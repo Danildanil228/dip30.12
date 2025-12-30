@@ -2,13 +2,14 @@ import React from 'react';
 import DesktopNavigation from './DesktopNavigation';
 import MobileNavigation from './MobileNavigation';
 import { Outlet } from 'react-router-dom';
+import Header from './Header';
 
 const Layout: React.FC = () => {
     return (
-        <div className="min-h-screen pb-16 lg:pb-0">
-            
+        <div className="min-h-screen ">
+            <Header/>
             <DesktopNavigation />
-            <main className="container p-4 lg:p-6">
+            <main className="container">
                 <Outlet /> 
             </main>
             <MobileNavigation />
