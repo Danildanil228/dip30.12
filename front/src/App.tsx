@@ -10,6 +10,7 @@ import AdminRoute from './components/AdminRoute';
 import AllUsers from './Pages/AllUsers';
 import AddUser from './Pages/AddUser';
 import Layout from './components/Layout';
+import NotFound from './Pages/NotFound';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path='*' element={<NotFound/>} />
           <Route path="/login" element={<Login />} />
 
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

@@ -13,7 +13,7 @@ export default function Header() {
                 'Неизвестная роль'}
             </p>
             <p>{user.name + ' ' + user.secondname}</p>
-            <div className="items-center flex gap-2">
+            <div className="items-center gap-2 flex">
                 <DarkModeButtonToggle />
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
