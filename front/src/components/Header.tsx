@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 export default function Header() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return (
-        <section className="container flex flex-wrap justify-between">
+        <section className="container flex flex-wrap justify-between sm:border-none border-b py-4! sm:mb-0! mb-4!">
             <p>
                 {user.role === 'admin' ? 'Администратор' : 
                 user.role === 'storekeeper' ? 'Работник склада' : 

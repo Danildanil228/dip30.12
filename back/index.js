@@ -172,6 +172,49 @@ app.get('/verifyToken', (req, res) => {
 })
 
 
+app.post('/createUser', async (req, res) => {
+    try {
+        const { username, password, name, secondname, role } = req.body;
+        
+        // Проверка данных
+        if (!username || !password || !name || !secondname || !role) {
+            return res.status(400).json({ error: 'Заполните все поля' });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+        }
+        
+        // Хеширование пароля
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Создание пользователя
+        const result = await pool.query(
+            `INSERT INTO users (username, password, role, name, secondname) 
+             VALUES ($1, $2, $3, $4, $5) 
+             RETURNING id, username, role, name, secondname`,
+            [username, hashedPassword, role, name, secondname]
+        );
+        
+        const user = result.rows[0];
+        
+        res.json({
+            message: 'Пользователь успешно создан',
+            user: user
+        });
+        
+    } catch (error) {
+        console.error('Ошибка:', error);
+        
+        if (error.code === '23505') {
+            return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+        }
+        
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+
 
 
 // тест
