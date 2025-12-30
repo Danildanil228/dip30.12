@@ -6,7 +6,7 @@ import Header from './Header';
 
 const Layout: React.FC = () => {
     return (
-        <div className="min-h-screen ">
+        <div className="min-h-screen mb-20!">
             <Header/>
             <DesktopNavigation />
             <main className="container">

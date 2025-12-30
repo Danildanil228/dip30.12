@@ -68,7 +68,7 @@ export default function AddUser() {
       setUsername("");
       setPassword("");
       setRole("storekeeper");
-      
+
     } catch (error: any) {
       setError(error.response?.data?.error || "Ошибка");
     } finally {
@@ -81,19 +81,19 @@ export default function AddUser() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Добавить пользователя</h1>
         <Link to='/allusers' className="text-sm flex gap-3 items-center">
-          Все пользователи 
+          Все пользователи
           <img src="/arrow.png" className="icon w-4 lg:block hidden" alt="" />
         </Link>
       </div>
-      
-      
-      
+
+
+
       <form onSubmit={handleSubmit} className="grid gap-6">
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="grid gap-2">
             <p className="text-xl">Имя</p>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Имя"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -101,12 +101,12 @@ export default function AddUser() {
               required
             />
           </div>
-          
+
           <div className="grid gap-2">
             <p className="text-xl">Фамилия</p>
-            <input 
-              type="text" 
-              placeholder="Фамилия" 
+            <input
+              type="text"
+              placeholder="Фамилия"
               value={secondname}
               onChange={(e) => setSecondname(e.target.value)}
               className="px-4 py-3 border rounded focus:outline-none focus:ring-1 text-xl"
@@ -114,13 +114,13 @@ export default function AddUser() {
             />
           </div>
         </div>
-        
+
         <div className="grid gap-4">
-          <div className="flex items-center gap-4">
+          <div className="sm:flex grid items-center gap-4">
             <div className="flex-1">
               <p className="text-xl mb-2">Логин</p>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Логин"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -128,7 +128,7 @@ export default function AddUser() {
                 required
               />
             </div>
-            <Button 
+            <Button
               type="button"
               onClick={handleGenerateLogin}
               className="self-end px-6 py-3 text-xl"
@@ -136,11 +136,11 @@ export default function AddUser() {
               Сгенерировать
             </Button>
           </div>
-          
-          <div className="flex items-center gap-4">
+
+          <div className="sm:flex grid items-center gap-4">
             <div className="flex-1">
               <p className="text-xl mb-2">Пароль</p>
-              <input 
+              <input
                 type="text"
                 placeholder="Пароль"
                 value={password}
@@ -150,7 +150,7 @@ export default function AddUser() {
                 minLength={6}
               />
             </div>
-            <Button 
+            <Button
               type="button"
               onClick={handleGeneratePassword}
               className="self-end px-6 py-3 text-xl"
@@ -159,7 +159,7 @@ export default function AddUser() {
             </Button>
           </div>
         </div>
-        
+
         <div className="grid gap-2">
           <p className="text-xl">Роль</p>
           <Select value={role} onValueChange={setRole}>
@@ -173,9 +173,9 @@ export default function AddUser() {
             </SelectContent>
           </Select>
         </div>
-        
-        <Button 
-          type="submit" 
+
+        <Button
+          type="submit"
           className="w-full lg:w-fit px-8 py-3 text-xl"
           disabled={loading}
         >
