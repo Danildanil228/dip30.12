@@ -1,21 +1,25 @@
+import { useUser } from '@/hooks/useUser';
 import { Link, useLocation, } from 'react-router-dom';
 
 export default function DesktopNavigation() {
     const location = useLocation();
+    const { isAdmin } = useUser();
     const navItems = [
-        { path: '/main', label: 'Главная' },
-        { path: '/materials', label: 'Материалы' },
-        { path: '/allusers', label: 'Все пользователи' },
-        { path: '/add', label: 'Добавить пользователя' },
-        { path: '/profile', label: 'Профиль' },
-        { path: '/notifications', label: 'Уведомления' },
+        { path: '/main', label: 'Главная', adminOnly: false },
+        { path: '/materials', label: 'Материалы', adminOnly: false },
+        { path: '/allusers', label: 'Все пользователи', adminOnly: true },
+        { path: '/add', label: 'Добавить пользователя', adminOnly: true },
+        { path: '/profile', label: 'Профиль', adminOnly: false },
+        { path: '/notifications', label: 'Уведомления', adminOnly: true },
     ];
+    const filItems = navItems.filter(item => !item.adminOnly || (item.adminOnly && isAdmin))
 
     return (
         <div className="container hidden lg:block border rounded-2xl my-4!">
             <div className="">
                 <div className="flex justify-between py-4">
-                    {navItems.map((item) => {
+                    {filItems.map((item) => {
+                        const isActive = location.pathname === item.path;
                         return (
                             <Link
                                 key={item.path}

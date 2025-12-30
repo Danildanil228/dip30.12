@@ -130,12 +130,14 @@
 .dark .icon {
   --icon-filter: brightness(0) invert(1);
 }
-*{
+
+body{
   font-size: 24px;
   font-family: "Montserrat";
   font-style: normal;
   font-weight: 600;
 }
+
 button{
   cursor: pointer;
 }

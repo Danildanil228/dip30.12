@@ -1,36 +1,40 @@
-
-import { Link } from 'react-router-dom';
+import { useUser } from '@/hooks/useUser';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function MobileNavigation() {
-
+    const location = useLocation();
+    const { isAdmin } = useUser();
     const navItems = [
         {
             path: '/main',
             label: 'Главная',
-            icon: '/home.svg'
+            icon: '/home.svg', adminOnly: false
         },
         {
             path: '/materials',
             label: 'Материалы',
-            icon: '/material.png'
+            icon: '/material.png', adminOnly: false
 
         },
         {
             path: '/add',
             label: 'Добавить',
-            icon: '/add.png'
+            icon: '/add.png', adminOnly: true
         },
         {
             path: '/profile',
             label: 'Профиль',
-            icon: '/profile.png'
+            icon: '/profile.png', adminOnly: false
         },
         {
             path: '/notifications',
             label: 'Уведомления',
-            icon: '/not.png'
+            icon: '/not.png', adminOnly: true
         }
     ];
+    const filteredNavItems = navItems.filter(item => 
+        !item.adminOnly || (item.adminOnly && isAdmin)
+    );
 
     const isActive = (path: string) => {
         if (path === '/main') {
@@ -42,7 +46,7 @@ export default function MobileNavigation() {
     return (
         <div className="lg:hidden fixed bottom-0 left-0 right-0  border-t z-50 bg-background">
             <div className="flex justify-around py-2">
-                {navItems.map((item) => {
+                {filteredNavItems.map((item) => {
                     const active = isActive(item.path);
                     return (
                         <Link
