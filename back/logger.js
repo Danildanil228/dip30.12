@@ -42,6 +42,8 @@ class Logger {
             `${adminName} удалил пользователя ${deletedUsername}`);
     }
 
+    
+
     // добавлени материала
     // static async materialAdded(userId, userName, materialName) {
     //     await this.log(userId, 'material_added', 'Добавление материала', 
@@ -59,6 +61,9 @@ class Logger {
     //     await this.log(userId, 'material_deleted', 'Удаление материала', 
     //         `${userName} удалил материал: ${materialName}`);
     // }
+
+
+   
 }
 
 module.exports = Logger;

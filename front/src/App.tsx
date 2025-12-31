@@ -18,7 +18,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path='*' element={<NotFound/>} />
+          <Route path='*' element={<NotFound />} />
           <Route path="/login" element={<Login />} />
 
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -37,6 +37,12 @@ function App() {
             } />
 
             <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/profile/:id" element={
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
