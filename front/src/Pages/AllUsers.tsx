@@ -1,40 +1,13 @@
 import { useState, useEffect } from "react";
-import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-    type ColumnDef,
-    type ColumnFiltersState,
-    type SortingState,
-    type VisibilityState,
-} from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 
 interface User {
@@ -53,6 +26,24 @@ export default function AllUsers() {
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = useState({});
+    const [showAll, setShowAll] = useState(false);
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 10
+    });
+
+    // Обработчик переключения
+    const handleToggleShowAll = () => {
+        if (showAll) {
+            // Переключаемся на пагинацию по 10
+            setPagination({ pageIndex: 0, pageSize: 10 });
+        } else {
+            // Переключаемся на всех пользователей
+            setPagination({ pageIndex: 0, pageSize: users.length });
+        }
+        setShowAll(!showAll);
+    };
+
 
     const columns: ColumnDef<User>[] = [
         {
@@ -159,7 +150,7 @@ export default function AllUsers() {
 
                 // Не показывать удаление для текущего пользователя
                 if (user.id === currentUser.id) {
-                    return <span className="text-gray-400">Текущий пользователь</span>;
+                    return <span className="text-gray-400">Вы</span>;
                 }
 
                 return (
@@ -273,11 +264,13 @@ export default function AllUsers() {
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
+        onPaginationChange: setPagination, // Добавляем обработчик
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
+            pagination, // Используем наш стейт
         },
     });
 
@@ -307,12 +300,12 @@ export default function AllUsers() {
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
                     <Input
-                        placeholder="Поиск по логину..."
+                        placeholder="Поиск по фамилии..."
                         value={
-                            (table.getColumn("username")?.getFilterValue() as string) ?? ""
+                            (table.getColumn("secondname")?.getFilterValue() as string) ?? ""
                         }
                         onChange={(event) =>
-                            table.getColumn("username")?.setFilterValue(event.target.value)
+                            table.getColumn("secondname")?.setFilterValue(event.target.value)
                         }
                         className="max-w-sm"
                     />
@@ -404,29 +397,37 @@ export default function AllUsers() {
                         Пользователей: {table.getFilteredRowModel().rows.length}
                     </div>
                     <div className="flex items-center space-x-2">
-                        {table.getPageCount() > 1 && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => table.previousPage()}
-                                disabled={!table.getCanPreviousPage()}
-                            >
-                                Назад
-                            </Button>
-                        )}
-                        <span className="text-sm">
-                            Страница {table.getState().pagination.pageIndex + 1} из{" "}
-                            {table.getPageCount()}
-                        </span>
-                        {table.getPageCount() > 1 && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => table.nextPage()}
-                                disabled={!table.getCanNextPage()}
-                            >
-                                Вперед
-                            </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleToggleShowAll}
+                            className="ml-2"
+                        >
+                            {showAll ? 'Свернуть' : 'Развернуть'}
+                        </Button>
+
+                        {!showAll && table.getPageCount() > 1 && (
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => table.previousPage()}
+                                    disabled={!table.getCanPreviousPage()}
+                                >
+                                    Назад
+                                </Button>
+                                <span className="text-sm">
+                                    Стр. {table.getState().pagination.pageIndex + 1} из{" "}
+                                    {table.getPageCount()}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => table.nextPage()}
+                                    disabled={!table.getCanNextPage()}
+                                >
+                                    Вперед
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>
