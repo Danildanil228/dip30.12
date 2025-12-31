@@ -7,13 +7,15 @@ export default function Header() {
     return (
         <section className="container flex flex-wrap justify-between sm:border-none border-b py-4! sm:mb-0! mb-4!">
             <p>
-                {user.role === 'admin' ? 'Администратор' : 
-                user.role === 'storekeeper' ? 'Работник склада' : 
-                user.role === 'accountant' ? 'Бухгалтер' : 
-                'Неизвестная роль'}
+                {user.role === 'admin' ? 'Администратор' :
+                    user.role === 'storekeeper' ? 'Работник склада' :
+                        user.role === 'accountant' ? 'Бухгалтер' :
+                            'Неизвестная роль'}
             </p>
-            <p>{user.name + ' ' + user.secondname}</p>
-            <div className="items-center gap-2 flex">
+
+            <p className="lg:flex hidden">{user.name + ' ' + user.secondname}</p>
+
+            <div className="items-center flex gap-2 ">
                 <DarkModeButtonToggle />
                 <AlertDialog>
                     <AlertDialogTrigger asChild>

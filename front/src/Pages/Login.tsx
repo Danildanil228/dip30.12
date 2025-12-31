@@ -132,7 +132,7 @@ export default function Login() {
                     {isFirst && password && confirmPassword && password !== confirmPassword && (
                         <p>Пароли не совпадают</p>
                     )}
-                    {error && <p className="text-red-500">{error}</p>}
+                    {error && <p className="">{error}</p>}
                 </div>
             </form>
         </section>

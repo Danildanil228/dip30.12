@@ -29,7 +29,7 @@ export default function MobileNavigation() {
         {
             path: '/notifications',
             label: 'Уведомления',
-            icon: '/not.png', adminOnly: true
+            icon: '/not.png', adminOnly: true, 
         }
     ];
     const filteredNavItems = navItems.filter(item => 

@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken')
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = 'key'
+const Logger = require('./logger')
 
 // Создаем пул подключений к БД
 const pool = new Pool({
@@ -36,6 +37,26 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+const checkAdmin = (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Требуются права администратора' });
+        }
+
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Недействительный токен' });
+    }
+};
 
 app.get('/countUsers', async (req, res) => {
     try {
@@ -142,6 +163,8 @@ app.post('/login', async (req, res) => {
             { expiresIn: '8h' }
         );
 
+        await Logger.login(user.id, user.username);
+
         res.json({
             message: 'Совершен вход',
             user: {
@@ -171,25 +194,7 @@ app.get('/verifyToken', (req, res) => {
     }
 })
 
-const checkAdmin = (req, res, next) => {
-    try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
-        }
 
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Требуются права администратора' });
-        }
-
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(403).json({ error: 'Недействительный токен' });
-    }
-};
 
 app.post('/createUser', checkAdmin, async (req, res) => {
     try {
@@ -202,6 +207,19 @@ app.post('/createUser', checkAdmin, async (req, res) => {
 
         if (password.length < 6) {
             return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+        }
+
+        // Получаем данные администратора из токена
+        const token = req.headers.authorization?.split(' ')[1];
+        let adminUsername = 'system';
+
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                adminUsername = decoded.username;
+            } catch (error) {
+                console.log('Токен не валиден, создание от имени системы');
+            }
         }
 
         // Хеширование пароля
@@ -217,13 +235,28 @@ app.post('/createUser', checkAdmin, async (req, res) => {
 
         const user = result.rows[0];
 
+        // Логирование создания пользователя
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                await pool.query(
+                    `INSERT INTO notifications (user_id, type, title, message) 
+                     VALUES ($1, $2, $3, $4)`,
+                    [decoded.id, 'user_created', 'Создание пользователя',
+                    `${decoded.username} создал пользователя ${username}`]
+                );
+            } catch (error) {
+                console.log('Не удалось записать лог');
+            }
+        }
+
         res.json({
             message: 'Пользователь успешно создан',
             user: user
         });
 
     } catch (error) {
-        console.error('Ошибка:', error);
+        console.error('Ошибка при создании пользователя:', error);
 
         if (error.code === '23505') {
             return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
@@ -239,7 +272,7 @@ app.get('/users', checkAdmin, async (req, res) => {
         const result = await pool.query(
             'SELECT id, username, role, name, secondname, created_at FROM users'
         );
-        
+
         res.json({ users: result.rows });
     } catch (error) {
         console.error('Ошибка при получении пользователей:', error);
@@ -247,37 +280,114 @@ app.get('/users', checkAdmin, async (req, res) => {
     }
 });
 
+// Удаление пользователя (только для админа)
 app.delete('/users/:id', checkAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
-        
+
+        // Получаем информацию об удаляемом пользователе
+        const userToDeleteResult = await pool.query(
+            'SELECT username FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userToDeleteResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const userToDelete = userToDeleteResult.rows[0];
+
         // Нельзя удалить самого себя
-        const token = req.headers.authorization?.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        if (userId === decoded.id) {
+        if (userId === req.user.id) {
             return res.status(400).json({ error: 'Нельзя удалить самого себя' });
         }
-        
+
+        // Удаляем пользователя
         const result = await pool.query(
             'DELETE FROM users WHERE id = $1 RETURNING id, username',
             [userId]
         );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-        
-        res.json({ 
-            message: 'Пользователь удален', 
-            deletedUser: result.rows[0] 
+
+        // Логирование удаления пользователя
+        await pool.query(
+            `INSERT INTO notifications (user_id, type, title, message) 
+             VALUES ($1, $2, $3, $4)`,
+            [req.user.id, 'user_deleted', 'Удаление пользователя',
+            `${req.user.username} удалил пользователя ${userToDelete.username}`]
+        );
+
+        res.json({
+            message: 'Пользователь удален',
+            deletedUser: result.rows[0]
         });
-        
+
     } catch (error) {
         console.error('Ошибка при удалении пользователя:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
+
+
+//ЛОГИ
+
+// Получение логов 
+app.get('/logs', checkAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT n.*, u.username as user_name, u.name, u.secondname 
+            FROM notifications n
+            LEFT JOIN users u ON n.user_id = u.id
+            ORDER BY n.created_at DESC
+            LIMIT 100
+        `);
+
+        await pool.query(
+            'UPDATE notifications SET read = true WHERE read = false'
+        );
+
+        res.json({ logs: result.rows });
+
+    } catch (error) {
+        console.error('Ошибка при получении логов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Удаление лога 
+app.delete('/logs/:id', checkAdmin, async (req, res) => {
+    try {
+        const logId = parseInt(req.params.id);
+
+        const result = await pool.query(
+            'DELETE FROM notifications WHERE id = $1 RETURNING id',
+            [logId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Лог не найден' });
+        }
+
+        res.json({ message: 'Лог удален' });
+
+    } catch (error) {
+        console.error('Ошибка при удалении лога:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Удаление всех логов 
+app.delete('/logs', checkAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM notifications');
+
+        res.json({ message: 'Все логи удалены' });
+
+    } catch (error) {
+        console.error('Ошибка при удалении логов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 
 
 

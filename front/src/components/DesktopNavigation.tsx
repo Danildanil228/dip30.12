@@ -24,7 +24,7 @@ export default function DesktopNavigation() {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`text-lg relative ${location.pathname === item.path
+                                className={`text-lg relative ${isActive
                                     ? 'opacity-50'
                                     : 'hover:opacity-50'
                                     }`}
