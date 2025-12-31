@@ -11,6 +11,7 @@ export default function DarkModeButtonToggle() {
 
     return (
         <Button
+            type="button"
             variant="outline"
             size="icon"
             onClick={toggleTheme}

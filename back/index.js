@@ -389,8 +389,6 @@ app.delete('/logs', checkAdmin, async (req, res) => {
 });
 
 
-
-
 // тест
 app.get('/test', (req, res) => {
     res.json({ message: 'Сервер работает!' });
