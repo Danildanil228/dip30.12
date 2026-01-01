@@ -269,7 +269,7 @@ export default function Profile() {
                                 {isOwnProfile ? 'Изменить ваши данные' : 'Изменить данные пользователя'}
                             </AlertDialogTitle>
                             <AlertDialogDescription className="grid gap-4 pt-4">
-                                {isAdmin && isOwnProfile && (
+                                {isAdmin && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Логин</label>
                                         <Input
