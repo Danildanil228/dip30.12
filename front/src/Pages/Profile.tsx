@@ -251,7 +251,7 @@ export default function Profile() {
                 <p>Логин: {user.username}</p>
                 <p>Email: {user.email || 'Не указан'}</p>
                 <p>Телефон: {user.phone || 'Не указан'}</p>
-                <p>Дата рождения: {user.birthday ? formatDate(user.birthday) : 'Не указана'}</p>
+                <p>Дата рождения: {user.birthday ? new Date(user.birthday).toLocaleDateString() : 'Не указана'}</p>
                 <div className="grid ">
 
                     <p className="text-xs opacity-50">Последнее обновление: {formatDate(user.updated_at)}</p>
