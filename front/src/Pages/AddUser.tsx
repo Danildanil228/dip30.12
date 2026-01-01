@@ -50,11 +50,7 @@ export default function AddUser() {
     setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/createUser`, {
-        username,
-        password,
-        name,
-        secondname,
-        role
+        username,password,name,secondname,role
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -62,7 +58,6 @@ export default function AddUser() {
       });
 
       setSuccess(`Пользователь ${username} создан`);
-      // Очистка формы
       setName("");
       setSecondname("");
       setUsername("");
@@ -85,9 +80,6 @@ export default function AddUser() {
           <img src="/arrow.png" className="icon w-4 lg:block hidden" alt="" />
         </Link>
       </div>
-
-
-
       <form onSubmit={handleSubmit} className="grid gap-6">
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="grid gap-2">

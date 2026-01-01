@@ -2,16 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 
 interface Log {
@@ -80,100 +71,6 @@ export default function Notifications({ onVisited }: LogsProps) {
     }
   };
 
-  // Функция для парсинга сообщения и создания ссылок
-  // const renderMessageWithLinks = (log: Log) => {
-  //   const message = log.message;
-
-  //   // Регулярное выражение для поиска [user:ID:username] и [admin:ID]
-  //   const userPattern = /\[user:(\d+):([^\]]+)\]/g;
-  //   const adminPattern = /\[admin:(\d+)\]/g;
-
-  //   const parts = [];
-  //   let lastIndex = 0;
-
-  //   // Ищем все совпадения
-  //   const matches = [];
-  //   let match;
-
-  //   // Ищем user ссылки
-  //   while ((match = userPattern.exec(message)) !== null) {
-  //     matches.push({
-  //       type: 'user',
-  //       index: match.index,
-  //       endIndex: match.index + match[0].length,
-  //       id: parseInt(match[1]),
-  //       username: match[2]
-  //     });
-  //   }
-
-  //   // Ищем admin ссылки
-  //   while ((match = adminPattern.exec(message)) !== null) {
-  //     matches.push({
-  //       type: 'admin',
-  //       index: match.index,
-  //       endIndex: match.index + match[0].length,
-  //       id: parseInt(match[1]),
-  //       username: 'admin'
-  //     });
-  //   }
-
-  //   // Сортируем совпадения по индексу
-  //   matches.sort((a, b) => a.index - b.index);
-
-  //   // Собираем части сообщения
-  //   let currentIndex = 0;
-
-  //   matches.forEach((matchObj, idx) => {
-  //     // Текст до совпадения
-  //     if (matchObj.index > currentIndex) {
-  //       parts.push(message.substring(currentIndex, matchObj.index));
-  //     }
-
-  //     // Ссылка на профиль
-  //     if (matchObj.type === 'user') {
-  //       // Ищем пользователя в логах по ID
-  //       const foundUser = logs.find(l => l.user_id === matchObj.id);
-  //       const displayName = foundUser
-  //         ? `${foundUser.name} ${foundUser.secondname} (${foundUser.user_name})`
-  //         : matchObj.username;
-
-  //       parts.push(
-  //         <Link
-  //           key={`${log.id}-${idx}`}
-  //           to={`/profile/${matchObj.id}`}
-  //           className="text-blue-500 hover:underline font-medium mx-1"
-  //         >
-  //           {displayName}
-  //         </Link>
-  //       );
-  //     } else if (matchObj.type === 'admin') {
-  //       // Для админа тоже делаем ссылку
-  //       const foundUser = logs.find(l => l.user_id === matchObj.id);
-  //       const displayName = foundUser
-  //         ? `${foundUser.name} ${foundUser.secondname} (админ)`
-  //         : 'Администратор';
-
-  //       parts.push(
-  //         <Link
-  //           key={`${log.id}-${idx}`}
-  //           to={`/profile/${matchObj.id}`}
-  //           className="text-blue-500 hover:underline font-medium mx-1"
-  //         >
-  //           {displayName}
-  //         </Link>
-  //       );
-  //     }
-
-  //     currentIndex = matchObj.endIndex;
-  //   });
-
-  //   // Остаток сообщения
-  //   if (currentIndex < message.length) {
-  //     parts.push(message.substring(currentIndex));
-  //   }
-
-  //   return parts.length > 0 ? parts : message;
-  // };
   const parseMessageWithLinks = (message: string) => {
     const parts = message.split(/(\[user:\d+:\w+\])/g);
 
@@ -244,7 +141,6 @@ export default function Notifications({ onVisited }: LogsProps) {
               </div>
             </div>
 
-            {/* Сообщение с парсингом ссылок */}
             <div className="mt-2 text-xl flex flex-wrap items-center">
               {parseMessageWithLinks(log.message)}
             </div>

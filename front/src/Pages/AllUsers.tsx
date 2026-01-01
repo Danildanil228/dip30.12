@@ -32,13 +32,10 @@ export default function AllUsers() {
         pageSize: 10
     });
 
-    // Обработчик переключения
     const handleToggleShowAll = () => {
         if (showAll) {
-            // Переключаемся на пагинацию по 10
             setPagination({ pageIndex: 0, pageSize: 10 });
         } else {
-            // Переключаемся на всех пользователей
             setPagination({ pageIndex: 0, pageSize: users.length });
         }
         setShowAll(!showAll);
@@ -147,9 +144,6 @@ export default function AllUsers() {
             cell: ({ row }) => {
                 const user = row.original;
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-
-
-                // Не показывать удаление для текущего пользователя
                 if (user.id === currentUser.id) {
                     return <span className="text-gray-400">Вы</span>;
                 }
@@ -270,13 +264,13 @@ export default function AllUsers() {
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
-        onPaginationChange: setPagination, // Добавляем обработчик
+        onPaginationChange: setPagination, 
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
-            pagination, // Используем наш стейт
+            pagination, 
         },
     });
 

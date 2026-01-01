@@ -23,7 +23,6 @@ function App() {
 
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
 
-            {/* Защищенные маршруты для всех авторизованных */}
             <Route path="/main" element={
               <ProtectedRoute>
                 <Main />
@@ -38,7 +37,9 @@ function App() {
 
             <Route path="/profile/:id" element={
               <ProtectedRoute>
-                <Profile />
+                <AdminRoute>
+                  <Profile />
+                </AdminRoute>
               </ProtectedRoute>
             } />
 
@@ -54,7 +55,6 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Маршруты только для админов */}
             <Route path="/allusers" element={
               <ProtectedRoute>
                 <AdminRoute>

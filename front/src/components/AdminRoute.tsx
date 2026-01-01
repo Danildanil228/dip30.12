@@ -8,7 +8,6 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     const { isAdmin, loading } = useUser();
-
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -16,8 +15,6 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
             </div>
         );
     }
-
-    // Если не админ - редирект на главную
     if (!isAdmin) {
         return <Navigate to="/main" replace />;
     }

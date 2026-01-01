@@ -8,7 +8,6 @@ const PORT = 3000;
 const JWT_SECRET = 'key'
 const Logger = require('./logger')
 
-// Создаем пул подключений к БД
 const pool = new Pool({
     user: "postgres",
     password: "1234",
@@ -17,13 +16,11 @@ const pool = new Pool({
     database: "materialHousedb"
 });
 
-// Логирование всех запросов
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
     next();
 });
 
-// CORS middleware
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
@@ -36,8 +33,11 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
+
+//Проверка на админа
 const checkAdmin = (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -84,10 +84,8 @@ app.post('/registerFirst', async (req, res) => {
             return res.status(400).json({ error: 'Заполните все поля' });
         }
 
-        // Хешируем пароль
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Создаем первого пользователя (админ по умолчанию)
         const result = await pool.query(
             'INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday',
             [username, hashedPassword, 'admin', 'admin', 'admin', '', '', null]
@@ -95,7 +93,6 @@ app.post('/registerFirst', async (req, res) => {
 
         const user = result.rows[0];
 
-        // Создаем токен
         const token = jwt.sign(
             {
                 id: user.id,
@@ -134,7 +131,6 @@ app.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Заполните все поля' });
         }
 
-        // Получаем пользователя из базы
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
 
         if (result.rows.length === 0) {
@@ -142,15 +138,12 @@ app.post('/login', async (req, res) => {
         }
 
         const user = result.rows[0];
-
-        // Проверяем пароль
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
             return res.status(401).json({ error: 'Неверные данные' });
         }
 
-        // Создаем токен
         const token = jwt.sign(
             {
                 id: user.id,
@@ -200,7 +193,6 @@ app.post('/createUser', checkAdmin, async (req, res) => {
     try {
         const { username, password, name, secondname, role } = req.body;
 
-        // Проверка данных
         if (!username || !password || !name || !secondname || !role) {
             return res.status(400).json({ error: 'Заполните все поля' });
         }
@@ -209,7 +201,6 @@ app.post('/createUser', checkAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
         }
 
-        // Получаем данные администратора из токена
         const token = req.headers.authorization?.split(' ')[1];
         let adminUsername = 'system';
 
@@ -222,10 +213,7 @@ app.post('/createUser', checkAdmin, async (req, res) => {
             }
         }
 
-        // Хеширование пароля
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Создание пользователя
         const result = await pool.query(
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
@@ -235,7 +223,6 @@ app.post('/createUser', checkAdmin, async (req, res) => {
 
         const user = result.rows[0];
 
-        // Логирование создания пользователя
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
@@ -243,7 +230,7 @@ app.post('/createUser', checkAdmin, async (req, res) => {
                     decoded.id,
                     decoded.username,
                     user.username,
-                    user.id  // Добавляем ID созданного пользователя
+                    user.id  
                 );
             } catch (error) {
                 console.log('Не удалось записать лог');
@@ -285,7 +272,6 @@ app.delete('/users/:id', checkAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
 
-        // Получаем информацию об удаляемом пользователе
         const userToDeleteResult = await pool.query(
             'SELECT username FROM users WHERE id = $1',
             [userId]
@@ -296,24 +282,19 @@ app.delete('/users/:id', checkAdmin, async (req, res) => {
         }
 
         const userToDelete = userToDeleteResult.rows[0];
-
-        // Нельзя удалить самого себя
         if (userId === req.user.id) {
             return res.status(400).json({ error: 'Нельзя удалить самого себя' });
         }
-
-        // Удаляем пользователя
         const result = await pool.query(
             'DELETE FROM users WHERE id = $1 RETURNING id, username',
             [userId]
         );
-
-        // Логирование удаления пользователя
+        //логи
         await Logger.userDeleted(
             req.user.id,
             req.user.username,
             userToDelete.username,
-            userToDelete.id  // Добавляем ID удаленного пользователя
+            userToDelete.id
         );
 
         res.json({
@@ -379,17 +360,12 @@ app.delete('/logs/:id', checkAdmin, async (req, res) => {
 app.delete('/logs', checkAdmin, async (req, res) => {
     try {
         await pool.query('DELETE FROM notifications');
-
         res.json({ message: 'Все логи удалены' });
-
     } catch (error) {
         console.error('Ошибка при удалении логов:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
-
-
-
 
 // profile 
 
@@ -422,7 +398,6 @@ app.put('/users/:id', async (req, res) => {
         const userId = parseInt(req.params.id);
         const { username, name, secondname, email, phone, birthday, role } = req.body;
 
-        // Проверка токена
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
             return res.status(401).json({ error: 'Требуется авторизация' });
@@ -432,10 +407,8 @@ app.put('/users/:id', async (req, res) => {
         const isAdmin = decoded.role === 'admin';
         const isSelf = decoded.id === userId;
 
-        // Получаем старые данные пользователя с текстовым представлением даты
         const oldUserResult = await pool.query(
-            'SELECT *, birthday::text as birthday_text FROM users WHERE id = $1',
-            [userId]
+            'SELECT *, birthday::text as birthday_text FROM users WHERE id = $1',[userId]
         );
 
         if (oldUserResult.rows.length === 0) {
@@ -444,12 +417,10 @@ app.put('/users/:id', async (req, res) => {
 
         const oldUser = oldUserResult.rows[0];
 
-        // Проверка прав
         if (!isSelf && !isAdmin) {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
 
-        // Для не-админа нельзя менять роль и логин
         const updateData = {
             name: name || oldUser.name,
             secondname: secondname || oldUser.secondname,
@@ -459,20 +430,15 @@ app.put('/users/:id', async (req, res) => {
             updated_at: new Date()
         };
 
-        // Админ может менять username всем (включая себя)
         if (isAdmin) {
             updateData.username = username || oldUser.username;
-
-            // Роль можно менять только другим пользователям (не себе)
             if (!isSelf) {
                 updateData.role = role || oldUser.role;
             } else {
-                // Админ не может менять свою роль
                 updateData.role = oldUser.role;
             }
         }
 
-        // Проверка уникальности логина (если меняется)
         if (updateData.username && updateData.username !== oldUser.username) {
             const existingUser = await pool.query(
                 'SELECT id FROM users WHERE username = $1 AND id != $2',
@@ -483,7 +449,6 @@ app.put('/users/:id', async (req, res) => {
             }
         }
 
-        // Формируем запрос
         const setClauses = [];
         const values = [];
         let paramIndex = 1;
@@ -508,10 +473,9 @@ app.put('/users/:id', async (req, res) => {
         const result = await pool.query(query, values);
         const updatedUser = result.rows[0];
 
-        // Логирование
+        // логи
         const changedFields = {};
         Object.entries(updateData).forEach(([key, newValue]) => {
-            // Для даты используем текстовое представление из БД
             let oldValue;
             if (key === 'birthday') {
                 oldValue = oldUser.birthday_text || '';
@@ -524,8 +488,7 @@ app.put('/users/:id', async (req, res) => {
 
             if (normalizedNewValue !== normalizedOldValue && key !== 'updated_at') {
                 changedFields[key] = {
-                    old: normalizedOldValue,
-                    new: normalizedNewValue
+                    old: normalizedOldValue,new: normalizedNewValue
                 };
             }
         });
@@ -533,11 +496,7 @@ app.put('/users/:id', async (req, res) => {
         if (Object.keys(changedFields).length > 0) {
             if (isAdmin && !isSelf) {
                 await Logger.userUpdated(
-                    decoded.id,
-                    decoded.username,
-                    userId,
-                    oldUser.username,
-                    changedFields
+                    decoded.id,decoded.username,userId,oldUser.username,changedFields
                 );
             } else {
                 await Logger.profileUpdated(userId, oldUser.username, changedFields);
@@ -545,15 +504,12 @@ app.put('/users/:id', async (req, res) => {
         }
 
         res.json({
-            message: 'Данные обновлены',
-            user: updatedUser
+            message: 'Данные обновлены', user: updatedUser
         });
 
     } catch (error) {
         console.error('Ошибка при обновлении пользователя:', error);
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({ error: 'Недействительный токен' });
-        }
+        if (error.name === 'JsonWebTokenError') {return res.status(401).json({ error: 'Недействительный токен' })}
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
@@ -564,25 +520,19 @@ app.put('/users/:id/password', async (req, res) => {
         const userId = parseInt(req.params.id);
         const { currentPassword, newPassword, isAdminChange } = req.body;
 
-        // Проверка токена
         const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
-        }
+        if (!token) {return res.status(401).json({ error: 'Требуется авторизация' })}
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const isAdmin = decoded.role === 'admin';
         const isSelf = decoded.id === userId;
 
-        // Проверка прав
         if (!isSelf && !isAdmin) {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
 
-        // Получаем пользователя
         const userResult = await pool.query(
-            'SELECT * FROM users WHERE id = $1',
-            [userId]
+            'SELECT * FROM users WHERE id = $1',[userId]
         );
 
         if (userResult.rows.length === 0) {
@@ -591,7 +541,6 @@ app.put('/users/:id/password', async (req, res) => {
 
         const user = userResult.rows[0];
 
-        // Если это не админская смена пароля, проверяем текущий пароль
         if (!isAdminChange) {
             if (!currentPassword) {
                 return res.status(400).json({ error: 'Требуется текущий пароль' });
@@ -603,29 +552,21 @@ app.put('/users/:id/password', async (req, res) => {
             }
         }
 
-        // Проверка нового пароля
         if (!newPassword || newPassword.length < 6) {
             return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
         }
 
-        // Хешируем новый пароль
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // Обновляем пароль
         await pool.query(
             'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
             [hashedPassword, userId]
         );
 
-        // Логирование
-        // После успешной смены пароля:
+        // логи
         if (isAdmin && !isSelf) {
             await Logger.passwordChanged(
-                decoded.id,
-                decoded.username,
-                false,  // selfChange = false
-                userId,  // targetUserId
-                user.username  // targetUsername
+                decoded.id, decoded.username, false, userId, user.username
             );
         } else {
             await Logger.passwordChanged(userId, user.username, true);
@@ -644,11 +585,7 @@ app.put('/users/:id/password', async (req, res) => {
 
 
 // тест
-app.get('/test', (req, res) => {
-    res.json({ message: 'Сервер работает!' });
-});
+app.get('/test', (req, res) => {res.json({ message: 'hello world' })});
 
 // Запуск сервера
-app.listen(PORT, () => {
-    console.log(`Сервер запущен на http://localhost:${PORT}`);
-});
+app.listen(PORT, () => { console.log(`Сервер запущен на http://localhost:${PORT}`)});

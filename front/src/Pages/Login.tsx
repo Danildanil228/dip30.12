@@ -33,7 +33,6 @@ export default function Login() {
         setLoading(true);
         setError(null);
 
-        // Проверка для первого запуска (создание админа)
         if (isFirst) {
             if (!username.trim() || !password.trim() || !confirmPassword.trim()) {
                 setError('Заполните все поля');
@@ -53,7 +52,6 @@ export default function Login() {
                 return;
             }
         } else {
-            // Проверка для обычного входа
             if (!username.trim() || !password.trim()) {
                 setError('Заполните все поля');
                 setLoading(false);

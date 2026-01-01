@@ -18,7 +18,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             return;
         }
 
-        // Проверяем токен
         axios.get(`${API_BASE_URL}/verifyToken`, {
             headers: { Authorization: `Bearer ${token}` }
         })
@@ -30,7 +29,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         });
     }, []);
 
-    // Пока проверяем
     if (isAuthenticated === null) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -39,12 +37,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         );
     }
 
-    // Если не авторизован - на логин
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
 
-    // Если авторизован - показываем содержимое
     return <>{children}</>;
 };
 

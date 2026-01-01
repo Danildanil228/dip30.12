@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { ChevronDownIcon, ArrowLeft } from "lucide-react";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import {Popover,PopoverContent,PopoverTrigger,} from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { API_BASE_URL } from "@/components/api";
 import axios from "axios";
@@ -33,16 +29,13 @@ export default function Profile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-
     const isAdmin = currentUser.role === 'admin';
     const isOwnProfile = !id || parseInt(id) === currentUser.id;
     const targetUserId = id ? parseInt(id) : currentUser.id;
-
     const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Состояния для редактирования данных
     const [editData, setEditData] = useState({
         username: '',
         name: '',
@@ -54,7 +47,6 @@ export default function Profile() {
     const [birthday, setBirthday] = useState<Date | undefined>();
     const [editOpen, setEditOpen] = useState(false);
 
-    // Состояния для смены пароля
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -77,7 +69,6 @@ export default function Profile() {
             const userData = response.data.user;
             setUser(userData);
 
-            // Заполняем форму данными пользователя
             setEditData({
                 username: userData.username,
                 name: userData.name,
@@ -102,72 +93,55 @@ export default function Profile() {
         }
     };
 
-    // В handleSaveData обновим логику:
     const handleSaveData = async () => {
         try {
             setError(null);
             const token = localStorage.getItem('token');
 
-            // Получаем текущие данные пользователя для сравнения
             const currentData = await axios.get(`${API_BASE_URL}/users/${targetUserId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const currentUserData = currentData.data.user;
 
-            // Форматируем дату рождения для отправки
             const formattedBirthday = birthday ? format(birthday, 'yyyy-MM-dd') : null;
 
-            // Нормализуем текущую дату рождения для сравнения
             let currentBirthdayFormatted = null;
             if (currentUserData.birthday) {
-                // Преобразуем строку из БД в Date, затем в такой же формат
                 const currentDate = new Date(currentUserData.birthday);
                 currentBirthdayFormatted = format(currentDate, 'yyyy-MM-dd');
             }
-
-            // Сравниваем значения с текущими данными
             const updateData: any = {};
 
-            // Проверяем каждое поле на изменения
             if (editData.name !== currentUserData.name) updateData.name = editData.name;
             if (editData.secondname !== currentUserData.secondname) updateData.secondname = editData.secondname;
             if (editData.email !== (currentUserData.email || '')) updateData.email = editData.email;
             if (editData.phone !== (currentUserData.phone || '')) updateData.phone = editData.phone;
 
-            // Сравниваем дату рождения в нормализованном формате
             if (formattedBirthday !== currentBirthdayFormatted) {
                 updateData.birthday = formattedBirthday;
             }
 
-            // Админ может менять username всем (включая себя)
             if (isAdmin) {
                 if (editData.username !== currentUserData.username) {
                     updateData.username = editData.username;
                 }
-
-                // Роль можно менять только другим пользователям
                 if (!isOwnProfile && editData.role !== currentUserData.role) {
                     updateData.role = editData.role;
                 }
             }
 
-            // Если ничего не изменилось, просто закрываем окно
             if (Object.keys(updateData).length === 0) {
                 setEditOpen(false);
                 return;
             }
 
-            console.log('Отправляемые данные:', updateData); // Для отладки
+            console.log('Отправляемые данные:', updateData);
 
-            // Отправляем только измененные данные
             const response = await axios.put(`${API_BASE_URL}/users/${targetUserId}`, updateData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-
-            // Обновляем локальные данные
             await fetchUserProfile();
 
-            // Если это текущий пользователь, обновляем данные в localStorage
             if (isOwnProfile) {
                 const updatedUser = {
                     ...currentUser,
@@ -205,7 +179,6 @@ export default function Profile() {
                 isAdminChange: isAdmin && !isOwnProfile
             };
 
-            // Если пользователь меняет свой пароль, нужен текущий пароль
             if (!isAdmin || isOwnProfile) {
                 requestData.currentPassword = currentPassword;
             }
@@ -215,13 +188,9 @@ export default function Profile() {
             });
 
             setPasswordSuccess('Пароль успешно изменен');
-
-            // Очищаем поля
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-
-            // Закрываем через 2 секунды
             setTimeout(() => {
                 setPasswordOpen(false);
                 setPasswordSuccess(null);
@@ -292,7 +261,6 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* Кнопки действий */}
             <div className="flex flex-wrap gap-4 mt-6">
                 <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
                     <AlertDialogTrigger asChild>
@@ -306,7 +274,6 @@ export default function Profile() {
                                 {isOwnProfile ? 'Изменить ваши данные' : 'Изменить данные пользователя'}
                             </AlertDialogTitle>
                             <AlertDialogDescription className="grid gap-4 pt-4">
-                                {/* Логин - только админ для чужих профилей */}
                                 {isAdmin && !isOwnProfile && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Логин</label>
@@ -362,18 +329,6 @@ export default function Profile() {
                                     />
                                 </div>
 
-                                {isAdmin && (
-                                    <div className="grid gap-2">
-                                        <label className="text-sm font-medium">Логин</label>
-                                        <Input
-                                            type="text"
-                                            placeholder="Логин"
-                                            value={editData.username}
-                                            onChange={(e) => setEditData({ ...editData, username: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                )}
                                 {isAdmin && !isOwnProfile && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Роль</label>
@@ -451,7 +406,6 @@ export default function Profile() {
                                 Смена пароля
                             </AlertDialogTitle>
                             <AlertDialogDescription className="grid gap-4 pt-4">
-                                {/* Текущий пароль - только для своих паролей или не-админов */}
                                 {(!isAdmin || isOwnProfile) && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Текущий пароль</label>
@@ -476,7 +430,6 @@ export default function Profile() {
                                     />
                                 </div>
 
-                                {/* Подтверждение пароля - только для своих паролей или не-админов */}
                                 {(!isAdmin || isOwnProfile) && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Подтвердите новый пароль</label>
