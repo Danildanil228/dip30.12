@@ -241,11 +241,6 @@ export default function Profile() {
 
             <div className="flex gap-4 flex-wrap">
                 <p className="text-lg">{user.name} {user.secondname}</p>
-                <p className="text-lg">
-                    {user.role === 'admin' ? 'Администратор' :
-                        user.role === 'storekeeper' ? 'Работник склада' :
-                            user.role === 'accountant' ? 'Бухгалтер' : 'Неизвестная роль'}
-                </p>
             </div>
 
             <h1 className="text-xl font-semibold mt-6">Данные пользователя</h1>
@@ -274,7 +269,7 @@ export default function Profile() {
                                 {isOwnProfile ? 'Изменить ваши данные' : 'Изменить данные пользователя'}
                             </AlertDialogTitle>
                             <AlertDialogDescription className="grid gap-4 pt-4">
-                                {isAdmin && !isOwnProfile && (
+                                {isAdmin && isOwnProfile && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Логин</label>
                                         <Input
