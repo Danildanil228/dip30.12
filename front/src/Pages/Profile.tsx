@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as React from "react"
+import { ru } from "date-fns/locale/ru"
 
 export default function Profile() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -105,6 +106,7 @@ export default function Profile() {
                                 <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                                     <Calendar
                                         mode="single"
+                                        locale={ru}
                                         selected={date}
                                         captionLayout="dropdown"
                                         onSelect={(date) => {
