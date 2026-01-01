@@ -148,34 +148,40 @@ export default function AllUsers() {
                 const user = row.original;
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
+
                 // Не показывать удаление для текущего пользователя
                 if (user.id === currentUser.id) {
                     return <span className="text-gray-400">Вы</span>;
                 }
 
                 return (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <img
-                                src="/trash.png"
-                                className="w-5 icon cursor-pointer"
-                                alt="Удалить"
-                            />
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                    Удалить пользователя {user.username}?
-                                </AlertDialogTitle>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
-                                    Удалить
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex gap-3">
+                        <Link to={`/profile/${user.id}`} className="text-blue-500 hover:text-blue-700">
+                            <img src="/profile.png" className="icon w-5" alt="Профиль" title="Перейти в профиль" />
+                        </Link>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <img
+                                    src="/trash.png"
+                                    className="w-5 icon cursor-pointer"
+                                    alt="Удалить"
+                                />
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Удалить пользователя {user.username}?
+                                    </AlertDialogTitle>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                        Удалить
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 );
             },
         },

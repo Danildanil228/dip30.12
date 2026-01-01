@@ -89,8 +89,8 @@ app.post('/registerFirst', async (req, res) => {
 
         // Создаем первого пользователя (админ по умолчанию)
         const result = await pool.query(
-            'INSERT INTO users (username, password, role, name, secondname) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, role, name, secondname',
-            [username, hashedPassword, 'admin', 'admin', 'admin']
+            'INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday',
+            [username, hashedPassword, 'admin', 'admin', 'admin', '', '', null]
         );
 
         const user = result.rows[0];
@@ -227,10 +227,10 @@ app.post('/createUser', checkAdmin, async (req, res) => {
 
         // Создание пользователя
         const result = await pool.query(
-            `INSERT INTO users (username, password, role, name, secondname) 
-             VALUES ($1, $2, $3, $4, $5) 
-             RETURNING id, username, role, name, secondname`,
-            [username, hashedPassword, role, name, secondname]
+            `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+     RETURNING id, username, role, name, secondname, email, phone, birthday`,
+            [username, hashedPassword, role, name, secondname, '', '', null]
         );
 
         const user = result.rows[0];
@@ -241,9 +241,9 @@ app.post('/createUser', checkAdmin, async (req, res) => {
                 const decoded = jwt.verify(token, JWT_SECRET);
                 await pool.query(
                     `INSERT INTO notifications (user_id, type, title, message) 
-                     VALUES ($1, $2, $3, $4)`,
+     VALUES ($1, $2, $3, $4)`,
                     [decoded.id, 'user_created', 'Создание пользователя',
-                    `${decoded.username} создал пользователя ${username}`]
+                    `${decoded.username} [admin:${decoded.id}] создал пользователя [user:${result.rows[0].id}:${username}]`]
                 );
             } catch (error) {
                 console.log('Не удалось записать лог');
@@ -384,6 +384,240 @@ app.delete('/logs', checkAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Ошибка при удалении логов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+
+
+
+// profile 
+
+// Получение данных пользователя по ID
+app.get('/users/:id', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+
+        const result = await pool.query(
+            `SELECT id, username, role, name, secondname, email, phone, 
+                    birthday, created_at, updated_at 
+             FROM users WHERE id = $1`,
+            [userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        res.json({ user: result.rows[0] });
+    } catch (error) {
+        console.error('Ошибка при получении пользователя:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Обновление данных пользователя
+app.put('/users/:id', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const { username, name, secondname, email, phone, birthday, role } = req.body;
+
+        // Проверка токена
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const isAdmin = decoded.role === 'admin';
+        const isSelf = decoded.id === userId;
+
+        // Получаем старые данные пользователя
+        const oldUserResult = await pool.query(
+            'SELECT * FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (oldUserResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const oldUser = oldUserResult.rows[0];
+
+        // Проверка прав
+        if (!isSelf && !isAdmin) {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+
+        // Для не-админа нельзя менять роль и логин
+        const updateData = {
+            name: name || oldUser.name,
+            secondname: secondname || oldUser.secondname,
+            email: email || oldUser.email,
+            phone: phone || oldUser.phone,
+            birthday: birthday || oldUser.birthday,
+            updated_at: new Date()
+        };
+
+        if (isAdmin) {
+            // Username можно менять всем (и себе и другим)
+            updateData.username = username || oldUser.username;
+
+            // Роль можно менять только другим пользователям (не себе)
+            if (!isSelf) {
+                updateData.role = role || oldUser.role;
+            } else {
+                // Админ не может менять свою роль
+                updateData.role = oldUser.role;
+            }
+        }
+
+        // Проверка уникальности логина (если меняется)
+        if (updateData.username && updateData.username !== oldUser.username) {
+            const existingUser = await pool.query(
+                'SELECT id FROM users WHERE username = $1 AND id != $2',
+                [updateData.username, userId]
+            );
+            if (existingUser.rows.length > 0) {
+                return res.status(400).json({ error: 'Логин уже занят' });
+            }
+        }
+
+        // Формируем запрос
+        const setClauses = [];
+        const values = [];
+        let paramIndex = 1;
+
+        Object.entries(updateData).forEach(([key, value]) => {
+            if (value !== undefined) {
+                setClauses.push(`${key} = $${paramIndex}`);
+                values.push(value);
+                paramIndex++;
+            }
+        });
+
+        values.push(userId);
+
+        const query = `
+            UPDATE users 
+            SET ${setClauses.join(', ')} 
+            WHERE id = $${paramIndex} 
+            RETURNING id, username, role, name, secondname, email, phone, birthday, created_at, updated_at
+        `;
+
+        const result = await pool.query(query, values);
+        const updatedUser = result.rows[0];
+
+        // Логирование
+        const changedFields = {};
+        Object.entries(updateData).forEach(([key, newValue]) => {
+            const oldValue = oldUser[key];
+            if (newValue !== oldValue && key !== 'updated_at') {
+                changedFields[key] = { old: oldValue || '', new: newValue };
+            }
+        });
+
+        if (Object.keys(changedFields).length > 0) {
+            if (isAdmin && !isSelf) {
+                await Logger.userUpdated(
+                    decoded.id,
+                    decoded.username,
+                    userId,
+                    oldUser.username,
+                    changedFields
+                );
+            } else {
+                await Logger.profileUpdated(userId, oldUser.username, changedFields);
+            }
+        }
+
+        res.json({
+            message: 'Данные обновлены',
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.error('Ошибка при обновлении пользователя:', error);
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Недействительный токен' });
+        }
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Смена пароля
+app.put('/users/:id/password', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const { currentPassword, newPassword, isAdminChange } = req.body;
+
+        // Проверка токена
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const isAdmin = decoded.role === 'admin';
+        const isSelf = decoded.id === userId;
+
+        // Проверка прав
+        if (!isSelf && !isAdmin) {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+
+        // Получаем пользователя
+        const userResult = await pool.query(
+            'SELECT * FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Если это не админская смена пароля, проверяем текущий пароль
+        if (!isAdminChange) {
+            if (!currentPassword) {
+                return res.status(400).json({ error: 'Требуется текущий пароль' });
+            }
+
+            const validPassword = await bcrypt.compare(currentPassword, user.password);
+            if (!validPassword) {
+                return res.status(401).json({ error: 'Неверный текущий пароль' });
+            }
+        }
+
+        // Проверка нового пароля
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+        }
+
+        // Хешируем новый пароль
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Обновляем пароль
+        await pool.query(
+            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [hashedPassword, userId]
+        );
+
+        // Логирование
+        if (isAdmin && !isSelf) {
+            await Logger.adminPasswordChanged(decoded.id, decoded.username, userId, user.username);
+        } else {
+            await Logger.passwordChanged(userId, user.username, true);
+        }
+
+        res.json({ message: 'Пароль успешно изменен' });
+
+    } catch (error) {
+        console.error('Ошибка при смене пароля:', error);
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Недействительный токен' });
+        }
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });

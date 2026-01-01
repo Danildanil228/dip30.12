@@ -36,13 +36,13 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/profile" element={
+            <Route path="/profile/:id" element={
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
             } />
 
-            <Route path="/profile/:id" element={
+            <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>

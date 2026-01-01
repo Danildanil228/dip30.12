@@ -25,11 +25,6 @@ class Logger {
         await this.log(userId, 'login', 'Вход в систему', `Пользователь ${username} вошел в систему`);
     }
 
-    //  выход из системы
-    static async logout(userId, username) {
-        await this.log(userId, 'logout', 'Выход из системы', `Пользователь ${username} вышел из системы`);
-    }
-
     //  создания пользователя
     static async userCreated(adminId, adminName, createdUsername) {
         await this.log(adminId, 'user_created', 'Создание пользователя',
@@ -42,7 +37,7 @@ class Logger {
             `${adminName} удалил пользователя ${deletedUsername}`);
     }
 
-    
+
 
     // добавлени материала
     // static async materialAdded(userId, userName, materialName) {
@@ -63,7 +58,55 @@ class Logger {
     // }
 
 
-   
+    //PROFILE
+
+    static async profileUpdated(userId, username, changedFields) {
+        const changesText = Object.entries(changedFields)
+            .map(([field, values]) => `"${field}": "${values.old}" → "${values.new}"`)
+            .join(', ');
+
+        await this.log(
+            userId,
+            'profile_updated',
+            'Изменение профиля',
+            `Пользователь ${username} изменил данные: ${changesText}`
+        );
+    }
+
+    static async passwordChanged(userId, username, selfChange = true) {
+        await this.log(
+            userId,
+            'password_changed',
+            'Смена пароля',
+            selfChange
+                ? `Пользователь ${username} сменил свой пароль`
+                : `Администратор ${username} сменил пароль пользователя`
+        );
+    }
+
+    static async userUpdated(adminId, adminUsername, targetUserId, targetUsername, changedFields) {
+        const changesText = Object.entries(changedFields)
+            .map(([field, values]) => `"${field}": "${values.old}" → "${values.new}"`)
+            .join(', ');
+
+        await this.log(
+            adminId,
+            'admin_user_updated',
+            'Админ изменил данные пользователя',
+            `Администратор ${adminUsername} изменил данные пользователя ${targetUsername}: ${changesText}`
+        );
+    }
+
+    static async adminPasswordChanged(adminId, adminUsername, targetUserId, targetUsername) {
+        await this.log(
+            adminId,
+            'admin_password_changed',
+            'Админ сменил пароль пользователя',
+            `Администратор ${adminUsername} сменил пароль пользователю ${targetUsername}`
+        );
+    }
+
+
 }
 
 module.exports = Logger;

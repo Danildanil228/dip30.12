@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Link } from "react-router-dom";
 
 interface Log {
   id: number;
@@ -25,11 +26,12 @@ interface Log {
   name: string;
   secondname: string;
 }
+
 interface LogsProps {
-    onVisited?: () => void;
+  onVisited?: () => void;
 }
 
-export default function Notifications({onVisited} : LogsProps) {
+export default function Notifications({ onVisited }: LogsProps) {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,14 +80,109 @@ export default function Notifications({onVisited} : LogsProps) {
     }
   };
 
+  // Функция для парсинга сообщения и создания ссылок
+  const renderMessageWithLinks = (log: Log) => {
+    const message = log.message;
+
+    // Регулярное выражение для поиска [user:ID:username] и [admin:ID]
+    const userPattern = /\[user:(\d+):([^\]]+)\]/g;
+    const adminPattern = /\[admin:(\d+)\]/g;
+
+    const parts = [];
+    let lastIndex = 0;
+
+    // Ищем все совпадения
+    const matches = [];
+    let match;
+
+    // Ищем user ссылки
+    while ((match = userPattern.exec(message)) !== null) {
+      matches.push({
+        type: 'user',
+        index: match.index,
+        endIndex: match.index + match[0].length,
+        id: parseInt(match[1]),
+        username: match[2]
+      });
+    }
+
+    // Ищем admin ссылки
+    while ((match = adminPattern.exec(message)) !== null) {
+      matches.push({
+        type: 'admin',
+        index: match.index,
+        endIndex: match.index + match[0].length,
+        id: parseInt(match[1]),
+        username: 'admin'
+      });
+    }
+
+    // Сортируем совпадения по индексу
+    matches.sort((a, b) => a.index - b.index);
+
+    // Собираем части сообщения
+    let currentIndex = 0;
+
+    matches.forEach((matchObj, idx) => {
+      // Текст до совпадения
+      if (matchObj.index > currentIndex) {
+        parts.push(message.substring(currentIndex, matchObj.index));
+      }
+
+      // Ссылка на профиль
+      if (matchObj.type === 'user') {
+        // Ищем пользователя в логах по ID
+        const foundUser = logs.find(l => l.user_id === matchObj.id);
+        const displayName = foundUser
+          ? `${foundUser.name} ${foundUser.secondname} (${foundUser.user_name})`
+          : matchObj.username;
+
+        parts.push(
+          <Link
+            key={`${log.id}-${idx}`}
+            to={`/profile/${matchObj.id}`}
+            className="text-blue-500 hover:underline font-medium mx-1"
+          >
+            {displayName}
+          </Link>
+        );
+      } else if (matchObj.type === 'admin') {
+        // Для админа тоже делаем ссылку
+        const foundUser = logs.find(l => l.user_id === matchObj.id);
+        const displayName = foundUser
+          ? `${foundUser.name} ${foundUser.secondname} (админ)`
+          : 'Администратор';
+
+        parts.push(
+          <Link
+            key={`${log.id}-${idx}`}
+            to={`/profile/${matchObj.id}`}
+            className="text-blue-500 hover:underline font-medium mx-1"
+          >
+            {displayName}
+          </Link>
+        );
+      }
+
+      currentIndex = matchObj.endIndex;
+    });
+
+    // Остаток сообщения
+    if (currentIndex < message.length) {
+      parts.push(message.substring(currentIndex));
+    }
+
+    return parts.length > 0 ? parts : message;
+  };
+
   if (loading) {
     return <div className="p-4">Загрузка логов...</div>;
   }
 
   return (
     <div className="mx-auto">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl mb-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl">
           Журнал действий {logs.length > 0 && `(${logs.length})`}
         </h1>
         {logs.length > 1 && (
@@ -107,13 +204,10 @@ export default function Notifications({onVisited} : LogsProps) {
           </AlertDialog>
         )}
       </div>
-      
+
       <div className="space-y-3">
         {logs.map((log) => (
-          <div 
-            key={log.id} 
-            className={`p-4 border rounded-lg`}
-          >
+          <div key={log.id} className={`p-4 border rounded-lg`}>
             <div className="flex justify-between items-center">
               <div className="flex">
                 <h3 className="text-xs">{log.title}</h3>
@@ -127,19 +221,46 @@ export default function Notifications({onVisited} : LogsProps) {
                 </button>
               </div>
             </div>
-            <p className="mt-2 text-xl">{log.message}</p>
+            <p className="mt-2 text-xl">
+              {log.message.split(' ').map((word, index) => {
+                // Ищем username в формате "Пользователь username" или "Администратор username"
+                if (word.match(/^[a-zA-Z0-9_]+$/) && index > 0 &&
+                  (log.message.split(' ')[index - 1] === 'Пользователь' ||
+                    log.message.split(' ')[index - 1] === 'Администратор' ||
+                    log.message.split(' ')[index - 1] === 'пользователя')) {
+
+                  // Находим ID пользователя из лога
+                  const logUser = logs.find(l => l.user_name === word);
+                  if (logUser) {
+                    return (
+                      <React.Fragment key={index}>
+                        {' '}
+                        <Link to={`/profile/${logUser.user_id}`} className="text-blue-500 hover:underline">
+                          {word}
+                        </Link>
+                      </React.Fragment>
+                    );
+                  }
+                }
+                return ' ' + word;
+              }).slice(1)}
+            </p>
             {log.user_name && (
               <p className="text-sm mt-1">
-                Пользователь: {log.name} {log.secondname} ({log.user_name})
+                Действие выполнено: {log.name} {log.secondname} (
+                <Link to={`/profile/${log.user_id}`} className="text-blue-500 hover:underline">
+                  {log.user_name}
+                </Link>
+                )
               </p>
             )}
           </div>
         ))}
-        
+
         {logs.length === 0 && (
-          <p className="text-center py-8">
+          <div className="text-center py-8 text-gray-500">
             Нет записей в журнале
-          </p>
+          </div>
         )}
       </div>
     </div>
