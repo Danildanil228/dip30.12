@@ -129,9 +129,6 @@ export default function Login() {
                         </button>
                         <DarkModeButtonToggle />
                     </div>
-                    {isFirst && password && confirmPassword && password !== confirmPassword && (
-                        <p>Пароли не совпадают</p>
-                    )}
                     {error && <p className="">{error}</p>}
                 </div>
             </form>

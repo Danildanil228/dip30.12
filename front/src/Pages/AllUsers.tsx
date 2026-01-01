@@ -138,7 +138,7 @@ export default function AllUsers() {
             },
             cell: ({ row }) => {
                 const date = new Date(row.getValue("created_at"));
-                return <div>{date.toLocaleDateString("ru-RU")}</div>;
+                return <div>{date.toLocaleString("ru-RU")}</div>;
             },
         },
         {
@@ -397,13 +397,16 @@ export default function AllUsers() {
                         Пользователей: {table.getFilteredRowModel().rows.length}
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleToggleShowAll}
-                            className="ml-2"
-                        >
-                            {showAll ? 'Свернуть' : 'Развернуть'}
-                        </Button>
+                        {table.getPageCount() > 1 && (
+
+                            <Button
+                                variant="outline"
+                                onClick={handleToggleShowAll}
+                                className="ml-2"
+                            >
+                                {showAll ? 'Свернуть' : 'Развернуть'}
+                            </Button>
+                        )}
 
                         {!showAll && table.getPageCount() > 1 && (
                             <div className="flex items-center space-x-2">
