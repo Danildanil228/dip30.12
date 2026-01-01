@@ -22,19 +22,30 @@ class Logger {
 
     //  вход в систему
     static async login(userId, username) {
-        await this.log(userId, 'login', 'Вход в систему', `Пользователь ${username} вошел в систему`);
+        await this.log(userId, 'login', 'Вход в систему',
+            `[user:${userId}:${username}] вошел в систему`);
     }
-
+    static async logout(userId, username) {
+        await this.log(userId, 'logout', 'Выход из системы',
+            `[user:${userId}:${username}] вышел из системы`);
+    }
     //  создания пользователя
-    static async userCreated(adminId, adminName, createdUsername) {
-        await this.log(adminId, 'user_created', 'Создание пользователя',
-            `${adminName} создал пользователя ${createdUsername}`);
+    static async userCreated(adminId, adminUsername, createdUsername, createdUserId) {
+        await this.log(
+            adminId,
+            'user_created',
+            'Создание пользователя',
+            `[user:${adminId}:${adminUsername}] создал пользователя [user:${createdUserId}:${createdUsername}]`
+        );
     }
-
-    //  удалени пользователя
-    static async userDeleted(adminId, adminName, deletedUsername) {
-        await this.log(adminId, 'user_deleted', 'Удаление пользователя',
-            `${adminName} удалил пользователя ${deletedUsername}`);
+    //delte
+    static async userDeleted(adminId, adminUsername, deletedUsername, deletedUserId) {
+        await this.log(
+            adminId,
+            'user_deleted',
+            'Удаление пользователя',
+            `[user:${adminId}:${adminUsername}] удалил пользователя [user:${deletedUserId}:${deletedUsername}]`
+        );
     }
 
 
@@ -69,19 +80,26 @@ class Logger {
             userId,
             'profile_updated',
             'Изменение профиля',
-            `Пользователь ${username} изменил данные: ${changesText}`
+            `[user:${userId}:${username}] изменил данные: ${changesText}`
         );
     }
 
-    static async passwordChanged(userId, username, selfChange = true) {
-        await this.log(
-            userId,
-            'password_changed',
-            'Смена пароля',
-            selfChange
-                ? `Пользователь ${username} сменил свой пароль`
-                : `Администратор ${username} сменил пароль пользователя`
-        );
+    static async passwordChanged(userId, username, selfChange = true, targetUserId = null, targetUsername = null) {
+        if (selfChange) {
+            await this.log(
+                userId,
+                'password_changed',
+                'Смена пароля',
+                `[user:${userId}:${username}] сменил свой пароль`
+            );
+        } else {
+            await this.log(
+                userId,
+                'admin_password_changed',
+                'Админ сменил пароль пользователю',
+                `[user:${userId}:${username}] сменил пароль пользователю [user:${targetUserId}:${targetUsername}]`
+            );
+        }
     }
 
     static async userUpdated(adminId, adminUsername, targetUserId, targetUsername, changedFields) {
@@ -93,7 +111,7 @@ class Logger {
             adminId,
             'admin_user_updated',
             'Админ изменил данные пользователя',
-            `Администратор ${adminUsername} изменил данные пользователя ${targetUsername}: ${changesText}`
+            `[user:${adminId}:${adminUsername}] изменил данные пользователя [user:${targetUserId}:${targetUsername}]: ${changesText}`
         );
     }
 

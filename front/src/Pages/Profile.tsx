@@ -108,26 +108,59 @@ export default function Profile() {
             setError(null);
             const token = localStorage.getItem('token');
 
-            const updateData: any = {
-                name: editData.name,
-                secondname: editData.secondname,
-                email: editData.email,
-                phone: editData.phone,
-                birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
-            };
+            // Получаем текущие данные пользователя для сравнения
+            const currentData = await axios.get(`${API_BASE_URL}/users/${targetUserId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const currentUserData = currentData.data.user;
+
+            // Форматируем дату рождения для отправки
+            const formattedBirthday = birthday ? format(birthday, 'yyyy-MM-dd') : null;
+
+            // Нормализуем текущую дату рождения для сравнения
+            let currentBirthdayFormatted = null;
+            if (currentUserData.birthday) {
+                // Преобразуем строку из БД в Date, затем в такой же формат
+                const currentDate = new Date(currentUserData.birthday);
+                currentBirthdayFormatted = format(currentDate, 'yyyy-MM-dd');
+            }
+
+            // Сравниваем значения с текущими данными
+            const updateData: any = {};
+
+            // Проверяем каждое поле на изменения
+            if (editData.name !== currentUserData.name) updateData.name = editData.name;
+            if (editData.secondname !== currentUserData.secondname) updateData.secondname = editData.secondname;
+            if (editData.email !== (currentUserData.email || '')) updateData.email = editData.email;
+            if (editData.phone !== (currentUserData.phone || '')) updateData.phone = editData.phone;
+
+            // Сравниваем дату рождения в нормализованном формате
+            if (formattedBirthday !== currentBirthdayFormatted) {
+                updateData.birthday = formattedBirthday;
+            }
 
             // Админ может менять username всем (включая себя)
             if (isAdmin) {
-                updateData.username = editData.username;
+                if (editData.username !== currentUserData.username) {
+                    updateData.username = editData.username;
+                }
 
                 // Роль можно менять только другим пользователям
-                if (!isOwnProfile) {
+                if (!isOwnProfile && editData.role !== currentUserData.role) {
                     updateData.role = editData.role;
                 }
-                // Админ не может менять свою роль - остается текущая
             }
 
-            await axios.put(`${API_BASE_URL}/users/${targetUserId}`, updateData, {
+            // Если ничего не изменилось, просто закрываем окно
+            if (Object.keys(updateData).length === 0) {
+                setEditOpen(false);
+                return;
+            }
+
+            console.log('Отправляемые данные:', updateData); // Для отладки
+
+            // Отправляем только измененные данные
+            const response = await axios.put(`${API_BASE_URL}/users/${targetUserId}`, updateData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -138,7 +171,7 @@ export default function Profile() {
             if (isOwnProfile) {
                 const updatedUser = {
                     ...currentUser,
-                    ...updateData
+                    ...response.data.user
                 };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
             }

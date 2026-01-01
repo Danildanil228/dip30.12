@@ -239,11 +239,11 @@ app.post('/createUser', checkAdmin, async (req, res) => {
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
-                await pool.query(
-                    `INSERT INTO notifications (user_id, type, title, message) 
-     VALUES ($1, $2, $3, $4)`,
-                    [decoded.id, 'user_created', 'Создание пользователя',
-                    `${decoded.username} [admin:${decoded.id}] создал пользователя [user:${result.rows[0].id}:${username}]`]
+                await Logger.userCreated(
+                    decoded.id,
+                    decoded.username,
+                    user.username,
+                    user.id  // Добавляем ID созданного пользователя
                 );
             } catch (error) {
                 console.log('Не удалось записать лог');
@@ -309,11 +309,11 @@ app.delete('/users/:id', checkAdmin, async (req, res) => {
         );
 
         // Логирование удаления пользователя
-        await pool.query(
-            `INSERT INTO notifications (user_id, type, title, message) 
-             VALUES ($1, $2, $3, $4)`,
-            [req.user.id, 'user_deleted', 'Удаление пользователя',
-            `${req.user.username} удалил пользователя ${userToDelete.username}`]
+        await Logger.userDeleted(
+            req.user.id,
+            req.user.username,
+            userToDelete.username,
+            userToDelete.id  // Добавляем ID удаленного пользователя
         );
 
         res.json({
@@ -432,9 +432,9 @@ app.put('/users/:id', async (req, res) => {
         const isAdmin = decoded.role === 'admin';
         const isSelf = decoded.id === userId;
 
-        // Получаем старые данные пользователя
+        // Получаем старые данные пользователя с текстовым представлением даты
         const oldUserResult = await pool.query(
-            'SELECT * FROM users WHERE id = $1',
+            'SELECT *, birthday::text as birthday_text FROM users WHERE id = $1',
             [userId]
         );
 
@@ -459,8 +459,8 @@ app.put('/users/:id', async (req, res) => {
             updated_at: new Date()
         };
 
+        // Админ может менять username всем (включая себя)
         if (isAdmin) {
-            // Username можно менять всем (и себе и другим)
             updateData.username = username || oldUser.username;
 
             // Роль можно менять только другим пользователям (не себе)
@@ -489,7 +489,7 @@ app.put('/users/:id', async (req, res) => {
         let paramIndex = 1;
 
         Object.entries(updateData).forEach(([key, value]) => {
-            if (value !== undefined) {
+            if (value !== undefined && value !== null) {
                 setClauses.push(`${key} = $${paramIndex}`);
                 values.push(value);
                 paramIndex++;
@@ -511,9 +511,22 @@ app.put('/users/:id', async (req, res) => {
         // Логирование
         const changedFields = {};
         Object.entries(updateData).forEach(([key, newValue]) => {
-            const oldValue = oldUser[key];
-            if (newValue !== oldValue && key !== 'updated_at') {
-                changedFields[key] = { old: oldValue || '', new: newValue };
+            // Для даты используем текстовое представление из БД
+            let oldValue;
+            if (key === 'birthday') {
+                oldValue = oldUser.birthday_text || '';
+            } else {
+                oldValue = oldUser[key] || '';
+            }
+
+            const normalizedOldValue = String(oldValue);
+            const normalizedNewValue = String(newValue || '');
+
+            if (normalizedNewValue !== normalizedOldValue && key !== 'updated_at') {
+                changedFields[key] = {
+                    old: normalizedOldValue,
+                    new: normalizedNewValue
+                };
             }
         });
 
@@ -605,8 +618,15 @@ app.put('/users/:id/password', async (req, res) => {
         );
 
         // Логирование
+        // После успешной смены пароля:
         if (isAdmin && !isSelf) {
-            await Logger.adminPasswordChanged(decoded.id, decoded.username, userId, user.username);
+            await Logger.passwordChanged(
+                decoded.id,
+                decoded.username,
+                false,  // selfChange = false
+                userId,  // targetUserId
+                user.username  // targetUsername
+            );
         } else {
             await Logger.passwordChanged(userId, user.username, true);
         }

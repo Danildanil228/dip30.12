@@ -81,98 +81,120 @@ export default function Notifications({ onVisited }: LogsProps) {
   };
 
   // Функция для парсинга сообщения и создания ссылок
-  const renderMessageWithLinks = (log: Log) => {
-    const message = log.message;
+  // const renderMessageWithLinks = (log: Log) => {
+  //   const message = log.message;
 
-    // Регулярное выражение для поиска [user:ID:username] и [admin:ID]
-    const userPattern = /\[user:(\d+):([^\]]+)\]/g;
-    const adminPattern = /\[admin:(\d+)\]/g;
+  //   // Регулярное выражение для поиска [user:ID:username] и [admin:ID]
+  //   const userPattern = /\[user:(\d+):([^\]]+)\]/g;
+  //   const adminPattern = /\[admin:(\d+)\]/g;
 
-    const parts = [];
-    let lastIndex = 0;
+  //   const parts = [];
+  //   let lastIndex = 0;
 
-    // Ищем все совпадения
-    const matches = [];
-    let match;
+  //   // Ищем все совпадения
+  //   const matches = [];
+  //   let match;
 
-    // Ищем user ссылки
-    while ((match = userPattern.exec(message)) !== null) {
-      matches.push({
-        type: 'user',
-        index: match.index,
-        endIndex: match.index + match[0].length,
-        id: parseInt(match[1]),
-        username: match[2]
-      });
-    }
+  //   // Ищем user ссылки
+  //   while ((match = userPattern.exec(message)) !== null) {
+  //     matches.push({
+  //       type: 'user',
+  //       index: match.index,
+  //       endIndex: match.index + match[0].length,
+  //       id: parseInt(match[1]),
+  //       username: match[2]
+  //     });
+  //   }
 
-    // Ищем admin ссылки
-    while ((match = adminPattern.exec(message)) !== null) {
-      matches.push({
-        type: 'admin',
-        index: match.index,
-        endIndex: match.index + match[0].length,
-        id: parseInt(match[1]),
-        username: 'admin'
-      });
-    }
+  //   // Ищем admin ссылки
+  //   while ((match = adminPattern.exec(message)) !== null) {
+  //     matches.push({
+  //       type: 'admin',
+  //       index: match.index,
+  //       endIndex: match.index + match[0].length,
+  //       id: parseInt(match[1]),
+  //       username: 'admin'
+  //     });
+  //   }
 
-    // Сортируем совпадения по индексу
-    matches.sort((a, b) => a.index - b.index);
+  //   // Сортируем совпадения по индексу
+  //   matches.sort((a, b) => a.index - b.index);
 
-    // Собираем части сообщения
-    let currentIndex = 0;
+  //   // Собираем части сообщения
+  //   let currentIndex = 0;
 
-    matches.forEach((matchObj, idx) => {
-      // Текст до совпадения
-      if (matchObj.index > currentIndex) {
-        parts.push(message.substring(currentIndex, matchObj.index));
-      }
+  //   matches.forEach((matchObj, idx) => {
+  //     // Текст до совпадения
+  //     if (matchObj.index > currentIndex) {
+  //       parts.push(message.substring(currentIndex, matchObj.index));
+  //     }
 
-      // Ссылка на профиль
-      if (matchObj.type === 'user') {
-        // Ищем пользователя в логах по ID
-        const foundUser = logs.find(l => l.user_id === matchObj.id);
-        const displayName = foundUser
-          ? `${foundUser.name} ${foundUser.secondname} (${foundUser.user_name})`
-          : matchObj.username;
+  //     // Ссылка на профиль
+  //     if (matchObj.type === 'user') {
+  //       // Ищем пользователя в логах по ID
+  //       const foundUser = logs.find(l => l.user_id === matchObj.id);
+  //       const displayName = foundUser
+  //         ? `${foundUser.name} ${foundUser.secondname} (${foundUser.user_name})`
+  //         : matchObj.username;
 
-        parts.push(
+  //       parts.push(
+  //         <Link
+  //           key={`${log.id}-${idx}`}
+  //           to={`/profile/${matchObj.id}`}
+  //           className="text-blue-500 hover:underline font-medium mx-1"
+  //         >
+  //           {displayName}
+  //         </Link>
+  //       );
+  //     } else if (matchObj.type === 'admin') {
+  //       // Для админа тоже делаем ссылку
+  //       const foundUser = logs.find(l => l.user_id === matchObj.id);
+  //       const displayName = foundUser
+  //         ? `${foundUser.name} ${foundUser.secondname} (админ)`
+  //         : 'Администратор';
+
+  //       parts.push(
+  //         <Link
+  //           key={`${log.id}-${idx}`}
+  //           to={`/profile/${matchObj.id}`}
+  //           className="text-blue-500 hover:underline font-medium mx-1"
+  //         >
+  //           {displayName}
+  //         </Link>
+  //       );
+  //     }
+
+  //     currentIndex = matchObj.endIndex;
+  //   });
+
+  //   // Остаток сообщения
+  //   if (currentIndex < message.length) {
+  //     parts.push(message.substring(currentIndex));
+  //   }
+
+  //   return parts.length > 0 ? parts : message;
+  // };
+  const parseMessageWithLinks = (message: string) => {
+    const parts = message.split(/(\[user:\d+:\w+\])/g);
+
+    return parts.map((part, index) => {
+      const match = part.match(/\[user:(\d+):(\w+)\]/);
+      if (match) {
+        const userId = parseInt(match[1]);
+        const username = match[2];
+
+        return (
           <Link
-            key={`${log.id}-${idx}`}
-            to={`/profile/${matchObj.id}`}
-            className="text-blue-500 hover:underline font-medium mx-1"
+            key={index}
+            to={`/profile/${userId}`}
+            className="text-blue-500 hover:underline mx-1"
           >
-            {displayName}
+            {username}
           </Link>
         );
-      } else if (matchObj.type === 'admin') {
-        // Для админа тоже делаем ссылку
-        const foundUser = logs.find(l => l.user_id === matchObj.id);
-        const displayName = foundUser
-          ? `${foundUser.name} ${foundUser.secondname} (админ)`
-          : 'Администратор';
-
-        parts.push(
-          <Link
-            key={`${log.id}-${idx}`}
-            to={`/profile/${matchObj.id}`}
-            className="text-blue-500 hover:underline font-medium mx-1"
-          >
-            {displayName}
-          </Link>
-        );
       }
-
-      currentIndex = matchObj.endIndex;
+      return part;
     });
-
-    // Остаток сообщения
-    if (currentIndex < message.length) {
-      parts.push(message.substring(currentIndex));
-    }
-
-    return parts.length > 0 ? parts : message;
   };
 
   if (loading) {
@@ -221,30 +243,12 @@ export default function Notifications({ onVisited }: LogsProps) {
                 </button>
               </div>
             </div>
-            <p className="mt-2 text-xl">
-              {log.message.split(' ').map((word, index) => {
-                // Ищем username в формате "Пользователь username" или "Администратор username"
-                if (word.match(/^[a-zA-Z0-9_]+$/) && index > 0 &&
-                  (log.message.split(' ')[index - 1] === 'Пользователь' ||
-                    log.message.split(' ')[index - 1] === 'Администратор' ||
-                    log.message.split(' ')[index - 1] === 'пользователя')) {
 
-                  // Находим ID пользователя из лога
-                  const logUser = logs.find(l => l.user_name === word);
-                  if (logUser) {
-                    return (
-                      <React.Fragment key={index}>
-                        {' '}
-                        <Link to={`/profile/${logUser.user_id}`} className="text-blue-500 hover:underline">
-                          {word}
-                        </Link>
-                      </React.Fragment>
-                    );
-                  }
-                }
-                return ' ' + word;
-              }).slice(1)}
-            </p>
+            {/* Сообщение с парсингом ссылок */}
+            <div className="mt-2 text-xl flex flex-wrap items-center">
+              {parseMessageWithLinks(log.message)}
+            </div>
+
             {log.user_name && (
               <p className="text-sm mt-1">
                 Действие выполнено: {log.name} {log.secondname} (
