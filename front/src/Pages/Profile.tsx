@@ -248,12 +248,15 @@ export default function Profile() {
 
             <h1 className="text-xl font-semibold mt-6">Данные пользователя</h1>
             <div className="grid gap-2">
-                <p><strong>Логин:</strong> {user.username}</p>
-                <p><strong>Email:</strong> {user.email || 'Не указан'}</p>
-                <p><strong>Телефон:</strong> {user.phone || 'Не указан'}</p>
-                <p><strong>Дата рождения:</strong> {user.birthday ? formatDate(user.birthday) : 'Не указана'}</p>
-                <p><strong>Профиль обновлен:</strong> {formatDate(user.updated_at)}</p>
-                <p><strong>Аккаунт создан:</strong> {formatDate(user.created_at)}</p>
+                <p>Логин: {user.username}</p>
+                <p>Email: {user.email || 'Не указан'}</p>
+                <p>Телефон: {user.phone || 'Не указан'}</p>
+                <p>Дата рождения: {user.birthday ? formatDate(user.birthday) : 'Не указана'}</p>
+                <div className="grid ">
+
+                    <p className="text-xs opacity-50">Последнее обновление: {formatDate(user.updated_at)}</p>
+                    <p className="text-xs opacity-50">Аккаунт создан: {formatDate(user.created_at)}</p>
+                </div>
             </div>
 
             {/* Кнопки действий */}
@@ -356,7 +359,7 @@ export default function Profile() {
                                         </Select>
                                     </div>
                                 )}
-                                
+
 
                                 <div className="grid gap-2">
                                     <label className="text-sm font-medium">Дата рождения</label>

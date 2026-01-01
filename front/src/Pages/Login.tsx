@@ -3,6 +3,7 @@ import axios from 'axios';
 import DarkModeButtonToggle from '@/components/DarkModeButtonToggle';
 import { API_BASE_URL } from '@/components/api';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -11,6 +12,7 @@ export default function Login() {
     const [error, setError] = useState<string | null>(null);
     const [isFirst, setIsFirst] = useState<boolean | null>(null);
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -98,25 +100,53 @@ export default function Login() {
                         disabled={loading}
                         required
                     />
-                    <input
-                        type="password"
-                        placeholder="Введите ваш пароль"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="px-4 py-2 border rounded focus:outline-none focus:ring-1"
-                        disabled={loading}
-                        required
-                    />
-                    {isFirst && (
+                    <div className='relative'>
                         <input
-                            type="password"
-                            placeholder="Подтвердите пароль"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Введите ваш пароль"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10"
                             disabled={loading}
                             required
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            tabIndex={-1}
+                        >
+                            {showPassword ? (
+                                <EyeOff className="h-5 w-5" />
+                            ) : (
+                                <Eye className="h-5 w-5" />
+                            )}
+                        </button>
+                    </div>
+                    {isFirst && (
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Подтвердите пароль"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10"
+                                disabled={loading}
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                tabIndex={-1}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-5 w-5" />
+                                ) : (
+                                    <Eye className="h-5 w-5" />
+                                )}
+                            </button>
+                        </div>
                     )}
 
                     <div className="flex gap-5 items-center">
