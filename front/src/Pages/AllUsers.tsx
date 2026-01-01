@@ -397,7 +397,7 @@ export default function AllUsers() {
                         Пользователей: {table.getFilteredRowModel().rows.length}
                     </div>
                     <div className="flex items-center space-x-2">
-                        {table.getPageCount() > 1 && (
+                        {users.length > 10 && (
 
                             <Button
                                 variant="outline"

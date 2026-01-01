@@ -118,8 +118,8 @@ export default function Profile() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction>Сохранить изменения</AlertDialogAction>
+                        <AlertDialogCancel>Закрыть</AlertDialogCancel>
+                        <Button>Сохранить</Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -148,8 +148,8 @@ export default function Profile() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction>Сменить пароль</AlertDialogAction>
+                        <AlertDialogCancel>Закрыть</AlertDialogCancel>
+                        <Button>Сменить пароль</Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
