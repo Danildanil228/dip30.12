@@ -392,7 +392,7 @@ export default function Profile() {
                 <AlertDialog open={passwordOpen} onOpenChange={setPasswordOpen}>
                     <AlertDialogTrigger asChild>
                         <Button className="w-fit" variant='outline'>
-                            Сменить пароль <img src="/edit.png" className="icon w-5 ml-2" alt="" />
+                            Сменить пароль <img src="/padlock.png" className="icon w-5 ml-2" alt="" />
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="max-w-md">

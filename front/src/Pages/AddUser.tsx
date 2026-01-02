@@ -50,7 +50,7 @@ export default function AddUser() {
     setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/createUser`, {
-        username,password,name,secondname,role
+        username, password, name, secondname, role
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -122,14 +122,15 @@ export default function AddUser() {
             </div>
             <Button
               type="button"
+              variant='outline'
               onClick={handleGenerateLogin}
-              className="self-end px-6 py-3 text-xl"
+              className=""
             >
-              Сгенерировать
+              <img src="/dice.png" className="icon w-5" alt="" />
             </Button>
           </div>
 
-          <div className="sm:flex grid items-center gap-4">
+          <div className="lg:flex grid items-center gap-4">
             <div className="flex-1">
               <p className="text-xl mb-2">Пароль</p>
               <input
@@ -144,10 +145,11 @@ export default function AddUser() {
             </div>
             <Button
               type="button"
+              variant='outline'
               onClick={handleGeneratePassword}
-              className="self-end px-6 py-3 text-xl"
+              className=""
             >
-              Сгенерировать
+              <img src="/dice.png" className="icon w-5" alt="" />
             </Button>
           </div>
         </div>
