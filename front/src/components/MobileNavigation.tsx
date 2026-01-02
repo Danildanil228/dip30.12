@@ -28,7 +28,7 @@ export default function MobileNavigation() {
         },
         {
             path: '/notifications',
-            label: 'Уведомления',
+            label: 'Журнал',
             icon: '/not.png', adminOnly: true, 
         }
     ];

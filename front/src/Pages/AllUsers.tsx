@@ -264,13 +264,13 @@ export default function AllUsers() {
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
-        onPaginationChange: setPagination, 
+        onPaginationChange: setPagination,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
-            pagination, 
+            pagination,
         },
     });
 
@@ -416,7 +416,7 @@ export default function AllUsers() {
                                     onClick={() => table.previousPage()}
                                     disabled={!table.getCanPreviousPage()}
                                 >
-                                    Назад
+                                    {'<'}
                                 </Button>
                                 <span className="text-sm">
                                     Стр. {table.getState().pagination.pageIndex + 1} из{" "}
@@ -428,7 +428,7 @@ export default function AllUsers() {
                                     onClick={() => table.nextPage()}
                                     disabled={!table.getCanNextPage()}
                                 >
-                                    Вперед
+                                    {'>'}
                                 </Button>
                             </div>
                         )}

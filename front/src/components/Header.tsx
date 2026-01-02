@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import DarkModeButtonToggle from "./DarkModeButtonToggle";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { Button } from "./ui/button";
@@ -5,15 +6,15 @@ import { Button } from "./ui/button";
 export default function Header() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return (
-        <section className="container flex flex-wrap justify-between sm:border-none border-b py-4! sm:mb-0! mb-4!">
-            <p>
+        <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
+            <Link to='/profile'>
                 {user.role === 'admin' ? 'Администратор' :
                     user.role === 'storekeeper' ? 'Работник склада' :
                         user.role === 'accountant' ? 'Бухгалтер' :
                             'Неизвестная роль'}
-            </p>
+            </Link>
 
-            <p className="lg:flex hidden">{user.name + ' ' + user.secondname}</p>
+            <Link to='/profile' className="lg:flex hidden">{user.name + ' ' + user.secondname}</Link>
 
             <div className="items-center flex gap-2 ">
                 <DarkModeButtonToggle />

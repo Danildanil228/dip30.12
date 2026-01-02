@@ -10,7 +10,7 @@ export default function DesktopNavigation() {
         { path: '/allusers', label: 'Все пользователи', adminOnly: true },
         { path: '/add', label: 'Добавить пользователя', adminOnly: true },
         { path: '/profile', label: 'Профиль', adminOnly: false },
-        { path: '/notifications', label: 'Уведомления', adminOnly: true },
+        { path: '/notifications', label: 'Журнал', adminOnly: true },
     ];
     const filItems = navItems.filter(item => !item.adminOnly || (item.adminOnly && isAdmin))
 
