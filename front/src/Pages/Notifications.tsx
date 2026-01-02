@@ -1,8 +1,23 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 
 interface Log {
@@ -17,7 +32,6 @@ interface Log {
   name: string;
   secondname: string;
 }
-
 interface LogsProps {
   onVisited?: () => void;
 }
@@ -25,6 +39,17 @@ interface LogsProps {
 export default function Notifications({ onVisited }: LogsProps) {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+
+  const LOG_TYPES = [
+    { value: "user_created", label: "Создание пользователя" },
+    { value: "user_deleted", label: "Удаление пользователя" },
+    { value: "profile_updated", label: "Изменение профиля" },
+    { value: "password_changed", label: "Смена пароля" },
+    { value: "admin_user_updated", label: "Админ изменил данные" },
+    { value: "admin_password_changed", label: "Админ сменил пароль" },
+    { value: "login", label: "Вход в систему" }
+  ];
 
   const fetchLogs = async () => {
     try {
@@ -70,6 +95,18 @@ export default function Notifications({ onVisited }: LogsProps) {
       console.error("Ошибка удаления логов:", error);
     }
   };
+  const filteredLogs = selectedTypes.length > 0
+    ? logs.filter(log => selectedTypes.includes(log.type))
+    : logs;
+
+
+  const handleTypeChange = (type: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTypes([...selectedTypes, type]);
+    } else {
+      setSelectedTypes(selectedTypes.filter(t => t !== type));
+    }
+  };
 
   const parseMessageWithLinks = (message: string) => {
     const parts = message.split(/(\[user:\d+:\w+\])/g);
@@ -99,34 +136,69 @@ export default function Notifications({ onVisited }: LogsProps) {
   }
 
   return (
-    <div className="mx-auto">
+    <div className="lg:my-0 my-10">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl">
-          Журнал действий {logs.length > 0 && `(${logs.length})`}
+        <h1 className="text-2xl mb-4">
+          Журнал действий {logs.length !== filteredLogs.length  && `(${filteredLogs.length}/${logs.length})`}
         </h1>
-        {logs.length > 1 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline">Удалить все ({logs.length})</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Удалить все записи из журнала?</AlertDialogTitle>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAllLogs}>
-                  Удалить
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+
+        <div className="grid sm:flex text-center items-center gap-4">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                Фильтры {selectedTypes.length > 0 && `(${selectedTypes.length})`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-4">
+              <div className="grid gap-2">
+                {LOG_TYPES.map((type) => (
+                  <div key={type.value} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`type-${type.value}`}
+                      checked={selectedTypes.includes(type.value)}
+                      onCheckedChange={(checked) =>
+                        handleTypeChange(type.value, checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor={`type-${type.value}`}
+                      className="text-sm leading-none cursor-pointer"
+                    >
+                      {type.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {logs.length > 1 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">Удалить все ({logs.length})</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить все записи из журнала?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllLogs}>
+                    Удалить
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
-        {logs.map((log) => (
-          <div key={log.id} className={`p-4 border rounded-lg`}>
+        {filteredLogs.map((log) => (
+          <div
+            key={log.id}
+            className={`p-4 border rounded-lg`}
+          >
             <div className="flex justify-between items-center">
               <div className="flex">
                 <h3 className="text-xs">{log.title}</h3>
@@ -140,27 +212,21 @@ export default function Notifications({ onVisited }: LogsProps) {
                 </button>
               </div>
             </div>
-
             <div className="mt-2 text-xl flex flex-wrap items-center">
               {parseMessageWithLinks(log.message)}
             </div>
-
             {log.user_name && (
               <p className="text-sm mt-1">
-                Действие выполнено: {log.name} {log.secondname} (
-                <Link to={`/profile/${log.user_id}`} className="text-blue-500 hover:underline">
-                  {log.user_name}
-                </Link>
-                )
+                Пользователь: {log.name} {log.secondname} ({log.user_name})
               </p>
             )}
           </div>
         ))}
 
-        {logs.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            Нет записей в журнале
-          </div>
+        {filteredLogs.length === 0 && (
+          <p className="text-center py-8">
+            {selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}
+          </p>
         )}
       </div>
     </div>
