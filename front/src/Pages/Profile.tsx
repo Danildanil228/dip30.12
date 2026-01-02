@@ -268,10 +268,10 @@ export default function Profile() {
                             <AlertDialogTitle className="text-2xl">
                                 {isOwnProfile ? 'Изменить ваши данные' : 'Изменить данные пользователя'}
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="grid gap-4 pt-4">
+                            <AlertDialogDescription className="grid gap-4 pt-4 text-left">
                                 {isAdmin && (
                                     <div className="grid gap-2">
-                                        <label className="text-sm font-medium">Логин</label>
+                                        <label className="text-sm font-medium ">Логин</label>
                                         <Input
                                             type="text"
                                             placeholder="Логин"
@@ -331,8 +331,8 @@ export default function Profile() {
                                             value={editData.role}
                                             onValueChange={(value) => setEditData({ ...editData, role: value })}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Роль" />
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Роль"/>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="admin">Администратор</SelectItem>
@@ -400,7 +400,7 @@ export default function Profile() {
                             <AlertDialogTitle className="text-2xl">
                                 Смена пароля
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="grid gap-4 pt-4">
+                            <AlertDialogDescription className="grid gap-4 pt-4 text-left">
                                 {(!isAdmin || isOwnProfile) && (
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Текущий пароль</label>
