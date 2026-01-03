@@ -12,6 +12,7 @@ import AddUser from './Pages/AddUser';
 import Layout from './components/Layout';
 import NotFound from './Pages/NotFound';
 import Categories from './Pages/Categories';
+import { Theme } from "@radix-ui/themes";
 
 function App() {
   return (
