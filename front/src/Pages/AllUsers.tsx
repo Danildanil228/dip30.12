@@ -183,6 +183,7 @@ export default function AllUsers() {
 
     const fetchUsers = async () => {
         try {
+            setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -275,7 +276,11 @@ export default function AllUsers() {
     });
 
     if (loading) {
-        return <div className="p-4">Загрузка пользователей...</div>;
+        return <section className="mx-auto">
+            <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
+            </div>
+        </section>;
     }
 
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;

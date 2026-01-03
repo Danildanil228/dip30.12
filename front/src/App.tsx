@@ -11,6 +11,7 @@ import AllUsers from './Pages/AllUsers';
 import AddUser from './Pages/AddUser';
 import Layout from './components/Layout';
 import NotFound from './Pages/NotFound';
+import Categories from './Pages/Categories';
 
 function App() {
   return (
@@ -32,6 +33,11 @@ function App() {
             <Route path="/materials" element={
               <ProtectedRoute>
                 <Materials />
+              </ProtectedRoute>
+            } />
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <Categories />
               </ProtectedRoute>
             } />
 

@@ -590,8 +590,13 @@ app.put('/users/:id/password', async (req, res) => {
 app.get('/categories', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT c.*, u.username as created_by_username, u2.username as updated_by_username FROM material_categories c
-            LEFT JOIN users u ON c.created_by = u.id LEFT JOIN users u2 ON c.updated_by = u.id ORDER BY c.name
+            SELECT DISTINCT c.*, 
+                   uc.username as created_by_username, 
+                   uu.username as updated_by_username
+            FROM materialcategories c
+            LEFT JOIN users uc ON c.created_by = uc.id
+            LEFT JOIN users uu ON c.updated_by = uu.id
+            ORDER BY c.name
         `);
         res.json({ categories: result.rows });
     } catch (error) {
@@ -613,7 +618,7 @@ app.post('/categories', checkAdmin, async (req, res) => {
         }
         
         const result = await pool.query(
-            `INSERT INTO material_categories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`,
+            `INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`,
             [name, description || null, decoded.id]
         );
         
@@ -653,7 +658,7 @@ app.put('/categories/:id', checkAdmin, async (req, res) => {
         
         // Получаем старые данные для логирования
         const oldCategoryResult = await pool.query(
-            'SELECT * FROM material_categories WHERE id = $1',
+            'SELECT * FROM materialCategories WHERE id = $1',
             [categoryId]
         );
         
@@ -664,7 +669,7 @@ app.put('/categories/:id', checkAdmin, async (req, res) => {
         const oldCategory = oldCategoryResult.rows[0];
         
         const result = await pool.query(
-            `UPDATE material_categories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`,
+            `UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`,
             [name, description || null, decoded.id, categoryId]
         );
         
@@ -716,7 +721,7 @@ app.delete('/categories/:id', checkAdmin, async (req, res) => {
         
         // Получаем информацию о категории для логирования
         const categoryResult = await pool.query(
-            'SELECT name FROM material_categories WHERE id = $1',
+            'SELECT name FROM materialCategories WHERE id = $1',
             [categoryId]
         );
         
@@ -728,7 +733,7 @@ app.delete('/categories/:id', checkAdmin, async (req, res) => {
         
         // Удаляем категорию
         const result = await pool.query(
-            'DELETE FROM material_categories WHERE id = $1 RETURNING id, name',
+            'DELETE FROM materialCategories WHERE id = $1 RETURNING id, name',
             [categoryId]
         );
         
@@ -758,7 +763,7 @@ app.get('/materials', async (req, res) => {
         let query = `
             SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username
             FROM materials m
-            LEFT JOIN material_categories c ON m.category_id = c.id LEFT JOIN users uc ON m.created_by = uc.id LEFT JOIN users uu ON m.updated_by = uu.id WHERE 1=1
+            LEFT JOIN materialCategories c ON m.category_id = c.id LEFT JOIN users uc ON m.created_by = uc.id LEFT JOIN users uu ON m.updated_by = uu.id WHERE 1=1
         `;
         const params = [];
         let paramIndex = 1;
@@ -803,7 +808,7 @@ app.get('/materials/:id', checkAdmin, async (req, res) => {
         const materialId = parseInt(req.params.id);
         
         const result = await pool.query(`
-            SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username FROM materials m LEFT JOIN material_categories c ON m.category_id = c.id LEFT JOIN users uc ON m.created_by = uc.id LEFT JOIN users uu ON m updated_by = uu.id WHERE m.id = $1
+            SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username FROM materials m LEFT JOIN materialCategories c ON m.category_id = c.id LEFT JOIN users uc ON m.created_by = uc.id LEFT JOIN users uu ON m updated_by = uu.id WHERE m.id = $1
         `, [materialId]);
         
         if (result.rows.length === 0) {
@@ -856,7 +861,7 @@ app.post('/materials', checkAdmin, async (req, res) => {
         // Если указана категория, проверяем её существование
         if (category_id) {
             const categoryExists = await pool.query(
-                'SELECT id FROM material_categories WHERE id = $1',
+                'SELECT id FROM materialCategories WHERE id = $1',
                 [category_id]
             );
             if (categoryExists.rows.length === 0) {
@@ -930,7 +935,7 @@ app.put('/materials/:id', checkAdmin, async (req, res) => {
         // Если указана категория, проверяем её существование
         if (category_id) {
             const categoryExists = await pool.query(
-                'SELECT id FROM material_categories WHERE id = $1',
+                'SELECT id FROM materialCategories WHERE id = $1',
                 [category_id]
             );
             if (categoryExists.rows.length === 0) {
