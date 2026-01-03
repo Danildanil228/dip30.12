@@ -151,6 +151,47 @@ export default function Categories() {
                 return <div>{date.toLocaleString("ru-RU")}</div>;
             }
         },
+        ...(() => {
+            const hasModifiedCategory = categories.some(category => {
+                const createdDate = new Date(category.created_at);
+                const updatedDate = new Date(category.updated_at);
+                return createdDate.getTime() !== updatedDate.getTime();
+            });
+
+            if (!hasModifiedCategory) return [];
+
+            return [
+                {
+                    accessorKey: "updated_at",
+                    header: "Дата изменения",
+                    cell: ({ row }) => {
+                        const updatedDate = new Date(row.original.updated_at);
+                        return <div>{updatedDate.toLocaleString("ru-RU")}</div>;
+                    }
+                },
+                {
+                    accessorKey: "updated_by_username",
+                    header: "Кем изменено",
+                    cell: ({ row }) => {
+                        const username = row.original.updated_by_username;
+                        const userId = row.original.updated_by;
+
+                        if (!username || !userId) {
+                            return <div>-</div>;
+                        }
+
+                        return (
+                            <Link
+                                to={`/profile/${userId}`}
+                                className="text-blue-500 hover:underline"
+                            >
+                                {username}
+                            </Link>
+                        );
+                    }
+                }
+            ];
+        })(),
         {
             accessorKey: "actions",
             header: 'Функции',
