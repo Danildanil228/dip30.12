@@ -145,6 +145,11 @@ export default function Materials() {
             }
         },
         {
+            accessorKey: "created_by_username",
+            header: "Создал",
+            cell: ({ row }) => <div>{row.getValue("created_by_username") || "-"}</div>
+        },
+        {
             id: "actions",
             enableHiding: false,
             cell: ({ row }) => {
