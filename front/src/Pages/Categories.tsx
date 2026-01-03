@@ -115,7 +115,23 @@ export default function Categories() {
         {
             accessorKey: "created_by_username",
             header: "Создал",
-            cell: ({ row }) => <div>{row.getValue("created_by_username") || "-"}</div>
+            cell: ({ row }) => {
+                const username = row.getValue("created_by_username") as string;
+                const createdById = row.original.created_by;
+
+                if (!username || !createdById) {
+                    return <div>-</div>;
+                }
+
+                return (
+                    <Link
+                        to={`/profile/${createdById}`}
+                        className="text-blue-500"
+                    >
+                        {username}
+                    </Link>
+                );
+            }
         },
         {
             accessorKey: "created_at",
@@ -132,16 +148,16 @@ export default function Categories() {
             },
             cell: ({ row }) => {
                 const date = new Date(row.getValue("created_at"));
-                return <div>{date.toLocaleDateString("ru-RU")}</div>;
+                return <div>{date.toLocaleString("ru-RU")}</div>;
             }
         },
         {
-            id: "actions",
-            enableHiding: false,
+            accessorKey: "actions",
+            header: 'Функции',
             cell: ({ row }) => {
                 const category = row.original;
                 return (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-5">
                         {/* Ссылка на редактирование */}
                         {isAdmin && (
                             <Link to={`/categories/edit/${category.id}`}>

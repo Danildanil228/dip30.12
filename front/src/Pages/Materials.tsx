@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
+import Categories from "./Categories";
 
 interface Material {
     id: number;
@@ -113,8 +114,18 @@ export default function Materials() {
         },
         {
             accessorKey: "quantity",
-            header: "Количество",
-            cell: ({ row }) => <div>{row.getValue("quantity")} {row.original.unit}</div>
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Количество
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div>{row.getValue("quantity")}</div>
         },
         {
             accessorKey: "category_name",
@@ -125,6 +136,27 @@ export default function Materials() {
             accessorKey: "unit",
             header: "Ед. измерения",
             cell: ({ row }) => <div>{row.getValue("unit")}</div>
+        },
+        {
+            accessorKey: "created_by_username",
+            header: "Создал",
+            cell: ({ row }) => {
+                const username = row.getValue("created_by_username") as string;
+                const createdById = row.original.created_by;
+
+                if (!username || !createdById) {
+                    return <div>-</div>;
+                }
+
+                return (
+                    <Link
+                        to={`/profile/${createdById}`}
+                        className="text-blue-500"
+                    >
+                        {username}
+                    </Link>
+                );
+            }
         },
         {
             accessorKey: "created_at",
@@ -141,53 +173,47 @@ export default function Materials() {
             },
             cell: ({ row }) => {
                 const date = new Date(row.getValue("created_at"));
-                return <div>{date.toLocaleDateString("ru-RU")}</div>;
+                return <div>{date.toLocaleString("ru-RU")}</div>;
             }
         },
+
         {
-            accessorKey: "created_by_username",
-            header: "Создал",
-            cell: ({ row }) => <div>{row.getValue("created_by_username") || "-"}</div>
-        },
-        {
-            id: "actions",
-            enableHiding: false,
+            accessorKey: "actions",
+            header: 'Функции',
             cell: ({ row }) => {
                 const material = row.original;
                 return (
-                    <div className="flex items-center gap-2">
-                        {/* Ссылка на редактирование (если нужно) */}
-                        {(isAdmin || localStorage.getItem('user')?.includes('storekeeper')) && (
-                            <Link to={`/materials/edit/${material.id}`}>
-                                <img src="/edit.png" className="icon w-5" alt="Редактировать" title="Редактировать" />
-                            </Link>
-                        )}
-
-                        {/* Кнопка удаления - только для админа */}
+                    <div className="flex items-center gap-5">
+                        {/* Ссылка на редактирование */}
                         {isAdmin && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <img
-                                        src="/trash.png"
-                                        className="w-5 icon cursor-pointer"
-                                        alt="Удалить"
-                                        title="Удалить материал"
-                                    />
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                            Удалить материал {material.name}?
-                                        </AlertDialogTitle>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>
-                                            Удалить
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            <>
+                                <Link to={`/materials/edit/${material.id}`}>
+                                    <img src="/edit.png" className="icon w-5" alt="Редактировать" title="Редактировать" />
+                                </Link>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <img
+                                            src="/trash.png"
+                                            className=" lg:w-5 w-5 icon cursor-pointer"
+                                            alt="Удалить"
+                                            title="Удалить материал"
+                                        />
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>
+                                                Удалить материал {material.name}?
+                                            </AlertDialogTitle>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>
+                                                Удалить
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </>
                         )}
                     </div>
                 );
@@ -277,149 +303,155 @@ export default function Materials() {
 
     return (
         <section className="mx-auto">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Материалы</h1>
-                <Link to="/materials/create">
-                    <Button>Добавить материал</Button>
-                </Link>
-            </div>
+            <div>
 
-            <div className="w-full">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
-                    <Input
-                        placeholder="Поиск по названию..."
-                        value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                        className="max-w-sm"
-                    />
-
-                    {selectedCount > 0 && (
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-600">
-                                Выбрано: {selectedCount}
-                            </span>
-                            {isAdmin && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive">Удалить материалы</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteSelected}>
-                                                Удалить
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
-                        </div>
-                    )}
-
-                    <div className="ml-auto flex gap-2">
-                        <Button variant="outline" onClick={fetchMaterials}>
-                            Обновить
-                        </Button>
-                        <Button variant="outline">
-                            <Link to='/categories'>Перейти к категориям</Link>
-                        </Button>
-                    </div>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Материалы</h1>
+                    <Link to="/materials/create">
+                        <Button>Добавить материал</Button>
+                    </Link>
                 </div>
 
-                <div className="overflow-hidden rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => {
-                                        return (
-                                            <TableHead key={header.id}>
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                        header.column.columnDef.header,
-                                                        header.getContext()
-                                                    )}
-                                            </TableHead>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows?.length ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
-                                        Нет материалов.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                <div className="w-full">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
+                        <Input
+                            placeholder="Поиск по названию..."
+                            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+                            className="max-w-sm"
+                        />
 
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-gray-600">
-                        Материалов: {table.getFilteredRowModel().rows.length}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        {materials.length > 10 && (
-                            <Button
-                                variant="outline"
-                                onClick={handleToggleShowAll}
-                                className="ml-2"
-                            >
-                                {showAll ? 'Свернуть' : 'Развернуть'}
-                            </Button>
-                        )}
-
-                        {!showAll && table.getPageCount() > 1 && (
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    {'<'}
-                                </Button>
-                                <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из{" "}
-                                    {table.getPageCount()}
+                        {selectedCount > 0 && (
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-gray-600">
+                                    Выбрано: {selectedCount}
                                 </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    {'>'}
-                                </Button>
+                                {isAdmin && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive">Удалить материалы</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDeleteSelected}>
+                                                    Удалить
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                )}
                             </div>
                         )}
+
+                        <div className="ml-auto flex gap-2">
+                            <Button variant="outline" onClick={fetchMaterials}>
+                                Обновить
+                            </Button>
+                            <Button variant="outline">
+                                <Link to='/categories'>Перейти к категориям</Link>
+                            </Button>
+                        </div>
                     </div>
+
+                    <div className="overflow-hidden rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                {table.getHeaderGroups().map((headerGroup) => (
+                                    <TableRow key={headerGroup.id}>
+                                        {headerGroup.headers.map((header) => {
+                                            return (
+                                                <TableHead key={header.id}>
+                                                    {header.isPlaceholder
+                                                        ? null
+                                                        : flexRender(
+                                                            header.column.columnDef.header,
+                                                            header.getContext()
+                                                        )}
+                                                </TableHead>
+                                            );
+                                        })}
+                                    </TableRow>
+                                ))}
+                            </TableHeader>
+                            <TableBody>
+                                {table.getRowModel().rows?.length ? (
+                                    table.getRowModel().rows.map((row) => (
+                                        <TableRow
+                                            key={row.id}
+                                            data-state={row.getIsSelected() && "selected"}
+                                        >
+                                            {row.getVisibleCells().map((cell) => (
+                                                <TableCell key={cell.id}>
+                                                    {flexRender(
+                                                        cell.column.columnDef.cell,
+                                                        cell.getContext()
+                                                    )}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-24 text-center"
+                                        >
+                                            Нет материалов.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
+                        <div className="text-sm text-gray-600">
+                            Материалов: {table.getFilteredRowModel().rows.length}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            {materials.length > 10 && (
+                                <Button
+                                    variant="outline"
+                                    onClick={handleToggleShowAll}
+                                    className="ml-2"
+                                >
+                                    {showAll ? 'Свернуть' : 'Развернуть'}
+                                </Button>
+                            )}
+
+                            {!showAll && table.getPageCount() > 1 && (
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.previousPage()}
+                                        disabled={!table.getCanPreviousPage()}
+                                    >
+                                        {'<'}
+                                    </Button>
+                                    <span className="text-sm">
+                                        Стр. {table.getState().pagination.pageIndex + 1} из{" "}
+                                        {table.getPageCount()}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.nextPage()}
+                                        disabled={!table.getCanNextPage()}
+                                    >
+                                        {'>'}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <Categories />
                 </div>
             </div>
         </section>

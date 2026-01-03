@@ -139,8 +139,8 @@ export default function AllUsers() {
             },
         },
         {
-            id: "actions",
-            enableHiding: false,
+            accessorKey: "actions",
+            header: 'Функции',
             cell: ({ row }) => {
                 const user = row.original;
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -149,7 +149,7 @@ export default function AllUsers() {
                 }
 
                 return (
-                    <div className="flex gap-3">
+                    <div className="flex gap-5">
                         <Link to={`/profile/${user.id}`} className="text-blue-500 hover:text-blue-700">
                             <img src="/profile.png" className="icon w-5" alt="Профиль" title="Перейти в профиль" />
                         </Link>
