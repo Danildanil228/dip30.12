@@ -3,7 +3,6 @@ import Login from "./Pages/Login";
 import { ThemeProvider } from "@/components/theme-provider";
 import ProtectedRoute from './components/ProtectedRoute';
 import Main from './Pages/Main';
-import Materials from './Pages/Materials';
 import Profile from './Pages/Profile';
 import Notifications from './Pages/Notifications';
 import AdminRoute from './components/AdminRoute';
@@ -12,7 +11,7 @@ import AddUser from './Pages/AddUser';
 import Layout from './components/Layout';
 import NotFound from './Pages/NotFound';
 import Categories from './Pages/Categories';
-import { Theme } from "@radix-ui/themes";
+import Materials from './Pages/Materials';
 
 function App() {
   return (
@@ -36,7 +35,7 @@ function App() {
                 <Materials />
               </ProtectedRoute>
             } />
-            <Route path="/categories" element={
+            <Route path="/category" element={
               <ProtectedRoute>
                 <Categories />
               </ProtectedRoute>
