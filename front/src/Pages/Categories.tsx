@@ -1,27 +1,21 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
-import Categories from "./Categories";
-import CreateMaterialDialog from "@/components/CreateMaterialDialog";
+import CreateCategoryDialog from "@/components/CreateCategoryDialog";
 
-interface Material {
+interface Category {
     id: number;
     name: string;
-    code: string;
     description: string | null;
-    unit: string;
-    quantity: number;
-    category_id: number | null;
-    category_name: string | null;
     created_by: number | null;
     updated_by: number | null;
     created_by_username: string | null;
@@ -30,9 +24,9 @@ interface Material {
     updated_at: string;
 }
 
-export default function Materials() {
+export default function Categories() {
     const { isAdmin } = useUser();
-    const [materials, setMaterials] = useState<Material[]>([])
+    const [categories, setCategories] = useState<Category[]>([]);
     const [showAll, setShowAll] = useState(false);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -48,25 +42,31 @@ export default function Materials() {
         if (showAll) {
             setPagination({ pageIndex: 0, pageSize: 10 });
         } else {
-            setPagination({ pageIndex: 0, pageSize: materials.length });
+            setPagination({ pageIndex: 0, pageSize: categories.length });
         }
         setShowAll(!showAll);
     };
 
-    const handleDeleteMaterial = async (id: number) => {
+    const handleDeleteCategory = async (id: number) => {
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/materials/${id}`, {
+            const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setMaterials(materials.filter((material) => material.id !== id));
+
+            if (response.data.materialCount > 0) {
+                alert(`В категории находится ${response.data.materialCount} материалов. Сначала удалите или переместите их.`);
+                return;
+            }
+
+            setCategories(categories.filter((category) => category.id !== id));
         } catch (error: any) {
-            console.error("Ошибка удаления материала:", error);
-            alert(error.response?.data?.error || "Не удалось удалить материал");
+            console.error("Ошибка удаления категории:", error);
+            alert(error.response?.data?.error || "Не удалось удалить категорию");
         }
     };
 
-    const columns: ColumnDef<Material>[] = [
+    const columns: ColumnDef<Category>[] = [
         {
             id: "select",
             header: ({ table }) => (
@@ -109,44 +109,9 @@ export default function Materials() {
             cell: ({ row }) => <div>{row.getValue("name")}</div>
         },
         {
-            accessorKey: "code",
-            header: "Код",
-            cell: ({ row }) => <div>{row.getValue("code")}</div>
-        },
-        {
-            accessorKey: "quantity",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Количество
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => <div>{row.getValue("quantity")}</div>
-        },
-        {
-            accessorKey: "category_name",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Категория
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => <div>{row.getValue("category_name") || "Без категории"}</div>
-        },
-        {
-            accessorKey: "unit",
-            header: "Ед. измерения",
-            cell: ({ row }) => <div>{row.getValue("unit")}</div>
+            accessorKey: "description",
+            header: "Описание",
+            cell: ({ row }) => <div>{row.getValue("description") || "-"}</div>
         },
         {
             accessorKey: "created_by_username",
@@ -188,13 +153,13 @@ export default function Materials() {
             }
         },
         ...(() => {
-            const hasModifiedMaterials = materials.some(material => {
-                const createdDate = new Date(material.created_at);
-                const updatedDate = new Date(material.updated_at);
+            const hasModifiedCategory = categories.some(category => {
+                const createdDate = new Date(category.created_at);
+                const updatedDate = new Date(category.updated_at);
                 return createdDate.getTime() !== updatedDate.getTime();
             });
 
-            if (!hasModifiedMaterials) return [];
+            if (!hasModifiedCategory) return [];
 
             return [
                 {
@@ -228,44 +193,45 @@ export default function Materials() {
                 }
             ];
         })(),
-
         {
             accessorKey: "actions",
             header: 'Функции',
             cell: ({ row }) => {
-                const material = row.original;
+                const category = row.original;
                 return (
                     <div className="flex items-center gap-5">
                         {/* Ссылка на редактирование */}
                         {isAdmin && (
-                            <>
-                                <Link to={`/materials/edit/${material.id}`}>
-                                    <img src="/edit.png" className="icon w-5" alt="Редактировать" title="Редактировать" />
-                                </Link>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <img
-                                            src="/trash.png"
-                                            className=" lg:w-5 w-5 icon cursor-pointer"
-                                            alt="Удалить"
-                                            title="Удалить материал"
-                                        />
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>
-                                                Удалить материал {material.name}?
-                                            </AlertDialogTitle>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>
-                                                Удалить
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </>
+                            <Link to={`/categories/edit/${category.id}`}>
+                                <img src="/edit.png" className="icon w-5" alt="Редактировать" title="Редактировать" />
+                            </Link>
+                        )}
+
+                        {/* Кнопка удаления - только для админа */}
+                        {isAdmin && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <img
+                                        src="/trash.png"
+                                        className="w-5 icon cursor-pointer"
+                                        alt="Удалить"
+                                        title="Удалить категорию"
+                                    />
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                            Удалить категорию "{category.name}"?
+                                        </AlertDialogTitle>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
+                                            Удалить
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         )}
                     </div>
                 );
@@ -273,18 +239,18 @@ export default function Materials() {
         }
     ];
 
-    const fetchMaterials = async () => {
+    const fetchCategories = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/materials`, {
+            const response = await axios.get(`${API_BASE_URL}/categories`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setMaterials(response.data.materials);
+            setCategories(response.data.categories);
         } catch (error: any) {
-            console.error("Ошибка загрузки материалов:", error);
+            console.error("Ошибка загрузки категорий:", error);
             if (error.response?.status === 403) {
-                alert("Недостаточно прав для просмотра материалов");
+                alert("Недостаточно прав для просмотра категорий");
             }
         } finally {
             setLoading(false);
@@ -292,7 +258,7 @@ export default function Materials() {
     };
 
     useEffect(() => {
-        fetchMaterials();
+        fetchCategories();
     }, []);
 
     const handleDeleteSelected = async () => {
@@ -300,28 +266,28 @@ export default function Materials() {
         const selectedIds = selectedRows.map((row) => row.original.id);
 
         if (selectedIds.length === 0) {
-            alert("Выберите материалы для удаления");
+            alert("Выберите категории для удаления");
             return;
         }
 
         try {
             const token = localStorage.getItem("token");
             for (const id of selectedIds) {
-                await axios.delete(`${API_BASE_URL}/materials/${id}`, {
+                await axios.delete(`${API_BASE_URL}/categories/${id}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             }
 
-            setMaterials(materials.filter((material) => !selectedIds.includes(material.id)));
+            setCategories(categories.filter((category) => !selectedIds.includes(category.id)));
             setRowSelection({});
         } catch (error: any) {
-            console.error("Ошибка удаления материалов:", error);
-            alert(error.response?.data?.error || "Не удалось удалить материалы");
+            console.error("Ошибка удаления категорий:", error);
+            alert(error.response?.data?.error || "Не удалось удалить категории");
         }
     };
 
     const table = useReactTable({
-        data: materials,
+        data: categories,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -350,16 +316,16 @@ export default function Materials() {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
                 </div>
             </section>
-        )
+        );
     }
 
     return (
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Материалы</h1>
+                <h1 className="text-2xl font-bold">Категории материалов</h1>
                 {isAdmin && (
-                    <CreateMaterialDialog onMaterialCreated={() => { fetchMaterials() }} />
-                )} 
+                    <CreateCategoryDialog onCategoryCreated={() => { fetchCategories() }} />
+                )}
             </div>
 
             <div className="w-full">
@@ -379,7 +345,7 @@ export default function Materials() {
                             {isAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="destructive">Удалить материалы</Button>
+                                        <Button variant="destructive">Удалить категории</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
@@ -398,11 +364,8 @@ export default function Materials() {
                     )}
 
                     <div className="ml-auto flex gap-2">
-                        <Button variant="outline" onClick={fetchMaterials}>
+                        <Button variant="outline" onClick={fetchCategories}>
                             Обновить
-                        </Button>
-                        <Button variant="outline">
-                            <Link to='/categories'>Перейти к категориям</Link>
                         </Button>
                     </div>
                 </div>
@@ -450,7 +413,7 @@ export default function Materials() {
                                         colSpan={columns.length}
                                         className="h-24 text-center"
                                     >
-                                        Нет материалов.
+                                        Нет категорий.
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -460,10 +423,10 @@ export default function Materials() {
 
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
                     <div className="text-sm text-gray-600">
-                        Материалов: {table.getFilteredRowModel().rows.length}
+                        Категорий: {table.getFilteredRowModel().rows.length}
                     </div>
                     <div className="flex items-center space-x-2">
-                        {materials.length > 10 && (
+                        {categories.length > 10 && (
                             <Button
                                 variant="outline"
                                 onClick={handleToggleShowAll}
@@ -500,7 +463,6 @@ export default function Materials() {
                     </div>
                 </div>
             </div>
-
         </section>
     );
 }

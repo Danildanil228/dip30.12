@@ -125,6 +125,65 @@ class Logger {
     }
 
 
+
+
+    ///// MATERIALS МАТЕРИАЛЫ \\\\\
+
+    
+    static async materialCreated(userId, username, materialName) {
+        await this.log(
+            userId,
+            'material_created',
+            'Создание материала',
+            `[user:${userId}:${username}] создал материал: ${materialName}`
+        );
+    }
+
+    static async materialUpdated(userId, username, materialName, changes) {
+        await this.log(
+            userId,
+            'material_updated',
+            'Изменение материала',
+            `[user:${userId}:${username}] изменил материал "${materialName}": ${changes}`
+        );
+    }
+
+    static async materialDeleted(userId, username, materialName) {
+        await this.log(
+            userId,
+            'material_deleted',
+            'Удаление материала',
+            `[user:${userId}:${username}] удалил материал: ${materialName}`
+        );
+    }
+
+    static async categoryCreated(userId, username, categoryName) {
+        await this.log(
+            userId,
+            'category_created',
+            'Создание категории',
+            `[user:${userId}:${username}] создал категорию: ${categoryName}`
+        );
+    }
+
+    static async categoryUpdated(userId, username, categoryName, changes) {
+        await this.log(
+            userId,
+            'category_updated',
+            'Изменение категории',
+            `[user:${userId}:${username}] изменил категорию "${categoryName}": ${changes}`
+        );
+    }
+
+    static async categoryDeleted(userId, username, categoryName) {
+        await this.log(
+            userId,
+            'category_deleted',
+            'Удаление категории',
+            `[user:${userId}:${username}] удалил категорию: ${categoryName}`
+        );
+    }
+
 }
 
 module.exports = Logger;

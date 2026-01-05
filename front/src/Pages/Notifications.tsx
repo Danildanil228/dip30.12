@@ -132,7 +132,11 @@ export default function Notifications({ onVisited }: LogsProps) {
   };
 
   if (loading) {
-    return <div className="p-4">Загрузка логов...</div>;
+    return <section className="mx-auto">
+            <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
+            </div>
+        </section>;
   }
 
   return (
