@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import Categories from "./Categories";
+import CreateMaterialDialog from "@/components/CreateMaterialDialog";
 
 interface Material {
     id: number;
@@ -354,13 +355,11 @@ export default function Materials() {
 
     return (
         <section className="mx-auto">
-
-
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Материалы</h1>
-                <Link to="/materials/create">
-                    <Button>Добавить материал</Button>
-                </Link>
+                {isAdmin && (
+                    <CreateMaterialDialog onMaterialCreated={() => { fetchMaterials() }} />
+                )} 
             </div>
 
             <div className="w-full">

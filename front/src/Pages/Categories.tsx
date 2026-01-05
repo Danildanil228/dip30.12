@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
+import CreateCategoryDialog from "@/components/CreateCategoryDialog";
 
 interface Category {
     id: number;
@@ -323,9 +324,7 @@ export default function Categories() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Категории материалов</h1>
                 {isAdmin && (
-                    <Link to="/categories/create">
-                        <Button>Добавить категорию</Button>
-                    </Link>
+                    <CreateCategoryDialog onCategoryCreated={() => { fetchCategories() }} />
                 )}
             </div>
 
