@@ -71,7 +71,6 @@ export default function MobileNavigation() {
         {filteredNavItems.map((item) => {
           const active = isActive(item.path);
 
-          // Если это "Материалы" с dropdown
           if (item.path === '/materials' && item.hasDrop) {
             return (
               <div key={item.path} className="flex flex-col items-center justify-center py-1 px-2 flex-1 min-w-0 relative">
@@ -107,7 +106,6 @@ export default function MobileNavigation() {
             );
           }
 
-          // Обычные ссылки
           return (
             <Link
               key={item.path}
