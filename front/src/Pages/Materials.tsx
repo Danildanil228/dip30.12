@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import CreateMaterialDialog from "@/components/CreateMaterialDialog";
+import EditMaterialDialog from "@/components/EditMaterialDialog";
 
 interface Material {
     id: number;
@@ -235,12 +236,16 @@ export default function Materials() {
                 const material = row.original;
                 return (
                     <div className="flex items-center gap-5">
-                        {/* Ссылка на редактирование */}
+
+                        <EditMaterialDialog
+                            materialId={material.id}
+                            onMaterialUpdated={fetchMaterials}
+                            triggerButton={
+                                <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
+                            }
+                        />
                         {isAdmin && (
                             <>
-                                <Link to={`/materials/edit/${material.id}`}>
-                                    <img src="/edit.png" className="icon w-5" alt="Редактировать" title="Редактировать" />
-                                </Link>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <img
@@ -358,7 +363,7 @@ export default function Materials() {
                 <h1 className="text-2xl font-bold">Материалы</h1>
                 {isAdmin && (
                     <CreateMaterialDialog onMaterialCreated={() => { fetchMaterials() }} />
-                )} 
+                )}
             </div>
 
             <div className="w-full">
@@ -401,7 +406,7 @@ export default function Materials() {
                             Обновить
                         </Button>
                         <Button variant="outline">
-                            <Link to='/categories'>Перейти к категориям</Link>
+                            <Link to='/category'>Перейти к категориям</Link>
                         </Button>
                     </div>
                 </div>

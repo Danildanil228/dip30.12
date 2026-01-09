@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import CreateCategoryDialog from "@/components/CreateCategoryDialog";
+import EditCategoryDialog from "@/components/EditCategoryDialog";
 
 interface Category {
     id: number;
@@ -200,11 +201,14 @@ export default function Categories() {
                 const category = row.original;
                 return (
                     <div className="flex items-center gap-5">
-                        {/* Ссылка на редактирование */}
                         {isAdmin && (
-                            <Link to={`/categories/edit/${category.id}`}>
-                                <img src="/edit.png" className="icon w-5" alt="Редактировать" title="Редактировать" />
-                            </Link>
+                            <EditCategoryDialog
+                                categoryId={category.id}
+                                onCategoryUpdated={fetchCategories}
+                                triggerButton={
+                                    <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
+                                }
+                            />
                         )}
 
                         {/* Кнопка удаления - только для админа */}
@@ -366,6 +370,9 @@ export default function Categories() {
                     <div className="ml-auto flex gap-2">
                         <Button variant="outline" onClick={fetchCategories}>
                             Обновить
+                        </Button>
+                        <Button variant="outline">
+                            <Link to='/materials'>Перейти к материалам</Link>
                         </Button>
                     </div>
                 </div>
