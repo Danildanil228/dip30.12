@@ -2,22 +2,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 
 interface Log {
@@ -133,17 +120,17 @@ export default function Notifications({ onVisited }: LogsProps) {
 
   if (loading) {
     return <section className="mx-auto">
-            <div className="flex justify-center items-center py-10">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        </section>;
+      <div className="flex justify-center items-center py-10">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
+      </div>
+    </section>;
   }
 
   return (
     <div className="lg:my-0 my-10">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl mb-4">
-          Журнал действий {logs.length !== filteredLogs.length  && `(${filteredLogs.length}/${logs.length})`}
+          Журнал действий {logs.length !== filteredLogs.length && `(${filteredLogs.length}/${logs.length})`}
         </h1>
 
         <div className="grid sm:flex text-center items-center gap-4">

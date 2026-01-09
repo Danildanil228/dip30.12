@@ -1,11 +1,6 @@
 import { useUser } from '@/hooks/useUser';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
 
 export default function MobileNavigation() {
   const location = useLocation();

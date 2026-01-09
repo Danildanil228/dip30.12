@@ -10,7 +10,6 @@ import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
-import Categories from "./Categories";
 import CreateMaterialDialog from "@/components/CreateMaterialDialog";
 
 interface Material {
@@ -457,7 +456,6 @@ export default function Materials() {
                         </TableBody>
                     </Table>
                 </div>
-
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
                     <div className="text-sm text-gray-600">
                         Материалов: {table.getFilteredRowModel().rows.length}
@@ -500,7 +498,6 @@ export default function Materials() {
                     </div>
                 </div>
             </div>
-
         </section>
     );
 }

@@ -19,7 +19,7 @@ export default function DesktopNavigation() {
         { path: '/category', label: 'Категории', adminOnly: false }
     ]
     const filItems = navItems.filter(item => !item.adminOnly || (item.adminOnly && isAdmin))
-    
+
 
     return (
         <div className="container hidden lg:block border rounded-2xl my-4!">

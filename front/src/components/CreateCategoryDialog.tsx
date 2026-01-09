@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {AlertDialog,AlertDialogContent,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle,AlertDialogTrigger,} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
@@ -13,9 +13,9 @@ interface CreateCategoryDialogProps {
   triggerButton?: React.ReactNode;
 }
 
-export default function CreateCategoryDialog({ 
-  onCategoryCreated, 
-  triggerButton 
+export default function CreateCategoryDialog({
+  onCategoryCreated,
+  triggerButton
 }: CreateCategoryDialogProps) {
   const [open, setOpen] = useState(false);
   const [categoryName, setCategoryName] = useState("");
@@ -25,7 +25,7 @@ export default function CreateCategoryDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setError(null);
       setLoading(true);
@@ -36,7 +36,7 @@ export default function CreateCategoryDialog({
       }
 
       const token = localStorage.getItem("token");
-      
+
       await axios.post(
         `${API_BASE_URL}/categories`,
         {
@@ -51,7 +51,7 @@ export default function CreateCategoryDialog({
       setCategoryName("");
       setCategoryDescription("");
       setOpen(false);
-      
+
       if (onCategoryCreated) {
         onCategoryCreated();
       }
@@ -116,7 +116,7 @@ export default function CreateCategoryDialog({
 
           <AlertDialogFooter>
             <AlertDialogCancel className="text-base" disabled={loading}>Отмена</AlertDialogCancel>
-            <Button  type="submit" className="text-base" disabled={loading}>
+            <Button type="submit" className="text-base" disabled={loading}>
               {loading ? "Создание..." : "Создать категорию"}
             </Button>
           </AlertDialogFooter>

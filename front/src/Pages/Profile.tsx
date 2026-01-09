@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { ChevronDownIcon, ArrowLeft } from "lucide-react";
-import {Popover,PopoverContent,PopoverTrigger,} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { API_BASE_URL } from "@/components/api";
 import axios from "axios";
@@ -332,7 +332,7 @@ export default function Profile() {
                                             onValueChange={(value) => setEditData({ ...editData, role: value })}
                                         >
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Роль"/>
+                                                <SelectValue placeholder="Роль" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="admin">Администратор</SelectItem>
