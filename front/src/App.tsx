@@ -12,6 +12,7 @@ import Layout from './components/Layout';
 import NotFound from './Pages/NotFound';
 import Categories from './Pages/Categories';
 import Materials from './Pages/Materials';
+import Backup from './Pages/Backup';
 
 function App() {
   return (
@@ -45,6 +46,13 @@ function App() {
               <ProtectedRoute>
                 <AdminRoute>
                   <Profile />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/backup" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <Backup />
                 </AdminRoute>
               </ProtectedRoute>
             } />

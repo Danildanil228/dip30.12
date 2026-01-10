@@ -16,7 +16,8 @@ export default function DesktopNavigation() {
     ];
     const materialItem = [
         { path: '/materials', label: 'Материалы', adminOnly: false },
-        { path: '/category', label: 'Категории', adminOnly: false }
+        { path: '/category', label: 'Категории', adminOnly: false },
+        { path: '/backup', label: 'Бэкапы', adminOnly: true }
     ]
     const filItems = navItems.filter(item => !item.adminOnly || (item.adminOnly && isAdmin))
 

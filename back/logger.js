@@ -124,12 +124,49 @@ class Logger {
         );
     }
 
+    /// backups
+    static async backupCreated(userId, username, filename, size) {
+        await this.log(
+            userId,
+            'backup_created',
+            'Создание бэкапа',
+            `Администратор ${username} создал бэкап: ${filename} (${size})`
+        );
+    }
+
+    static async backupDownloaded(userId, username, filename) {
+        await this.log(
+            userId,
+            'backup_downloaded',
+            'Скачивание бэкапа',
+            `Пользователь ${username} скачал бэкап: ${filename}`
+        );
+    }
+
+    static async backupRestored(userId, username, filename) {
+        await this.log(
+            userId,
+            'backup_restored',
+            'Восстановление из бэкапа',
+            `Администратор ${username} восстановил базу из бэкапа: ${filename}`
+        );
+    }
+
+    static async backupDeleted(userId, username, filename) {
+        await this.log(
+            userId,
+            'backup_deleted',
+            'Удаление бэкапа',
+            `Администратор ${username} удалил бэкап: ${filename}`
+        );
+    }
+
 
 
 
     ///// MATERIALS МАТЕРИАЛЫ \\\\\
 
-    
+
     static async materialCreated(userId, username, materialName) {
         await this.log(
             userId,

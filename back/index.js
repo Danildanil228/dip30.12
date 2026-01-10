@@ -7,6 +7,7 @@ const app = express();
 const PORT = 3000;
 const JWT_SECRET = 'key'
 const Logger = require('./logger')
+const backupRouter = require('./backup');
 
 const pool = new Pool({
     user: "postgres",
@@ -35,6 +36,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/api/backup', backupRouter);
 
 
 //Проверка на админа
