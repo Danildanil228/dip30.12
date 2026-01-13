@@ -43,7 +43,8 @@ export default function MobileNavigation() {
 
   const materialItem = [
     { path: '/materials', label: 'Материалы', adminOnly: false },
-    { path: '/category', label: 'Категории', adminOnly: false }
+    { path: '/category', label: 'Категории', adminOnly: false },
+    { path: '/backups', label: 'Бэкапы', adminOnly: true }
   ];
 
   const filteredNavItems = navItems.filter(item => 

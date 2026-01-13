@@ -12,6 +12,7 @@ import Layout from './components/Layout';
 import NotFound from './Pages/NotFound';
 import Categories from './Pages/Categories';
 import Materials from './Pages/Materials';
+import Backups from './Pages/Backups';
 
 function App() {
   return (
@@ -52,6 +53,13 @@ function App() {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/backups" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <Backups />
+                </AdminRoute>
               </ProtectedRoute>
             } />
 

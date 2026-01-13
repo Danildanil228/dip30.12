@@ -7,6 +7,7 @@ const app = express();
 const PORT = 3000;
 const JWT_SECRET = 'key'
 const Logger = require('./logger')
+const backupRoutes = require('./backup');
 
 const pool = new Pool({
     user: "postgres",
@@ -15,6 +16,7 @@ const pool = new Pool({
     port: '5432',
     database: "materialHousedb"
 });
+app.set('pool', pool);
 
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
@@ -35,6 +37,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/backups', backupRoutes);
 
 
 //Проверка на админа
@@ -1022,6 +1025,9 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
+
+
+
 
 
 // тест

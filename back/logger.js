@@ -125,11 +125,40 @@ class Logger {
     }
 
 
+    ///// BACKUPS БЭКАПЫ \\\\\
+
+
+    static async backupCreated(userId, username, backupName) {
+        await this.log(
+            userId,
+            'backup_created',
+            'Создание бэкапа',
+            `[user:${userId}:${username}] создал бэкап: ${backupName}`
+        );
+    }
+
+    static async backupDownloaded(userId, username, backupName) {
+        await this.log(
+            userId,
+            'backup_downloaded',
+            'Скачивание бэкапа',
+            `[user:${userId}:${username}] скачал бэкап: ${backupName}`
+        );
+    }
+
+    static async backupDeleted(userId, username, backupName) {
+        await this.log(
+            userId,
+            'backup_deleted',
+            'Удаление бэкапа',
+            `[user:${userId}:${username}] удалил бэкап: ${backupName}`
+        );
+    }
 
 
     ///// MATERIALS МАТЕРИАЛЫ \\\\\
 
-    
+
     static async materialCreated(userId, username, materialName) {
         await this.log(
             userId,

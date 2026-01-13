@@ -1,38 +1,34 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
-import { Link } from "react-router-dom";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
-import CreateMaterialDialog from "@/components/CreateMaterialDialog";
-import EditMaterialDialog from "@/components/EditMaterialDialog";
+import CreateBackupDialog from "@/components/CreateBackupDialog";
+import { Link } from "react-router-dom";
 
-interface Material {
+interface Backup {
     id: number;
-    name: string;
-    code: string;
-    description: string | null;
-    unit: string;
-    quantity: number;
-    category_id: number | null;
-    category_name: string | null;
+    filename: string;
+    filepath: string;
+    file_size: number;
     created_by: number | null;
-    updated_by: number | null;
-    created_by_username: string | null;
-    updated_by_username: string | null;
     created_at: string;
-    updated_at: string;
+    description: string | null;
+    created_by_username: string | null;
+    name: string | null;
+    secondname: string | null;
+    file_exists: boolean;
 }
 
-export default function Materials() {
+export default function Backups() {
     const { isAdmin } = useUser();
-    const [materials, setMaterials] = useState<Material[]>([])
+    const [backups, setBackups] = useState<Backup[]>([]);
     const [showAll, setShowAll] = useState(false);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -43,30 +39,68 @@ export default function Materials() {
         pageSize: 10
     });
     const [loading, setLoading] = useState(true);
+    const [deleting, setDeleting] = useState<number | null>(null);
+    const [downloading, setDownloading] = useState<number | null>(null);
 
     const handleToggleShowAll = () => {
         if (showAll) {
             setPagination({ pageIndex: 0, pageSize: 10 });
         } else {
-            setPagination({ pageIndex: 0, pageSize: materials.length });
+            setPagination({ pageIndex: 0, pageSize: backups.length });
         }
         setShowAll(!showAll);
     };
 
-    const handleDeleteMaterial = async (id: number) => {
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const handleDeleteBackup = async (id: number) => {
         try {
+            setDeleting(id);
             const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/materials/${id}`, {
+            await axios.delete(`${API_BASE_URL}/backups/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setMaterials(materials.filter((material) => material.id !== id));
+            setBackups(backups.filter((backup) => backup.id !== id));
         } catch (error: any) {
-            console.error("Ошибка удаления материала:", error);
-            alert(error.response?.data?.error || "Не удалось удалить материал");
+            console.error("Ошибка удаления бэкапа:", error);
+            alert(error.response?.data?.error || "Не удалось удалить бэкап");
+        } finally {
+            setDeleting(null);
         }
     };
 
-    const columns: ColumnDef<Material>[] = [
+    const handleDownloadBackup = async (id: number, filename: string) => {
+        try {
+            setDownloading(id);
+            const token = localStorage.getItem("token");
+            const response = await axios.get(`${API_BASE_URL}/backups/${id}/download`, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+        } catch (error: any) {
+            console.error("Ошибка скачивания бэкапа:", error);
+            alert(error.response?.data?.error || "Не удалось скачать бэкап");
+        } finally {
+            setDownloading(null);
+        }
+    };
+
+    const columns: ColumnDef<Backup>[] = [
         {
             id: "select",
             header: ({ table }) => (
@@ -94,59 +128,42 @@ export default function Materials() {
             cell: ({ row }) => <div>{row.getValue("id")}</div>
         },
         {
-            accessorKey: "name",
+            accessorKey: "filename",
             header: ({ column }) => {
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
-                        Название
+                        Имя файла
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
             },
-            cell: ({ row }) => <div>{row.getValue("name")}</div>
+            cell: ({ row }) => <div>{row.getValue("filename")}</div>
         },
         {
-            accessorKey: "code",
-            header: "Код",
-            cell: ({ row }) => <div>{row.getValue("code")}</div>
+            accessorKey: "description",
+            header: "Описание",
+            cell: ({ row }) => <div>{row.getValue("description") || "-"}</div>
         },
         {
-            accessorKey: "quantity",
+            accessorKey: "file_size",
             header: ({ column }) => {
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
-                        Количество
+                        Размер
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
             },
-            cell: ({ row }) => <div>{row.getValue("quantity")}</div>
-        },
-        {
-            accessorKey: "category_name",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Категория
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => <div>{row.getValue("category_name") || "Без категории"}</div>
-        },
-        {
-            accessorKey: "unit",
-            header: "Ед. измерения",
-            cell: ({ row }) => <div>{row.getValue("unit")}</div>
+            cell: ({ row }) => {
+                const size = row.getValue("file_size") as number;
+                return <div>{formatFileSize(size)}</div>;
+            }
         },
         {
             accessorKey: "created_by_username",
@@ -187,89 +204,59 @@ export default function Materials() {
                 return <div>{date.toLocaleString("ru-RU")}</div>;
             }
         },
-        ...(() => {
-            const hasModifiedMaterials = materials.some(material => {
-                const createdDate = new Date(material.created_at);
-                const updatedDate = new Date(material.updated_at);
-                return createdDate.getTime() !== updatedDate.getTime();
-            });
-
-            if (!hasModifiedMaterials) return [];
-
-            return [
-                {
-                    accessorKey: "updated_at",
-                    header: "Дата изменения",
-                    cell: ({ row }) => {
-                        const updatedDate = new Date(row.original.updated_at);
-                        return <div>{updatedDate.toLocaleString("ru-RU")}</div>;
-                    }
-                },
-                {
-                    accessorKey: "updated_by_username",
-                    header: "Кем изменено",
-                    cell: ({ row }) => {
-                        const username = row.original.updated_by_username;
-                        const userId = row.original.updated_by;
-
-                        if (!username || !userId) {
-                            return <div>-</div>;
-                        }
-
-                        return (
-                            <Link
-                                to={`/profile/${userId}`}
-                                className="text-blue-500 hover:underline"
-                            >
-                                {username}
-                            </Link>
-                        );
-                    }
-                }
-            ];
-        })(),
-
         {
             accessorKey: "actions",
             header: 'Функции',
             cell: ({ row }) => {
-                const material = row.original;
-                return (
-                    <div className="flex items-center gap-5">
-                        {isAdmin && (
-                            <>
-                                <EditMaterialDialog
-                                    materialId={material.id}
-                                    onMaterialUpdated={fetchMaterials}
-                                    triggerButton={
-                                        <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
-                                    }
-                                />
+                const backup = row.original;
+                const isDownloading = downloading === backup.id;
+                const isDeleting = deleting === backup.id;
 
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
+                return (
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadBackup(backup.id, backup.filename)}
+                            disabled={isDownloading || !backup.file_exists}
+                            title="Скачать бэкап"
+                        >
+                            <Download className={`h-4 w-4 ${isDownloading ? 'animate-pulse' : ''}`} />
+                        </Button>
+
+                        {isAdmin && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={isDeleting}
+                                        title="Удалить бэкап"
+                                    >
                                         <img
                                             src="/trash.png"
-                                            className=" lg:w-5 w-5 icon cursor-pointer"
+                                            className={`icon w-5 ${isDeleting ? 'animate-pulse' : ''}`}
                                             alt="Удалить"
-                                            title="Удалить материал"
                                         />
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>
-                                                Удалить материал {material.name}?
-                                            </AlertDialogTitle>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>
-                                                Удалить
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                            Удалить бэкап "{backup.filename}"?
+                                        </AlertDialogTitle>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => handleDeleteBackup(backup.id)}
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            Удалить
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         )}
                     </div>
                 );
@@ -277,18 +264,18 @@ export default function Materials() {
         }
     ];
 
-    const fetchMaterials = async () => {
+    const fetchBackups = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/materials`, {
+            const response = await axios.get(`${API_BASE_URL}/backups`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setMaterials(response.data.materials);
+            setBackups(response.data.backups || []);
         } catch (error: any) {
-            console.error("Ошибка загрузки материалов:", error);
+            console.error("Ошибка загрузки бэкапов:", error);
             if (error.response?.status === 403) {
-                alert("Недостаточно прав для просмотра материалов");
+                alert("Недостаточно прав для просмотра бэкапов");
             }
         } finally {
             setLoading(false);
@@ -296,7 +283,7 @@ export default function Materials() {
     };
 
     useEffect(() => {
-        fetchMaterials();
+        fetchBackups();
     }, []);
 
     const handleDeleteSelected = async () => {
@@ -304,28 +291,33 @@ export default function Materials() {
         const selectedIds = selectedRows.map((row) => row.original.id);
 
         if (selectedIds.length === 0) {
-            alert("Выберите материалы для удаления");
+            alert("Выберите бэкапы для удаления");
+            return;
+        }
+
+        if (!confirm(`Вы уверены, что хотите удалить ${selectedIds.length} бэкап(ов)?`)) {
             return;
         }
 
         try {
             const token = localStorage.getItem("token");
             for (const id of selectedIds) {
-                await axios.delete(`${API_BASE_URL}/materials/${id}`, {
+                await axios.delete(`${API_BASE_URL}/backups/${id}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             }
 
-            setMaterials(materials.filter((material) => !selectedIds.includes(material.id)));
+            setBackups(backups.filter((backup) => !selectedIds.includes(backup.id)));
             setRowSelection({});
+            // Здесь можно добавить toast-уведомление об успешном удалении
         } catch (error: any) {
-            console.error("Ошибка удаления материалов:", error);
-            alert(error.response?.data?.error || "Не удалось удалить материалы");
+            console.error("Ошибка удаления бэкапов:", error);
+            alert(error.response?.data?.error || "Не удалось удалить бэкапы");
         }
     };
 
     const table = useReactTable({
-        data: materials,
+        data: backups,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -354,24 +346,26 @@ export default function Materials() {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
                 </div>
             </section>
-        )
+        );
     }
 
     return (
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Материалы</h1>
+                <h1 className="text-2xl font-bold">Бэкапы базы данных</h1>
                 {isAdmin && (
-                    <CreateMaterialDialog onMaterialCreated={() => { fetchMaterials() }} />
+                    <div className="flex gap-2">
+                        <CreateBackupDialog onBackupCreated={fetchBackups} />
+                    </div>
                 )}
             </div>
 
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
                     <Input
-                        placeholder="Поиск по названию..."
-                        value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+                        placeholder="Поиск по имени файла..."
+                        value={(table.getColumn("filename")?.getFilterValue() as string) ?? ""}
+                        onChange={(event) => table.getColumn("filename")?.setFilterValue(event.target.value)}
                         className="max-w-sm"
                     />
 
@@ -383,11 +377,14 @@ export default function Materials() {
                             {isAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="destructive">Удалить материалы</Button>
+                                        <Button variant="destructive">Удалить выбранные</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Будет удалено {selectedCount} бэкап(ов). Это действие нельзя отменить.
+                                            </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
@@ -402,11 +399,9 @@ export default function Materials() {
                     )}
 
                     <div className="ml-auto flex gap-2">
-                        <Button variant="outline" onClick={fetchMaterials}>
+                        <Button variant="outline" onClick={fetchBackups}>
+                            <RefreshCw className="h-4 w-4 mr-2" />
                             Обновить
-                        </Button>
-                        <Button variant="outline">
-                            <Link to='/category'>Перейти к категориям</Link>
                         </Button>
                     </div>
                 </div>
@@ -454,19 +449,25 @@ export default function Materials() {
                                         colSpan={columns.length}
                                         className="h-24 text-center"
                                     >
-                                        Нет материалов.
+                                        Нет бэкапов. Создайте первый бэкап.
                                     </TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
                     </Table>
                 </div>
+
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
                     <div className="text-sm text-gray-600">
-                        Материалов: {table.getFilteredRowModel().rows.length}
+                        Бэкапов: {table.getFilteredRowModel().rows.length}
+                        {backups.length > 0 && (
+                            <span className="ml-2">
+                                (Общий размер: {formatFileSize(backups.reduce((sum, b) => sum + b.file_size, 0))})
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center space-x-2">
-                        {materials.length > 10 && (
+                        {backups.length > 10 && (
                             <Button
                                 variant="outline"
                                 onClick={handleToggleShowAll}
