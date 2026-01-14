@@ -7,7 +7,6 @@ import Profile from './Pages/Profile';
 import Notifications from './Pages/Notifications';
 import AdminRoute from './components/AdminRoute';
 import AllUsers from './Pages/AllUsers';
-import AddUser from './Pages/AddUser';
 import Layout from './components/Layout';
 import NotFound from './Pages/NotFound';
 import Categories from './Pages/Categories';
