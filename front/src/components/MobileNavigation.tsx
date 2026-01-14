@@ -22,12 +22,6 @@ export default function MobileNavigation() {
       hasDrop: true
     },
     {
-      path: '/add',
-      label: 'Добавить',
-      icon: '/add.png',
-      adminOnly: true
-    },
-    {
       path: '/profile',
       label: 'Профиль',
       icon: '/profile.png',

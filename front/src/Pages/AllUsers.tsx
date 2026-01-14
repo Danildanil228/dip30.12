@@ -9,6 +9,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
+import AddUserDialog from "@/components/AddUserDialog";
 
 interface User {
     id: number;
@@ -289,14 +290,8 @@ export default function AllUsers() {
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Все пользователи</h1>
-                <Button>
-                    <Link
-                        to="/add"
-                        className="text-sm flex gap-3 items-center"
-                    >
-                        Добавить пользователя
-                    </Link>
-                </Button>
+                <AddUserDialog onUserCreated={fetchUsers} />
+
             </div>
 
             <div className="w-full">

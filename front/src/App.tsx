@@ -77,13 +77,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/add" element={
-              <ProtectedRoute>
-                <AdminRoute>
-                  <AddUser />
-                </AdminRoute>
-              </ProtectedRoute>
-            } />
+            
           </Route>
 
         </Routes>

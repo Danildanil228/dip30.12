@@ -10,7 +10,6 @@ export default function DesktopNavigation() {
         { path: '/main', label: 'Главная', adminOnly: false },
         { path: '/materials', label: 'Материалы', adminOnly: false, hasDrop: true },
         { path: '/allusers', label: 'Все пользователи', adminOnly: true },
-        { path: '/add', label: 'Добавить пользователя', adminOnly: true },
         { path: '/profile', label: 'Профиль', adminOnly: false },
         { path: '/notifications', label: 'Журнал', adminOnly: true },
     ];
