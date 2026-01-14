@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
@@ -47,7 +46,6 @@ export default function CreateBackupDialog({
             setDescription("");
             setSuccess("Бэкап успешно создан!");
             
-            // Закрываем диалог через 2 секунды после успеха
             setTimeout(() => {
                 setOpen(false);
                 setSuccess(null);

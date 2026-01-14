@@ -309,7 +309,6 @@ export default function Backups() {
 
             setBackups(backups.filter((backup) => !selectedIds.includes(backup.id)));
             setRowSelection({});
-            // Здесь можно добавить toast-уведомление об успешном удалении
         } catch (error: any) {
             console.error("Ошибка удаления бэкапов:", error);
             alert(error.response?.data?.error || "Не удалось удалить бэкапы");

@@ -202,40 +202,41 @@ export default function Categories() {
                 return (
                     <div className="flex items-center gap-5">
                         {isAdmin && (
-                            <EditCategoryDialog
-                                categoryId={category.id}
-                                onCategoryUpdated={fetchCategories}
-                                triggerButton={
-                                    <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
-                                }
-                            />
-                        )}
+                            <>
+                                <EditCategoryDialog
+                                    categoryId={category.id}
+                                    onCategoryUpdated={fetchCategories}
+                                    triggerButton={
+                                        <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
+                                    }
+                                />
 
-                        {/* Кнопка удаления - только для админа */}
-                        {isAdmin && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <img
-                                        src="/trash.png"
-                                        className="w-5 icon cursor-pointer"
-                                        alt="Удалить"
-                                        title="Удалить категорию"
-                                    />
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                            Удалить категорию "{category.name}"?
-                                        </AlertDialogTitle>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
-                                            Удалить
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+
+
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <img
+                                            src="/trash.png"
+                                            className="w-5 icon cursor-pointer"
+                                            alt="Удалить"
+                                            title="Удалить категорию"
+                                        />
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>
+                                                Удалить категорию "{category.name}"?
+                                            </AlertDialogTitle>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
+                                                Удалить
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </>
                         )}
                     </div>
                 );

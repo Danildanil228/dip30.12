@@ -270,7 +270,7 @@ app.get('/users', checkAdmin, async (req, res) => {
     }
 });
 
-// Удаление пользователя (только для админа)
+// Удаление пользователя
 app.delete('/users/:id', checkAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
@@ -791,7 +791,6 @@ app.get('/materials', async (req, res) => {
 
         const result = await pool.query(query, params);
 
-        // Получаем статистику
         const statsResult = await pool.query(`
             SELECT COUNT(*) as total_materials, SUM(quantity) as total_quantity, COUNT(DISTINCT category_id) as categories_count FROM materials
         `);
@@ -860,7 +859,6 @@ app.post('/materials', checkAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Количество не может быть отрицательным' });
         }
 
-        // Проверяем уникальность кода
         const existingCode = await pool.query(
             'SELECT id FROM materials WHERE code = $1',
             [code]
@@ -869,7 +867,6 @@ app.post('/materials', checkAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Материал с таким кодом уже существует' });
         }
 
-        // Если указана категория, проверяем её существование
         if (category_id) {
             const categoryExists = await pool.query(
                 'SELECT id FROM materialCategories WHERE id = $1',
@@ -963,7 +960,6 @@ app.put('/materials/:id', checkAdmin, async (req, res) => {
             [name, code || null, description || null, unit, category_id || null, decoded.id, materialId]
         );
 
-        // Логирование изменений
         const changes = [];
         if (name !== oldMaterial.name) changes.push(`название: "${oldMaterial.name}" → "${name}"`);
         if (code !== oldMaterial.code) changes.push(`код: "${oldMaterial.code}" → "${code}"`);
@@ -988,7 +984,6 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
     try {
         const materialId = parseInt(req.params.id);
 
-        // Получаем информацию о материале для логирования
         const materialResult = await pool.query(
             'SELECT name, quantity FROM materials WHERE id = $1',
             [materialId]
@@ -1000,20 +995,17 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
 
         const material = materialResult.rows[0];
 
-        // Проверяем, есть ли остаток на складе
         if (material.quantity > 0) {
             return res.status(400).json({
                 error: `Невозможно удалить материал: на складе осталось ${material.quantity} ед.`
             });
         }
 
-        // Удаляем материал
         const result = await pool.query(
             'DELETE FROM materials WHERE id = $1 RETURNING id, name, code',
             [materialId]
         );
 
-        // Логирование
         await Logger.materialDeleted(req.user.id, req.user.username, material.name);
 
         res.json({

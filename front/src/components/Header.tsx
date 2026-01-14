@@ -13,7 +13,6 @@ export default function Header() {
                         user.role === 'accountant' ? 'Бухгалтер' :
                             'Неизвестная роль'}
             </Link>
-
             <Link to='/profile' className="lg:flex hidden">{user.name + ' ' + user.secondname}</Link>
 
             <div className="items-center flex gap-2 ">
