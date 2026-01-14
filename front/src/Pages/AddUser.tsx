@@ -75,10 +75,12 @@ export default function AddUser() {
     <section className="">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Добавить пользователя</h1>
-        <Link to='/allusers' className="text-sm flex gap-3 items-center">
-          Все пользователи
-          <img src="/arrow.png" className="icon w-4 lg:block hidden" alt="" />
-        </Link>
+        <Button>
+          <Link to='/allusers' className="text-sm flex gap-3 items-center">
+            Все пользователи
+          </Link>
+        </Button>
+
       </div>
       <form onSubmit={handleSubmit} className="grid gap-6">
         <div className="grid lg:grid-cols-2 gap-6">

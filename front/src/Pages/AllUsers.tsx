@@ -289,17 +289,14 @@ export default function AllUsers() {
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Все пользователи</h1>
-                <Link
-                    to="/add"
-                    className="text-sm flex gap-3 items-center"
-                >
-                    Добавить пользователя
-                    <img
-                        src="/arrow.png"
-                        className="icon w-4 lg:block hidden"
-                        alt=""
-                    />
-                </Link>
+                <Button>
+                    <Link
+                        to="/add"
+                        className="text-sm flex gap-3 items-center"
+                    >
+                        Добавить пользователя
+                    </Link>
+                </Button>
             </div>
 
             <div className="w-full">
