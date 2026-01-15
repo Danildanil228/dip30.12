@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import AddUserDialog from "@/components/AddUserDialog";
+import ExportButton from "@/components/ExportButton";
 
 interface User {
     id: number;
@@ -284,6 +285,30 @@ export default function AllUsers() {
         </section>;
     }
 
+    const userColumnsForExport = [
+        { accessorKey: "id", header: "ID" },
+        { accessorKey: "username", header: "Логин" },
+        { accessorKey: "name", header: "Имя" },
+        { accessorKey: "secondname", header: "Фамилия" },
+        {
+            accessorKey: "role",
+            header: "Роль",
+            format: (value: string) => {
+                switch (value) {
+                    case 'admin': return 'Администратор';
+                    case 'accountant': return 'Бухгалтер';
+                    case 'storekeeper': return 'Кладовщик';
+                    default: return value;
+                }
+            }
+        },
+        {
+            accessorKey: "created_at",
+            header: "Дата регистрации",
+            format: (value: string) => new Date(value).toLocaleDateString()
+        }
+    ];
+
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
     return (
@@ -332,6 +357,12 @@ export default function AllUsers() {
                     )}
 
                     <div className="ml-auto flex gap-2">
+                        <ExportButton
+                            data={users}
+                            columns={userColumnsForExport}
+                            filename="users"
+                            title="Пользователи"
+                        />
                         <Button variant="outline" onClick={fetchUsers}>
                             Обновить
                         </Button>

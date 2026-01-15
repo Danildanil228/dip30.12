@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import CreateMaterialDialog from "@/components/CreateMaterialDialog";
 import EditMaterialDialog from "@/components/EditMaterialDialog";
+import ExportButton from "@/components/ExportButton";
 
 interface Material {
     id: number;
@@ -357,6 +358,21 @@ export default function Materials() {
         )
     }
 
+    const materialColumnsForExport = [
+        { accessorKey: "id", header: "ID" },
+        { accessorKey: "name", header: "Название" },
+        { accessorKey: "code", header: "Код" },
+        { accessorKey: "quantity", header: "Количество" },
+        { accessorKey: "unit", header: "Ед. измерения" },
+        { accessorKey: "category_name", header: "Категория" },
+        { accessorKey: "description", header: "Описание" },
+        {
+            accessorKey: "created_at",
+            header: "Дата создания",
+            format: (value: string) => new Date(value).toLocaleDateString()
+        }
+    ];
+
     return (
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -402,11 +418,14 @@ export default function Materials() {
                     )}
 
                     <div className="ml-auto flex gap-2">
+                        <ExportButton
+                            data={materials}
+                            columns={materialColumnsForExport}
+                            filename="materials"
+                            title="Материалы"
+                        />
                         <Button variant="outline" onClick={fetchMaterials}>
                             Обновить
-                        </Button>
-                        <Button variant="outline">
-                            <Link to='/category'>Перейти к категориям</Link>
                         </Button>
                     </div>
                 </div>

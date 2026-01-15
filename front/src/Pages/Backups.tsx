@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useUser } from "@/hooks/useUser";
 import CreateBackupDialog from "@/components/CreateBackupDialog";
 import { Link } from "react-router-dom";
+import ExportButton from "@/components/ExportButton";
 
 interface Backup {
     id: number;
@@ -348,6 +349,29 @@ export default function Backups() {
         );
     }
 
+    const backupColumnsForExport = [
+        { accessorKey: "id", header: "ID" },
+        { accessorKey: "filename", header: "Имя файла" },
+        { accessorKey: "description", header: "Описание" },
+        {
+            accessorKey: "file_size",
+            header: "Размер",
+            format: (value: number) => {
+                if (value === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(value) / Math.log(k));
+                return parseFloat((value / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        },
+        { accessorKey: "created_by_username", header: "Создал" },
+        {
+            accessorKey: "created_at",
+            header: "Дата создания",
+            format: (value: string) => new Date(value).toLocaleString()
+        }
+    ];
+
     return (
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -398,6 +422,12 @@ export default function Backups() {
                     )}
 
                     <div className="ml-auto flex gap-2">
+                        <ExportButton
+                            data={backups}
+                            columns={backupColumnsForExport}
+                            filename="backups"
+                            title="Бэкапы базы данных"
+                        />
                         <Button variant="outline" onClick={fetchBackups}>
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Обновить

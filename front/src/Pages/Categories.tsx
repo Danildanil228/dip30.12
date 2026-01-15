@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import CreateCategoryDialog from "@/components/CreateCategoryDialog";
 import EditCategoryDialog from "@/components/EditCategoryDialog";
+import ExportButton from "@/components/ExportButton";
 
 interface Category {
     id: number;
@@ -324,6 +325,23 @@ export default function Categories() {
         );
     }
 
+    const categoryColumnsForExport = [
+        { accessorKey: "id", header: "ID" },
+        { accessorKey: "name", header: "Название" },
+        { accessorKey: "description", header: "Описание" },
+        { accessorKey: "created_by_username", header: "Создал" },
+        {
+            accessorKey: "created_at",
+            header: "Дата создания",
+            format: (value: string) => new Date(value).toLocaleDateString()
+        },
+        {
+            accessorKey: "updated_at",
+            header: "Дата изменения",
+            format: (value: string) => value ? new Date(value).toLocaleDateString() : "-"
+        }
+    ];
+
     return (
         <section className="mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -369,11 +387,14 @@ export default function Categories() {
                     )}
 
                     <div className="ml-auto flex gap-2">
+                        <ExportButton
+                            data={categories}
+                            columns={categoryColumnsForExport}
+                            filename="categories"
+                            title="Категории материалов"
+                        />
                         <Button variant="outline" onClick={fetchCategories}>
                             Обновить
-                        </Button>
-                        <Button variant="outline">
-                            <Link to='/materials'>Перейти к материалам</Link>
                         </Button>
                     </div>
                 </div>

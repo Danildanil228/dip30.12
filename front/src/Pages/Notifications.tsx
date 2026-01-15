@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
+import ExportButton from "@/components/ExportButton";
 
 interface Log {
   id: number;
@@ -126,6 +127,38 @@ export default function Notifications({ onVisited }: LogsProps) {
     </section>;
   }
 
+  const logColumnsForExport = [
+    { accessorKey: "id", header: "ID" },
+    {
+      accessorKey: "type",
+      header: "Тип",
+      format: (value: string) => {
+        switch (value) {
+          case 'login': return 'Вход в систему';
+          case 'user_created': return 'Создание пользователя';
+          case 'user_deleted': return 'Удаление пользователя';
+          case 'backup_created': return 'Создание бэкапа';
+          case 'backup_downloaded': return 'Скачивание бэкапа';
+          case 'backup_deleted': return 'Удаление бэкапа';
+          default: return value;
+        }
+      }
+    },
+    { accessorKey: "title", header: "Заголовок" },
+    { accessorKey: "message", header: "Сообщение" },
+    { accessorKey: "user_name", header: "Пользователь" },
+    {
+      accessorKey: "created_at",
+      header: "Дата",
+      format: (value: string) => new Date(value).toLocaleString()
+    },
+    {
+      accessorKey: "read",
+      header: "Статус",
+      format: (value: boolean) => value ? 'Прочитано' : 'Новое'
+    }
+  ];
+
   return (
     <div className="lg:my-0 my-10">
       <div className="flex justify-between items-center mb-6">
@@ -134,6 +167,12 @@ export default function Notifications({ onVisited }: LogsProps) {
         </h1>
 
         <div className="grid sm:flex text-center items-center gap-4">
+          <ExportButton
+            data={filteredLogs}
+            columns={logColumnsForExport}
+            filename="logs"
+            title="Журнал действий"
+          />
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline">
@@ -162,6 +201,7 @@ export default function Notifications({ onVisited }: LogsProps) {
               </div>
             </PopoverContent>
           </Popover>
+
 
           {logs.length > 1 && (
             <AlertDialog>
