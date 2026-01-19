@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import DarkModeButtonToggle from "./DarkModeButtonToggle";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { Button } from "./ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "./ui/dropdown-menu";
+import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 
 export default function Header() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -35,6 +37,14 @@ export default function Header() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+                <DropdownMenu>
+                    <DropdownMenuTrigger><Button variant='outline'><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </section>
     )

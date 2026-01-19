@@ -71,7 +71,7 @@ export default function AddUserDialog({
             });
 
             setSuccess(`Пользователь ${username} создан`);
-            
+
             setTimeout(() => {
                 setName("");
                 setSecondname("");
@@ -80,7 +80,7 @@ export default function AddUserDialog({
                 setRole("storekeeper");
                 setOpen(false);
                 setSuccess("");
-                
+
                 if (onUserCreated) {
                     onUserCreated();
                 }
@@ -150,51 +150,55 @@ export default function AddUserDialog({
                             <div className="flex items-center gap-4">
                                 <div className="flex-1 grid gap-2">
                                     <Label htmlFor="add-user-username" className="text-lg">Логин</Label>
-                                    <Input
-                                        id="add-user-username"
-                                        placeholder="Логин"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        className="px-4 py-3 text-lg"
-                                        required
-                                        disabled={loading}
-                                    />
+                                    <div className="flex gap-4">
+                                        <Input
+                                            id="add-user-username"
+                                            placeholder="Логин"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            className="px-4 py-3 text-lg"
+                                            required
+                                            disabled={loading}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant='outline'
+                                            onClick={handleGenerateLogin}
+                                            disabled={loading || !name || !secondname}
+                                            className=""
+                                        >
+                                            <img src="/dice.png" className="icon w-5" alt="Сгенерировать" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant='outline'
-                                    onClick={handleGenerateLogin}
-                                    disabled={loading || !name || !secondname}
-                                    className="h-12"
-                                >
-                                    <img src="/dice.png" className="icon w-5" alt="Сгенерировать" />
-                                </Button>
                             </div>
-
                             <div className="flex items-center gap-4">
                                 <div className="flex-1 grid gap-2">
                                     <Label htmlFor="add-user-password" className="text-lg">Пароль</Label>
-                                    <Input
-                                        id="add-user-password"
-                                        type="text"
-                                        placeholder="Пароль"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="px-4 py-3 text-lg"
-                                        required
-                                        minLength={6}
-                                        disabled={loading}
-                                    />
+                                    <div className="flex gap-4">
+                                        <Input
+                                            id="add-user-password"
+                                            type="text"
+                                            placeholder="Пароль"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="px-4 py-3 text-lg"
+                                            required
+                                            minLength={6}
+                                            disabled={loading}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant='outline'
+                                            onClick={handleGeneratePassword}
+                                            disabled={loading}
+                                            className=""
+                                        >
+                                            <img src="/dice.png" className="icon w-5" alt="Сгенерировать" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant='outline'
-                                    onClick={handleGeneratePassword}
-                                    disabled={loading}
-                                    className="h-12"
-                                >
-                                    <img src="/dice.png" className="icon w-5" alt="Сгенерировать" />
-                                </Button>
+
                             </div>
                         </div>
 

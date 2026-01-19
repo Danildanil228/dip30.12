@@ -167,7 +167,7 @@ export default function EditCategoryDialog({
                         </div>
 
                         <AlertDialogFooter>
-                            <AlertDialogCancel disabled={loading}>Отмена</AlertDialogCancel>
+                            <AlertDialogCancel disabled={loading} className="text-base">Отмена</AlertDialogCancel>
                             <Button type="submit" disabled={loading}>
                                 {loading ? "Сохранение..." : "Сохранить изменения"}
                             </Button>
