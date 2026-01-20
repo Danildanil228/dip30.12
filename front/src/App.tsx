@@ -12,10 +12,12 @@ import NotFound from './Pages/NotFound';
 import Categories from './Pages/Categories';
 import Materials from './Pages/Materials';
 import Backups from './Pages/Backups';
+import { ScrollToTop } from './components/ScrollToTop';
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ScrollToTop></ScrollToTop>
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
