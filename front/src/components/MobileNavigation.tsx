@@ -1,12 +1,12 @@
 import { useUser } from '@/hooks/useUser';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu"
 
 export default function MobileNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin } = useUser();
-  
+
   const navItems = [
     {
       path: '/main',
@@ -40,7 +40,7 @@ export default function MobileNavigation() {
     { path: '/category', label: 'Категории', adminOnly: false }
   ];
 
-  const filteredNavItems = navItems.filter(item => 
+  const filteredNavItems = navItems.filter(item =>
     !item.adminOnly || (item.adminOnly && isAdmin)
   );
 
@@ -70,7 +70,7 @@ export default function MobileNavigation() {
                         src={item.icon}
                         alt={item.label}
                         className={`w-6 h-6 icon ${active
-                          ? 'filter brightness-0 invert-[30%] sepia-[90%] saturate-[3000%] hue-rotate-[220deg]'
+                          ? 'filter brightness-0 invert-30 sepia-90 saturate-3000 hue-rotate-220'
                           : 'filter brightness-0 opacity-60'
                           }`}
                       />
@@ -106,7 +106,7 @@ export default function MobileNavigation() {
                   src={item.icon}
                   alt={item.label}
                   className={`w-6 h-6 icon ${active
-                    ? 'filter brightness-0 invert-[30%] sepia-[90%] saturate-[3000%] hue-rotate-[220deg]'
+                    ? 'filter brightness-0 invert-30 sepia-90 saturate-3000 hue-rotate-220'
                     : 'filter brightness-0 opacity-60'
                     }`}
                 />
