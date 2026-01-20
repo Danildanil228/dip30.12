@@ -8,6 +8,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { Link } from "react-router-dom";
 
 interface Category {
     id: number;
@@ -240,7 +241,7 @@ export default function EditMaterialDialog({
                                         className="bg-gray-50"
                                     />
                                     <p className="text-xs text-gray-500">
-                                        Количество изменяется только через операции прихода/расхода
+                                        Количество изменяется только через операции <Link to='/coming' className="underline dark:text-gray-100 text-black">прихода/расхода</Link>
                                     </p>
                                 </div>
                             </div>

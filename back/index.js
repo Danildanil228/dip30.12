@@ -8,6 +8,8 @@ const PORT = 3000;
 const JWT_SECRET = 'key'
 const Logger = require('./logger')
 const backupRoutes = require('./backup');
+const materialOperationsRoutes = require('./materialOperations');
+
 
 const pool = new Pool({
     user: "postgres",
@@ -38,7 +40,6 @@ app.use(cors({
 
 app.use(express.json());
 app.use('/backups', backupRoutes);
-
 
 //Проверка на админа
 const checkAdmin = (req, res, next) => {
