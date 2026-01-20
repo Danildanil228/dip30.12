@@ -4,9 +4,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { useUser } from "@/hooks/useUser";
 
 export default function Header() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { isAdmin } = useUser();
     return (
         <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
             <Link to='/profile'>
@@ -37,14 +39,17 @@ export default function Header() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                <DropdownMenu>
-                    <DropdownMenuTrigger><Button variant='outline'><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                {isAdmin && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger><Button variant='outline'><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+
             </div>
         </section>
     )
