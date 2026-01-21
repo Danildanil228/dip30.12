@@ -213,6 +213,25 @@ class Logger {
         );
     }
 
+
+    //ОПЕРАЦИИ С МАТЕРИАЛАМИ
+    static async materialIncoming(userId, username, materialName, quantity) {
+        await this.log(
+            userId,
+            'material_incoming',
+            'Приход материала',
+            `[user:${userId}:${username}] добавил ${quantity} ед. материала "${materialName}"`
+        );
+    }
+
+    static async materialOutgoing(userId, username, materialName, quantity) {
+        await this.log(
+            userId,
+            'material_outgoing',
+            'Расход материала',
+            `[user:${userId}:${username}] списал ${quantity} ед. материала "${materialName}"`
+        );
+    }
 }
 
 module.exports = Logger;

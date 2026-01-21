@@ -55,3 +55,12 @@ CREATE TABLE backups (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     description TEXT
 );
+CREATE TABLE material_operations (
+    id SERIAL PRIMARY KEY,
+    material_id INTEGER REFERENCES materials(id) ON DELETE CASCADE,
+    operation_type VARCHAR(20) NOT NULL CHECK (operation_type IN ('incoming', 'outgoing')),
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
