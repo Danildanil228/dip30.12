@@ -8,7 +8,6 @@ const PORT = 3000;
 const JWT_SECRET = 'key'
 const Logger = require('./logger')
 const backupRoutes = require('./backup');
-const materialOperationsRoutes = require('./materialOperations');
 
 
 const pool = new Pool({
