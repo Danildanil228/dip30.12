@@ -1,4 +1,3 @@
-// front/src/components/ExportButton.tsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, FileSpreadsheet, File, Loader2 } from "lucide-react";
@@ -79,7 +78,6 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
         }
     };
 
-    // ПРОСТОЙ PDF ЭКСПОРТ - ОДНА ТАБЛИЦА
     const exportToPDF = () => {
         if (data.length === 0) {
             alert("Нет данных для экспорта");
@@ -103,7 +101,6 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                     <title>${title}</title>
                     <meta charset="UTF-8">
                     <style>
-                        /* Печать */
                         @media print {
                             @page {
                                 margin: 10mm;
@@ -135,7 +132,6 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                             }
                         }
                         
-                        /* Предпросмотр */
                         body {
                             font-family: Arial, sans-serif;
                             margin: 20px;
@@ -233,7 +229,6 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                                             value = col.format(value);
                                         }
                                         const text = String(value || '');
-                                        // Обрезаем слишком длинный текст
                                         const displayText = text.length > 80 
                                             ? text.substring(0, 77) + '...' 
                                             : text;
@@ -245,12 +240,10 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                     </table>
                     
                     <script>
-                        // Автоматически печатаем через 1 секунду
                         setTimeout(function() {
                             window.print();
                         }, 1000);
                         
-                        // Закрываем окно после печати
                         window.onafterprint = function() {
                             setTimeout(function() {
                                 window.close();
