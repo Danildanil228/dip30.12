@@ -50,23 +50,6 @@ class Logger {
 
 
 
-    // добавлени материала
-    // static async materialAdded(userId, userName, materialName) {
-    //     await this.log(userId, 'material_added', 'Добавление материала', 
-    //         `${userName} добавил материал: ${materialName}`);
-    // }
-
-    // изменения материала
-    // static async materialUpdated(userId, userName, materialName) {
-    //     await this.log(userId, 'material_updated', 'Изменение материала', 
-    //         `${userName} изменил материал: ${materialName}`);
-    // }
-
-    //  удаления материала
-    // static async materialDeleted(userId, userName, materialName) {
-    //     await this.log(userId, 'material_deleted', 'Удаление материала', 
-    //         `${userName} удалил материал: ${materialName}`);
-    // }
 
 
     //PROFILE
@@ -214,23 +197,55 @@ class Logger {
     }
 
 
-    //ОПЕРАЦИИ С МАТЕРИАЛАМИ
-    static async materialIncoming(userId, username, materialName, quantity) {
+    // ===== ЗАЯВКИ =====
+
+    static async requestCreated(userId, username, materialName, requestType, quantity) {
+        const typeText = requestType === 'incoming' ? 'приход' : 'расход';
         await this.log(
             userId,
-            'material_incoming',
-            'Приход материала',
-            `[user:${userId}:${username}] добавил ${quantity} ед. материала "${materialName}"`
+            'request_created',
+            'Создание заявки',
+            `[user:${userId}:${username}] создал заявку на ${typeText} материала "${materialName}" в количестве ${quantity} ед.`
         );
     }
 
-    static async materialOutgoing(userId, username, materialName, quantity) {
+    static async requestApproved(userId, username, materialName, requestType, quantity) {
+        const typeText = requestType === 'incoming' ? 'приход' : 'расход';
         await this.log(
             userId,
-            'material_outgoing',
-            'Расход материала',
-            `[user:${userId}:${username}] списал ${quantity} ед. материала "${materialName}"`
+            'request_approved',
+            'Подтверждение заявки',
+            `[user:${userId}:${username}] подтвердил заявку на ${typeText} материала "${materialName}" в количестве ${quantity} ед.`
         );
+    }
+
+    static async requestRejected(userId, username, materialName, requestType, rejectionReason) {
+        const typeText = requestType === 'incoming' ? 'приход' : 'расход';
+        await this.log(
+            userId,
+            'request_rejected',
+            'Отклонение заявки',
+            `[user:${userId}:${username}] отклонил заявку на ${typeText} материала "${materialName}". Причина: ${rejectionReason}`
+        );
+    }
+
+    static async notifyAccountantsAndAdmins(pool, type, title, message, requesterId) {
+        try {
+            const usersResult = await pool.query(
+                "SELECT id FROM users WHERE role IN ('admin', 'accountant') AND id != $1",
+                [requesterId]
+            );
+
+            for (const user of usersResult.rows) {
+                await pool.query(
+                    `INSERT INTO notifications (user_id, type, title, message) 
+                     VALUES ($1, $2, $3, $4)`,
+                    [user.id, type, title, message]
+                );
+            }
+        } catch (error) {
+            console.error('Ошибка отправки уведомлений:', error);
+        }
     }
 }
 

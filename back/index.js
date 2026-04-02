@@ -805,10 +805,10 @@ app.get('/materials', async (req, res) => {
     }
 });
 
-app.get('/materials/:id', async (req, res) => {  
+app.get('/materials/:id', async (req, res) => {
     try {
         const materialId = parseInt(req.params.id);
-        
+
         const result = await pool.query(`
             SELECT m.*, 
                    c.name as category_name, 
@@ -820,11 +820,11 @@ app.get('/materials/:id', async (req, res) => {
             LEFT JOIN users uu ON m.updated_by = uu.id 
             WHERE m.id = $1
         `, [materialId]);
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Материал не найден' });
         }
-        
+
         res.json({ material: result.rows[0] });
     } catch (error) {
         console.error('Ошибка при получении материала:', error);
@@ -1020,6 +1020,264 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
 
 
 
+//// ===========ЗАЯВКИ============
+
+// Получение списка заявок
+app.get('/requests', async (req, res) => {
+    try {
+        const { status } = req.query;
+        let query = `
+            SELECT r.*, 
+                   m.name as material_name, 
+                   u1.username as created_by_username,
+                   u2.username as reviewed_by_username
+            FROM material_requests r
+            LEFT JOIN materials m ON r.material_id = m.id
+            LEFT JOIN users u1 ON r.created_by = u1.id
+            LEFT JOIN users u2 ON r.reviewed_by = u2.id
+        `;
+        const params = [];
+
+        if (status && status !== 'all') {
+            query += ` WHERE r.status = $1`;
+            params.push(status);
+        }
+
+        query += ` ORDER BY r.created_at DESC`;
+
+        const result = await pool.query(query, params);
+        res.json({ requests: result.rows });
+    } catch (error) {
+        console.error('Ошибка получения заявок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Создание заявки
+app.post('/requests', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { material_id, request_type, quantity, notes } = req.body;
+
+        if (!material_id || !request_type || !quantity) {
+            return res.status(400).json({ error: 'Заполните обязательные поля' });
+        }
+
+        if (quantity <= 0) {
+            return res.status(400).json({ error: 'Количество должно быть больше 0' });
+        }
+
+        const materialCheck = await pool.query('SELECT id, name, quantity as current_quantity FROM materials WHERE id = $1', [material_id]);
+        if (materialCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Материал не найден' });
+        }
+
+        const material = materialCheck.rows[0];
+
+        if (request_type === 'outgoing' && material.current_quantity < quantity) {
+            return res.status(400).json({
+                error: `Недостаточно материала. Остаток: ${material.current_quantity}, запрошено: ${quantity}`
+            });
+        }
+
+        const isAdmin = decoded.role === 'admin';
+        const status = isAdmin ? 'approved' : 'pending';
+
+        const result = await pool.query(
+            `INSERT INTO material_requests (material_id, request_type, quantity, status, created_by, reviewed_by, notes, reviewed_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [material_id, request_type, quantity, status, decoded.id, isAdmin ? decoded.id : null, notes || null, isAdmin ? new Date() : null]
+        );
+
+        const newRequest = result.rows[0];
+
+        await Logger.requestCreated(decoded.id, decoded.username, material.name, request_type, quantity);
+
+        if (isAdmin) {
+            const newQuantity = request_type === 'incoming'
+                ? material.current_quantity + quantity
+                : material.current_quantity - quantity;
+
+            await pool.query(
+                'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
+                [newQuantity, material_id]
+            );
+
+            await pool.query(
+                `INSERT INTO material_operations 
+                 (material_id, operation_type, quantity, created_by, notes, request_id)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [material_id, request_type, quantity, decoded.id, notes || null, newRequest.id]
+            );
+
+            await Logger.requestApproved(decoded.id, decoded.username, material.name, request_type, quantity);
+
+            res.json({
+                message: 'Заявка создана и автоматически подтверждена (администратор)',
+                request: newRequest,
+                autoApproved: true
+            });
+        } else {
+            // Для кладовщика — только уведомления, без автоматического подтверждения
+            await Logger.notifyAccountantsAndAdmins(
+                pool,
+                'request_pending',
+                'Новая заявка',
+                `Кладовщик ${decoded.username} создал заявку на ${request_type === 'incoming' ? 'приход' : 'расход'} материала "${material.name}" в количестве ${quantity} ед.`,
+                decoded.id
+            );
+
+            res.json({
+                message: 'Заявка создана и отправлена на подтверждение',
+                request: newRequest,
+                autoApproved: false
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка создания заявки:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Подтверждение заявки (только для pending заявок)
+app.put('/requests/:id/approve', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Только admin или accountant могут подтверждать
+        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+
+        const requestId = parseInt(req.params.id);
+
+        const requestResult = await pool.query(
+            'SELECT r.*, m.name as material_name, m.quantity as current_quantity FROM material_requests r LEFT JOIN materials m ON r.material_id = m.id WHERE r.id = $1 AND r.status = $2',
+            [requestId, 'pending']
+        );
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Заявка не найдена или уже обработана' });
+        }
+
+        const request = requestResult.rows[0];
+
+        if (request.request_type === 'outgoing' && request.current_quantity < request.quantity) {
+            return res.status(400).json({
+                error: `Недостаточно материала. Остаток: ${request.current_quantity}, запрошено: ${request.quantity}`
+            });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            await client.query(
+                `UPDATE material_requests 
+                 SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
+                 WHERE id = $2`,
+                [decoded.id, requestId]
+            );
+
+            const newQuantity = request.request_type === 'incoming'
+                ? request.current_quantity + request.quantity
+                : request.current_quantity - request.quantity;
+
+            await client.query(
+                'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
+                [newQuantity, request.material_id]
+            );
+
+            await client.query(
+                `INSERT INTO material_operations 
+                 (material_id, operation_type, quantity, created_by, notes, request_id)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [request.material_id, request.request_type, request.quantity, decoded.id, request.notes, requestId]
+            );
+
+            await client.query('COMMIT');
+
+            await Logger.requestApproved(decoded.id, decoded.username, request.material_name, request.request_type, request.quantity);
+
+            res.json({ message: 'Заявка подтверждена, операция выполнена' });
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+
+    } catch (error) {
+        console.error('Ошибка подтверждения заявки:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Отклонение заявки
+app.put('/requests/:id/reject', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Только admin или accountant могут отклонять
+        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+
+        const requestId = parseInt(req.params.id);
+        const { rejection_reason } = req.body;
+
+        if (!rejection_reason || rejection_reason.trim() === '') {
+            return res.status(400).json({ error: 'Укажите причину отклонения' });
+        }
+
+        const requestResult = await pool.query(
+            'SELECT r.*, m.name as material_name FROM material_requests r LEFT JOIN materials m ON r.material_id = m.id WHERE r.id = $1 AND r.status = $2',
+            [requestId, 'pending']
+        );
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Заявка не найдена или уже обработана' });
+        }
+
+        const request = requestResult.rows[0];
+
+        await pool.query(
+            `UPDATE material_requests 
+             SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
+             WHERE id = $3`,
+            [decoded.id, rejection_reason, requestId]
+        );
+
+        await Logger.requestRejected(decoded.id, decoded.username, request.material_name, request.request_type, rejection_reason);
+
+        res.json({ message: 'Заявка отклонена' });
+
+    } catch (error) {
+        console.error('Ошибка отклонения заявки:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+
+
 
 
 // тест
@@ -1027,3 +1285,4 @@ app.get('/test', (req, res) => { res.json({ message: 'hello world' }) });
 
 // Запуск сервера
 app.listen(PORT, () => { console.log(`Сервер запущен на http://localhost:${PORT}`) });
+
