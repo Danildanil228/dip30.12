@@ -14,6 +14,7 @@ import Materials from './Pages/Materials';
 import Backups from './Pages/Backups';
 import { ScrollToTop } from './components/ScrollToTop';
 import Requests from './Pages/Requests';
+import RequestDetails from './Pages/RequestDetails';
 
 function App() {
   return (
@@ -36,6 +37,11 @@ function App() {
             <Route path="/requests" element={
               <ProtectedRoute>
                 <Requests />
+              </ProtectedRoute>
+            } />
+            <Route path="/requests/:id" element={
+              <ProtectedRoute>
+                <RequestDetails />
               </ProtectedRoute>
             } />
 

@@ -116,6 +116,20 @@ export default function Notifications({ onVisited }: LogsProps) {
           </Link>
         );
       }
+      // Ссылка на заявку
+      const requestMatch = part.match(/\[request:(\d+)\]/);
+      if (requestMatch) {
+        const requestId = requestMatch[1];
+        return (
+          <Link
+            key={index}
+            to={`/requests/${requestId}`}
+            className="text-green-500 hover:underline mx-1"
+          >
+            заявка #{requestId}
+          </Link>
+        );
+      }
       return part;
     });
   };

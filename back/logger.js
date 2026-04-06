@@ -8,6 +8,12 @@ const pool = new Pool({
 });
 
 class Logger {
+    static currentRequestId = null;
+
+    static setCurrentRequestId(requestId) {
+        this.currentRequestId = requestId;
+    }
+
     static async log(userId, type, title, message) {
         try {
             await pool.query(
@@ -47,10 +53,6 @@ class Logger {
             `[user:${adminId}:${adminUsername}] удалил пользователя [user:${deletedUserId}:${deletedUsername}]`
         );
     }
-
-
-
-
 
     //PROFILE
 
@@ -107,9 +109,7 @@ class Logger {
         );
     }
 
-
     ///// BACKUPS БЭКАПЫ \\\\\
-
 
     static async backupCreated(userId, username, backupName) {
         await this.log(
@@ -138,9 +138,7 @@ class Logger {
         );
     }
 
-
     ///// MATERIALS МАТЕРИАЛЫ \\\\\
-
 
     static async materialCreated(userId, username, materialName) {
         await this.log(
@@ -196,36 +194,38 @@ class Logger {
         );
     }
 
-
     // ===== ЗАЯВКИ =====
 
     static async requestCreated(userId, username, title, requestType, itemsList) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
+        const requestLink = this.currentRequestId ? `[request:${this.currentRequestId}]` : '';
         await this.log(
             userId,
             'request_created',
             'Создание заявки',
-            `[user:${userId}:${username}] создал заявку "${title}" на ${typeText}: ${itemsList}`
+            `[user:${userId}:${username}] создал заявку ${requestLink} на ${typeText}: ${itemsList}`
         );
     }
 
     static async requestApproved(userId, username, title, requestType, itemsList) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
+        const requestLink = this.currentRequestId ? `[request:${this.currentRequestId}]` : '';
         await this.log(
             userId,
             'request_approved',
             'Подтверждение заявки',
-            `[user:${userId}:${username}] подтвердил заявку "${title}" на ${typeText}: ${itemsList}`
+            `[user:${userId}:${username}] подтвердил заявку ${requestLink} на ${typeText}: ${itemsList}`
         );
     }
 
     static async requestRejected(userId, username, title, requestType, rejectionReason) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
+        const requestLink = this.currentRequestId ? `[request:${this.currentRequestId}]` : '';
         await this.log(
             userId,
             'request_rejected',
             'Отклонение заявки',
-            `[user:${userId}:${username}] отклонил заявку "${title}" на ${typeText}. Причина: ${rejectionReason}`
+            `[user:${userId}:${username}] отклонил заявку ${requestLink} на ${typeText}. Причина: ${rejectionReason}`
         );
     }
 

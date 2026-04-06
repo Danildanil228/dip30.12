@@ -1022,7 +1022,118 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
 
 //// ===========ЗАЯВКИ============
 
-// Получение списка заявок
+
+
+// Получение списка заявок 
+app.get('/requests', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { status } = req.query;
+        
+        let query = `
+            SELECT r.*, 
+                   u.username as created_by_username,
+                   (SELECT json_agg(json_build_object('id', m.id, 'name', m.name, 'quantity', ri.quantity))
+                    FROM material_requests_items ri
+                    JOIN materials m ON ri.material_id = m.id
+                    WHERE ri.request_id = r.id
+                    LIMIT 3) as items_preview
+            FROM material_requests r
+            LEFT JOIN users u ON r.created_by = u.id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        let paramIndex = 1;
+        
+        if (status && status !== 'all') {
+            query += ` AND r.status = $${paramIndex}`;
+            params.push(status);
+            paramIndex++;
+        }
+        
+        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        if (!isAdminOrAccountant) {
+            query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
+            params.push(decoded.id);
+            paramIndex++;
+        }
+        
+        query += ` ORDER BY r.created_at DESC`;
+        
+        const result = await pool.query(query, params);
+        res.json({ requests: result.rows });
+        
+    } catch (error) {
+        console.error('Ошибка получения заявок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получение конкретной заявки
+app.get('/requests/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const requestId = parseInt(req.params.id);
+
+        const requestResult = await pool.query(
+            `SELECT r.*, 
+                    u1.username as created_by_username,
+                    u1.name as created_by_name,
+                    u1.secondname as created_by_secondname,
+                    u2.username as reviewed_by_username
+             FROM material_requests r
+             LEFT JOIN users u1 ON r.created_by = u1.id
+             LEFT JOIN users u2 ON r.reviewed_by = u2.id
+             WHERE r.id = $1`,
+            [requestId]
+        );
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Заявка не найдена' });
+        }
+
+        const request = requestResult.rows[0];
+
+        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        const isCreator = decoded.id === request.created_by;
+        const canView = isAdminOrAccountant || isCreator || request.is_public === true;
+
+        if (!canView) {
+            return res.status(403).json({ error: 'Недостаточно прав для просмотра этой заявки' });
+        }
+
+        const itemsResult = await pool.query(
+            `SELECT ri.*, m.name, m.code, m.unit
+             FROM material_requests_items ri
+             LEFT JOIN materials m ON ri.material_id = m.id
+             WHERE ri.request_id = $1
+             ORDER BY ri.id`,
+            [requestId]
+        );
+
+        res.json({
+            request: request,
+            items: itemsResult.rows
+        });
+
+    } catch (error) {
+        console.error('Ошибка получения заявки:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Создание заявки
 app.post('/requests', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -1074,10 +1185,9 @@ app.post('/requests', async (req, res) => {
         }
 
         const isAdmin = decoded.role === 'admin';
-        // Админ может сразу подтвердить заявку
         const isApproved = isAdmin && req.body.is_approved === true;
-        const status = isApproved ? 'approved' : (isAdmin ? 'pending' : 'pending');
-        const publicStatus = isAdmin ? (is_public !== false) : true; // Только админ может сделать заявку приватной
+        const status = isApproved ? 'approved' : 'pending';
+        const publicStatus = isAdmin ? (is_public !== false) : true;
 
         const client = await pool.connect();
         
@@ -1092,6 +1202,8 @@ app.post('/requests', async (req, res) => {
             );
 
             const newRequest = requestResult.rows[0];
+
+            Logger.setCurrentRequestId(newRequest.id);
 
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
@@ -1118,7 +1230,6 @@ app.post('/requests', async (req, res) => {
 
             await client.query('COMMIT');
 
-            // Логирование
             const itemsList = items.map(i => {
                 const material = materialsMap.get(i.material_id);
                 return `${material.name} (${i.quantity})`;
@@ -1164,117 +1275,7 @@ app.post('/requests', async (req, res) => {
     }
 });
 
-// Получение конкретной заявки
-app.get('/requests/:id', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const requestId = parseInt(req.params.id);
-
-        const requestResult = await pool.query(
-            `SELECT r.*, 
-                    u1.username as created_by_username,
-                    u1.name as created_by_name,
-                    u1.secondname as created_by_secondname,
-                    u2.username as reviewed_by_username
-             FROM material_requests r
-             LEFT JOIN users u1 ON r.created_by = u1.id
-             LEFT JOIN users u2 ON r.reviewed_by = u2.id
-             WHERE r.id = $1`,
-            [requestId]
-        );
-
-        if (requestResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Заявка не найдена' });
-        }
-
-        const request = requestResult.rows[0];
-
-        // Проверка прав доступа
-        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
-        const isCreator = decoded.id === request.created_by;
-        const canView = isAdminOrAccountant || isCreator || request.is_public === true;
-
-        if (!canView) {
-            return res.status(403).json({ error: 'Недостаточно прав для просмотра этой заявки' });
-        }
-
-        const itemsResult = await pool.query(
-            `SELECT ri.*, m.name, m.code, m.unit
-             FROM material_requests_items ri
-             LEFT JOIN materials m ON ri.material_id = m.id
-             WHERE ri.request_id = $1
-             ORDER BY ri.id`,
-            [requestId]
-        );
-
-        res.json({
-            request: request,
-            items: itemsResult.rows
-        });
-
-    } catch (error) {
-        console.error('Ошибка получения заявки:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
-    }
-});
-
-// Создание заявки
-app.get('/requests', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const { status } = req.query;
-        
-        let query = `
-            SELECT r.*, 
-                   u.username as created_by_username,
-                   (SELECT json_agg(json_build_object('id', m.id, 'name', m.name, 'quantity', ri.quantity))
-                    FROM material_requests_items ri
-                    JOIN materials m ON ri.material_id = m.id
-                    WHERE ri.request_id = r.id
-                    LIMIT 3) as items_preview
-            FROM material_requests r
-            LEFT JOIN users u ON r.created_by = u.id
-            WHERE 1=1
-        `;
-        
-        const params = [];
-        let paramIndex = 1;
-        
-        if (status && status !== 'all') {
-            query += ` AND r.status = $${paramIndex}`;
-            params.push(status);
-            paramIndex++;
-        }
-        
-        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
-        if (!isAdminOrAccountant) {
-            query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
-            params.push(decoded.id);
-            paramIndex++;
-        }
-        
-        query += ` ORDER BY r.created_at DESC`;
-        
-        const result = await pool.query(query, params);
-        res.json({ requests: result.rows });
-        
-    } catch (error) {
-        console.error('Ошибка получения заявок:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
-    }
-});
-
-// Подтверждение заявки
+// Подтверждение заявки 
 app.put('/requests/:id/approve', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -1322,6 +1323,8 @@ app.put('/requests/:id/approve', async (req, res) => {
             }
         }
 
+        Logger.setCurrentRequestId(requestId);
+
         const client = await pool.connect();
         
         try {
@@ -1347,7 +1350,6 @@ app.put('/requests/:id/approve', async (req, res) => {
 
             await client.query('COMMIT');
 
-            // Логирование
             const itemsList = items.map(i => `ID:${i.material_id} (${i.quantity})`).join(', ');
             await Logger.requestApproved(decoded.id, decoded.username, request.title, request.request_type, itemsList);
 
@@ -1398,6 +1400,8 @@ app.put('/requests/:id/reject', async (req, res) => {
 
         const request = requestResult.rows[0];
 
+        Logger.setCurrentRequestId(requestId);
+
         await pool.query(
             `UPDATE material_requests 
              SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
@@ -1414,9 +1418,6 @@ app.put('/requests/:id/reject', async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
-
-
-
 
 
 // тест

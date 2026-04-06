@@ -7,8 +7,8 @@ import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-// import CreateRequestDialog from "@/components/CreateRequestDialog";
 import { Badge } from "@/components/ui/badge";
+import CreateRequestDialog from "@/components/CreateRequestDialog";
 
 interface RequestItem {
     id: number;
@@ -204,12 +204,12 @@ export default function Requests() {
                 )}
             </div>
 
-            {/* Диалог создания заявки
+            {/* Диалог создания заявки */}
             <CreateRequestDialog
                 open={showCreateDialog}
                 onOpenChange={setShowCreateDialog}
                 onRequestCreated={fetchRequests}
-            /> */}
+            />
         </div>
     );
 }
