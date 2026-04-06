@@ -75,7 +75,7 @@ export default function CreateBackupDialog({
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
             <AlertDialogTrigger asChild>
-                {triggerButton || <Button>Создать бэкап</Button>}
+                {triggerButton || <Button>Создать</Button>}
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>

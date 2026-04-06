@@ -162,7 +162,7 @@ export default function CreateMaterialDialog({
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
             <AlertDialogTrigger asChild>
-                {triggerButton || <Button>Добавить материал</Button>}
+                {triggerButton || <Button>Добавить</Button>}
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <AlertDialogHeader>

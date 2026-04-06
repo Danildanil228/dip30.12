@@ -374,8 +374,8 @@ export default function Backups() {
 
     return (
         <section className="mx-auto">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Бэкапы базы данных</h1>
+            <div className="flex justify-between items-center mb-6 gap-1">
+                <h1 className="text-2xl font-bold text-wrap">Бэкапы базы данных</h1>
                 {isAdmin && (
                     <div className="flex gap-2">
                         <CreateBackupDialog onBackupCreated={fetchBackups} />

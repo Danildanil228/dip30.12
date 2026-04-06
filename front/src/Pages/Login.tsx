@@ -85,16 +85,16 @@ export default function Login() {
     };
 
     return (
-        <section className="flex justify-center items-center min-h-screen">
+        <section className="flex justify-center items-center min-h-screen container">
             <form onSubmit={handleSubmit} className="text-center">
-                <h1 className="mb-4"> {isFirst ? 'Создание админа' : 'Авторизация в систему'} </h1>
+                <h1 className="mb-4 text-wrap"> {isFirst ? 'Создание админа' : 'Авторизация в систему'} </h1>
                 <div className="grid gap-5">
                     <input
                         type="text"
                         placeholder="Введите ваш логин"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="px-4 py-2 border rounded focus:outline-none focus:ring-1"
+                        className="px-4 py-2 border rounded focus:outline-none focus:ring-1 text-base"
                         disabled={loading}
                         required
                     />
@@ -104,7 +104,7 @@ export default function Login() {
                             placeholder="Введите ваш пароль"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10"
+                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10 text-base"
                             disabled={loading}
                             required
                         />

@@ -76,7 +76,7 @@ export default function CreateCategoryDialog({
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogTrigger asChild>
-        {triggerButton || <Button>Добавить категорию</Button>}
+        {triggerButton || <Button>Добавить</Button>}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
