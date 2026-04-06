@@ -199,33 +199,33 @@ class Logger {
 
     // ===== ЗАЯВКИ =====
 
-    static async requestCreated(userId, username, materialName, requestType, quantity) {
+    static async requestCreated(userId, username, title, requestType, itemsList) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
         await this.log(
             userId,
             'request_created',
             'Создание заявки',
-            `[user:${userId}:${username}] создал заявку на ${typeText} материала "${materialName}" в количестве ${quantity} ед.`
+            `[user:${userId}:${username}] создал заявку "${title}" на ${typeText}: ${itemsList}`
         );
     }
 
-    static async requestApproved(userId, username, materialName, requestType, quantity) {
+    static async requestApproved(userId, username, title, requestType, itemsList) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
         await this.log(
             userId,
             'request_approved',
             'Подтверждение заявки',
-            `[user:${userId}:${username}] подтвердил заявку на ${typeText} материала "${materialName}" в количестве ${quantity} ед.`
+            `[user:${userId}:${username}] подтвердил заявку "${title}" на ${typeText}: ${itemsList}`
         );
     }
 
-    static async requestRejected(userId, username, materialName, requestType, rejectionReason) {
+    static async requestRejected(userId, username, title, requestType, rejectionReason) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
         await this.log(
             userId,
             'request_rejected',
             'Отклонение заявки',
-            `[user:${userId}:${username}] отклонил заявку на ${typeText} материала "${materialName}". Причина: ${rejectionReason}`
+            `[user:${userId}:${username}] отклонил заявку "${title}" на ${typeText}. Причина: ${rejectionReason}`
         );
     }
 

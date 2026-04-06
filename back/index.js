@@ -1023,37 +1023,6 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
 //// ===========ЗАЯВКИ============
 
 // Получение списка заявок
-app.get('/requests', async (req, res) => {
-    try {
-        const { status } = req.query;
-        let query = `
-            SELECT r.*, 
-                   m.name as material_name, 
-                   u1.username as created_by_username,
-                   u2.username as reviewed_by_username
-            FROM material_requests r
-            LEFT JOIN materials m ON r.material_id = m.id
-            LEFT JOIN users u1 ON r.created_by = u1.id
-            LEFT JOIN users u2 ON r.reviewed_by = u2.id
-        `;
-        const params = [];
-
-        if (status && status !== 'all') {
-            query += ` WHERE r.status = $1`;
-            params.push(status);
-        }
-
-        query += ` ORDER BY r.created_at DESC`;
-
-        const result = await pool.query(query, params);
-        res.json({ requests: result.rows });
-    } catch (error) {
-        console.error('Ошибка получения заявок:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
-    }
-});
-
-// Создание заявки
 app.post('/requests', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -1062,82 +1031,131 @@ app.post('/requests', async (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const { material_id, request_type, quantity, notes } = req.body;
+        const { title, request_type, notes, items, is_public } = req.body;
 
-        if (!material_id || !request_type || !quantity) {
-            return res.status(400).json({ error: 'Заполните обязательные поля' });
+        if (!title || !request_type || !items || !items.length) {
+            return res.status(400).json({ error: 'Заполните обязательные поля (название, тип, хотя бы один товар)' });
         }
 
-        if (quantity <= 0) {
-            return res.status(400).json({ error: 'Количество должно быть больше 0' });
+        if (request_type !== 'incoming' && request_type !== 'outgoing') {
+            return res.status(400).json({ error: 'Неверный тип заявки' });
         }
 
-        const materialCheck = await pool.query('SELECT id, name, quantity as current_quantity FROM materials WHERE id = $1', [material_id]);
-        if (materialCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Материал не найден' });
+        for (const item of items) {
+            if (!item.material_id || !item.quantity || item.quantity <= 0) {
+                return res.status(400).json({ error: 'Неверные данные товаров' });
+            }
         }
 
-        const material = materialCheck.rows[0];
+        const materialIds = items.map(item => item.material_id);
+        const materialsResult = await pool.query(
+            'SELECT id, name, quantity FROM materials WHERE id = ANY($1)',
+            [materialIds]
+        );
+        
+        const materialsMap = new Map();
+        materialsResult.rows.forEach(m => materialsMap.set(m.id, m));
 
-        if (request_type === 'outgoing' && material.current_quantity < quantity) {
-            return res.status(400).json({
-                error: `Недостаточно материала. Остаток: ${material.current_quantity}, запрошено: ${quantity}`
-            });
+        for (const item of items) {
+            if (!materialsMap.has(item.material_id)) {
+                return res.status(404).json({ error: `Товар с ID ${item.material_id} не найден` });
+            }
+        }
+
+        if (request_type === 'outgoing') {
+            for (const item of items) {
+                const material = materialsMap.get(item.material_id);
+                if (material.quantity < item.quantity) {
+                    return res.status(400).json({ 
+                        error: `Недостаточно товара "${material.name}". Остаток: ${material.quantity}, запрошено: ${item.quantity}`
+                    });
+                }
+            }
         }
 
         const isAdmin = decoded.role === 'admin';
-        const status = isAdmin ? 'approved' : 'pending';
+        // Админ может сразу подтвердить заявку
+        const isApproved = isAdmin && req.body.is_approved === true;
+        const status = isApproved ? 'approved' : (isAdmin ? 'pending' : 'pending');
+        const publicStatus = isAdmin ? (is_public !== false) : true; // Только админ может сделать заявку приватной
 
-        const result = await pool.query(
-            `INSERT INTO material_requests (material_id, request_type, quantity, status, created_by, reviewed_by, notes, reviewed_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             RETURNING *`,
-            [material_id, request_type, quantity, status, decoded.id, isAdmin ? decoded.id : null, notes || null, isAdmin ? new Date() : null]
-        );
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
 
-        const newRequest = result.rows[0];
-
-        await Logger.requestCreated(decoded.id, decoded.username, material.name, request_type, quantity);
-
-        if (isAdmin) {
-            const newQuantity = request_type === 'incoming'
-                ? material.current_quantity + quantity
-                : material.current_quantity - quantity;
-
-            await pool.query(
-                'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
-                [newQuantity, material_id]
+            const requestResult = await client.query(
+                `INSERT INTO material_requests (title, request_type, status, created_by, notes, is_public, reviewed_by, reviewed_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                 RETURNING *`,
+                [title, request_type, status, decoded.id, notes || null, publicStatus, isApproved ? decoded.id : null, isApproved ? new Date() : null]
             );
 
-            await pool.query(
-                `INSERT INTO material_operations 
-                 (material_id, operation_type, quantity, created_by, notes, request_id)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [material_id, request_type, quantity, decoded.id, notes || null, newRequest.id]
-            );
+            const newRequest = requestResult.rows[0];
 
-            await Logger.requestApproved(decoded.id, decoded.username, material.name, request_type, quantity);
+            for (const item of items) {
+                const material = materialsMap.get(item.material_id);
+                await client.query(
+                    `INSERT INTO material_requests_items (request_id, material_id, quantity, current_quantity_at_request)
+                     VALUES ($1, $2, $3, $4)`,
+                    [newRequest.id, item.material_id, item.quantity, material.quantity]
+                );
+            }
 
-            res.json({
-                message: 'Заявка создана и автоматически подтверждена (администратор)',
-                request: newRequest,
-                autoApproved: true
-            });
-        } else {
-            // Для кладовщика — только уведомления, без автоматического подтверждения
-            await Logger.notifyAccountantsAndAdmins(
-                pool,
-                'request_pending',
-                'Новая заявка',
-                `Кладовщик ${decoded.username} создал заявку на ${request_type === 'incoming' ? 'приход' : 'расход'} материала "${material.name}" в количестве ${quantity} ед.`,
-                decoded.id
-            );
+            if (isApproved) {
+                for (const item of items) {
+                    const material = materialsMap.get(item.material_id);
+                    const newQuantity = request_type === 'incoming' 
+                        ? material.quantity + item.quantity 
+                        : material.quantity - item.quantity;
+                    
+                    await client.query(
+                        'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
+                        [newQuantity, item.material_id]
+                    );
+                }
+            }
 
-            res.json({
-                message: 'Заявка создана и отправлена на подтверждение',
-                request: newRequest,
-                autoApproved: false
-            });
+            await client.query('COMMIT');
+
+            // Логирование
+            const itemsList = items.map(i => {
+                const material = materialsMap.get(i.material_id);
+                return `${material.name} (${i.quantity})`;
+            }).join(', ');
+            
+            await Logger.requestCreated(decoded.id, decoded.username, title, request_type, itemsList);
+
+            if (isApproved) {
+                await Logger.requestApproved(decoded.id, decoded.username, title, request_type, itemsList);
+                res.json({
+                    message: 'Заявка создана и подтверждена',
+                    request: newRequest,
+                    autoApproved: true
+                });
+            } else {
+                if (decoded.role !== 'admin') {
+                    await Logger.notifyAccountantsAndAdmins(
+                        pool,
+                        'request_pending',
+                        'Новая заявка',
+                        `Создана новая заявка "${title}" на ${request_type === 'incoming' ? 'приход' : 'расход'} товаров: ${itemsList}`,
+                        decoded.id
+                    );
+                }
+                
+                res.json({
+                    message: 'Заявка создана',
+                    request: newRequest,
+                    autoApproved: false
+                });
+            }
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
         }
 
     } catch (error) {
@@ -1146,7 +1164,117 @@ app.post('/requests', async (req, res) => {
     }
 });
 
-// Подтверждение заявки (только для pending заявок)
+// Получение конкретной заявки
+app.get('/requests/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const requestId = parseInt(req.params.id);
+
+        const requestResult = await pool.query(
+            `SELECT r.*, 
+                    u1.username as created_by_username,
+                    u1.name as created_by_name,
+                    u1.secondname as created_by_secondname,
+                    u2.username as reviewed_by_username
+             FROM material_requests r
+             LEFT JOIN users u1 ON r.created_by = u1.id
+             LEFT JOIN users u2 ON r.reviewed_by = u2.id
+             WHERE r.id = $1`,
+            [requestId]
+        );
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Заявка не найдена' });
+        }
+
+        const request = requestResult.rows[0];
+
+        // Проверка прав доступа
+        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        const isCreator = decoded.id === request.created_by;
+        const canView = isAdminOrAccountant || isCreator || request.is_public === true;
+
+        if (!canView) {
+            return res.status(403).json({ error: 'Недостаточно прав для просмотра этой заявки' });
+        }
+
+        const itemsResult = await pool.query(
+            `SELECT ri.*, m.name, m.code, m.unit
+             FROM material_requests_items ri
+             LEFT JOIN materials m ON ri.material_id = m.id
+             WHERE ri.request_id = $1
+             ORDER BY ri.id`,
+            [requestId]
+        );
+
+        res.json({
+            request: request,
+            items: itemsResult.rows
+        });
+
+    } catch (error) {
+        console.error('Ошибка получения заявки:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Создание заявки
+app.get('/requests', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { status } = req.query;
+        
+        let query = `
+            SELECT r.*, 
+                   u.username as created_by_username,
+                   (SELECT json_agg(json_build_object('id', m.id, 'name', m.name, 'quantity', ri.quantity))
+                    FROM material_requests_items ri
+                    JOIN materials m ON ri.material_id = m.id
+                    WHERE ri.request_id = r.id
+                    LIMIT 3) as items_preview
+            FROM material_requests r
+            LEFT JOIN users u ON r.created_by = u.id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        let paramIndex = 1;
+        
+        if (status && status !== 'all') {
+            query += ` AND r.status = $${paramIndex}`;
+            params.push(status);
+            paramIndex++;
+        }
+        
+        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        if (!isAdminOrAccountant) {
+            query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
+            params.push(decoded.id);
+            paramIndex++;
+        }
+        
+        query += ` ORDER BY r.created_at DESC`;
+        
+        const result = await pool.query(query, params);
+        res.json({ requests: result.rows });
+        
+    } catch (error) {
+        console.error('Ошибка получения заявок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Подтверждение заявки
 app.put('/requests/:id/approve', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -1156,7 +1284,6 @@ app.put('/requests/:id/approve', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Только admin или accountant могут подтверждать
         if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
@@ -1164,8 +1291,13 @@ app.put('/requests/:id/approve', async (req, res) => {
         const requestId = parseInt(req.params.id);
 
         const requestResult = await pool.query(
-            'SELECT r.*, m.name as material_name, m.quantity as current_quantity FROM material_requests r LEFT JOIN materials m ON r.material_id = m.id WHERE r.id = $1 AND r.status = $2',
-            [requestId, 'pending']
+            `SELECT r.*, 
+                    array_agg(json_build_object('id', ri.id, 'material_id', ri.material_id, 'quantity', ri.quantity, 'current_quantity', ri.current_quantity_at_request)) as items
+             FROM material_requests r
+             LEFT JOIN material_requests_items ri ON r.id = ri.request_id
+             WHERE r.id = $1 AND r.status = 'pending'
+             GROUP BY r.id`,
+            [requestId]
         );
 
         if (requestResult.rows.length === 0) {
@@ -1173,14 +1305,25 @@ app.put('/requests/:id/approve', async (req, res) => {
         }
 
         const request = requestResult.rows[0];
+        const items = request.items || [];
 
-        if (request.request_type === 'outgoing' && request.current_quantity < request.quantity) {
-            return res.status(400).json({
-                error: `Недостаточно материала. Остаток: ${request.current_quantity}, запрошено: ${request.quantity}`
-            });
+        if (request.request_type === 'outgoing') {
+            for (const item of items) {
+                const currentMaterial = await pool.query(
+                    'SELECT quantity FROM materials WHERE id = $1',
+                    [item.material_id]
+                );
+                
+                if (currentMaterial.rows[0].quantity < item.quantity) {
+                    return res.status(400).json({
+                        error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`
+                    });
+                }
+            }
         }
 
         const client = await pool.connect();
+        
         try {
             await client.query('BEGIN');
 
@@ -1191,27 +1334,24 @@ app.put('/requests/:id/approve', async (req, res) => {
                 [decoded.id, requestId]
             );
 
-            const newQuantity = request.request_type === 'incoming'
-                ? request.current_quantity + request.quantity
-                : request.current_quantity - request.quantity;
-
-            await client.query(
-                'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
-                [newQuantity, request.material_id]
-            );
-
-            await client.query(
-                `INSERT INTO material_operations 
-                 (material_id, operation_type, quantity, created_by, notes, request_id)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [request.material_id, request.request_type, request.quantity, decoded.id, request.notes, requestId]
-            );
+            for (const item of items) {
+                const newQuantity = request.request_type === 'incoming'
+                    ? item.current_quantity + item.quantity
+                    : item.current_quantity - item.quantity;
+                
+                await client.query(
+                    'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
+                    [newQuantity, item.material_id]
+                );
+            }
 
             await client.query('COMMIT');
 
-            await Logger.requestApproved(decoded.id, decoded.username, request.material_name, request.request_type, request.quantity);
+            // Логирование
+            const itemsList = items.map(i => `ID:${i.material_id} (${i.quantity})`).join(', ');
+            await Logger.requestApproved(decoded.id, decoded.username, request.title, request.request_type, itemsList);
 
-            res.json({ message: 'Заявка подтверждена, операция выполнена' });
+            res.json({ message: 'Заявка подтверждена' });
 
         } catch (err) {
             await client.query('ROLLBACK');
@@ -1226,7 +1366,7 @@ app.put('/requests/:id/approve', async (req, res) => {
     }
 });
 
-// Отклонение заявки
+// Отклонение заявки 
 app.put('/requests/:id/reject', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -1236,7 +1376,6 @@ app.put('/requests/:id/reject', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Только admin или accountant могут отклонять
         if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
@@ -1249,7 +1388,7 @@ app.put('/requests/:id/reject', async (req, res) => {
         }
 
         const requestResult = await pool.query(
-            'SELECT r.*, m.name as material_name FROM material_requests r LEFT JOIN materials m ON r.material_id = m.id WHERE r.id = $1 AND r.status = $2',
+            'SELECT title, request_type FROM material_requests WHERE id = $1 AND status = $2',
             [requestId, 'pending']
         );
 
@@ -1266,7 +1405,7 @@ app.put('/requests/:id/reject', async (req, res) => {
             [decoded.id, rejection_reason, requestId]
         );
 
-        await Logger.requestRejected(decoded.id, decoded.username, request.material_name, request.request_type, rejection_reason);
+        await Logger.requestRejected(decoded.id, decoded.username, request.title, request.request_type, rejection_reason);
 
         res.json({ message: 'Заявка отклонена' });
 

@@ -9,9 +9,11 @@ export default function DesktopNavigation() {
     const navItems = [
         { path: '/main', label: 'Главная', adminOnly: false },
         { path: '/materials', label: 'Материалы', adminOnly: false, hasDrop: true },
+        { path: '/requests', label: 'Заявки', adminOnly: false },
         { path: '/allusers', label: 'Все пользователи', adminOnly: true },
         { path: '/profile', label: 'Профиль', adminOnly: false },
         { path: '/notifications', label: 'Журнал', adminOnly: true },
+        
     ];
     const materialItem = [
         { path: '/materials', label: 'Материалы', adminOnly: false },

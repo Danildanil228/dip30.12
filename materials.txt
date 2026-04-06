@@ -66,5 +66,18 @@ create table material_requests (
 	notes text,
 	rejection_reason text,
 	created_at timestamp default current_timestamp,
-	reviewed_at timestamp
+	reviewed_at timestamp,
+
+
+	//добавлено
+	is_public BOOLEAN DEFAULT TRUE,
+	title VARCHAR(255)
 )
+CREATE TABLE material_requests_items (
+    id SERIAL PRIMARY KEY,
+    request_id INTEGER NOT NULL REFERENCES material_requests(id) ON DELETE CASCADE,
+    material_id INTEGER NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    current_quantity_at_request INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

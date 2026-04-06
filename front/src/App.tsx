@@ -13,6 +13,7 @@ import Categories from './Pages/Categories';
 import Materials from './Pages/Materials';
 import Backups from './Pages/Backups';
 import { ScrollToTop } from './components/ScrollToTop';
+import Requests from './Pages/Requests';
 
 function App() {
   return (
@@ -29,6 +30,12 @@ function App() {
             <Route path="/main" element={
               <ProtectedRoute>
                 <Main />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/requests" element={
+              <ProtectedRoute>
+                <Requests />
               </ProtectedRoute>
             } />
 

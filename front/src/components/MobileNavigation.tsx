@@ -22,9 +22,9 @@ export default function MobileNavigation() {
       hasDrop: true
     },
     {
-      path: '/profile',
-      label: 'Профиль',
-      icon: '/profile.png',
+      path: '/requests',
+      label: 'Заявки',
+      icon: '/request.png',
       adminOnly: false
     },
     {

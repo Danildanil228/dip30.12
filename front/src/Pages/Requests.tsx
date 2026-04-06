@@ -1,0 +1,215 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { CalendarIcon, Search, Filter, Plus } from "lucide-react";
+import axios from "axios";
+import { API_BASE_URL } from "@/components/api";
+import { useUser } from "@/hooks/useUser";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale/ru";
+// import CreateRequestDialog from "@/components/CreateRequestDialog";
+import { Badge } from "@/components/ui/badge";
+
+interface RequestItem {
+    id: number;
+    name: string;
+    quantity: number;
+}
+
+interface Request {
+    id: number;
+    title: string;
+    request_type: 'incoming' | 'outgoing';
+    status: 'pending' | 'approved' | 'rejected' | 'draft';
+    created_by: number;
+    created_by_username: string;
+    created_at: string;
+    is_public: boolean;
+    items_preview: RequestItem[];
+    rejection_reason?: string;
+}
+
+export default function Requests() {
+    const { user, isAdmin } = useUser();
+    const [requests, setRequests] = useState<Request[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+    const fetchRequests = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem("token");
+            const response = await axios.get(`${API_BASE_URL}/requests`, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { status: statusFilter !== "all" ? statusFilter : undefined }
+            });
+            setRequests(response.data.requests);
+        } catch (error) {
+            console.error("Ошибка загрузки заявок:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, [statusFilter]);
+
+    const filteredRequests = requests.filter(request => 
+        request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'pending': return 'bg-yellow-500';
+            case 'approved': return 'bg-green-500';
+            case 'rejected': return 'bg-red-500';
+            case 'draft': return 'bg-gray-500';
+            default: return 'bg-gray-500';
+        }
+    };
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'pending': return 'На рассмотрении';
+            case 'approved': return 'Подтверждена';
+            case 'rejected': return 'Отклонена';
+            case 'draft': return 'Черновик';
+            default: return status;
+        }
+    };
+
+    const getTypeText = (type: string) => {
+        return type === 'incoming' ? 'Приход' : 'Расход';
+    };
+
+    const getTypeColor = (type: string) => {
+        return type === 'incoming' ? 'text-green-600' : 'text-orange-600';
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">Заявки</h1>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Создать заявку
+                </Button>
+            </div>
+
+            {/* Фильтры и поиск */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                        placeholder="Поиск по названию..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                <div className="flex-wrap flex gap-2 ">
+                    <Button
+                        variant={statusFilter === "all" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("all")}
+                    >
+                        Все
+                    </Button>
+                    <Button
+                        variant={statusFilter === "pending" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("pending")}
+                        className="bg-yellow-500 hover:bg-yellow-600"
+                    >
+                        На рассмотрении
+                    </Button>
+                    <Button
+                        variant={statusFilter === "approved" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("approved")}
+                        className="bg-green-500 hover:bg-green-600"
+                    >
+                        Подтверждены
+                    </Button>
+                    <Button
+                        variant={statusFilter === "rejected" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("rejected")}
+                        className="bg-red-500 hover:bg-red-600"
+                    >
+                        Отклонены
+                    </Button>
+                </div>
+            </div>
+
+            {/* Список заявок */}
+            <div className="grid gap-4">
+                {filteredRequests.length === 0 ? (
+                    <div className="text-center py-10 text-gray-500">
+                        Заявок не найдено
+                    </div>
+                ) : (
+                    filteredRequests.map((request) => (
+                        <div
+                            key={request.id}
+                            className="border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                            onClick={() => window.location.href = `/requests/${request.id}`}
+                        >
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <h3 className="text-lg font-semibold">{request.title}</h3>
+                                        <Badge className={getStatusColor(request.status)}>
+                                            {getStatusText(request.status)}
+                                        </Badge>
+                                        <Badge variant="outline" className={getTypeColor(request.request_type)}>
+                                            {getTypeText(request.request_type)}
+                                        </Badge>
+                                        {!request.is_public && isAdmin && (
+                                            <Badge variant="secondary">Приватная</Badge>
+                                        )}
+                                    </div>
+                                    <div className="text-sm text-gray-500 mb-2">
+                                        Создал: {request.created_by_username} • {format(new Date(request.created_at), "dd MMM yyyy, HH:mm", { locale: ru })}
+                                    </div>
+                                    {request.items_preview && request.items_preview.length > 0 && (
+                                        <div className="text-sm">
+                                            <span className="font-medium">Товары:</span>{" "}
+                                            {request.items_preview.map((item, idx) => (
+                                                <span key={idx}>
+                                                    {item.name} ({item.quantity})
+                                                    {idx < request.items_preview.length - 1 && ", "}
+                                                </span>
+                                            ))}
+                                            {request.items_preview.length >= 3 && " ..."}
+                                        </div>
+                                    )}
+                                    {request.rejection_reason && request.status === 'rejected' && (
+                                        <div className="text-sm text-red-600 mt-2">
+                                            Причина отклонения: {request.rejection_reason}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Диалог создания заявки
+            <CreateRequestDialog
+                open={showCreateDialog}
+                onOpenChange={setShowCreateDialog}
+                onRequestCreated={fetchRequests}
+            /> */}
+        </div>
+    );
+}
