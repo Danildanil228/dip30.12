@@ -94,7 +94,7 @@ export default function Login() {
                         placeholder="Введите ваш логин"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="px-4 py-2 border rounded focus:outline-none focus:ring-1 text-base"
+                        className="px-4 py-2 border rounded focus:outline-none focus:ring-1 sm:text-xl text-base"
                         disabled={loading}
                         required
                     />
@@ -104,14 +104,14 @@ export default function Login() {
                             placeholder="Введите ваш пароль"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10 text-base"
+                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10 sm:text-xl text-base"
                             disabled={loading}
                             required
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2"
                             tabIndex={-1}
                         >
                             {showPassword ? (
@@ -135,7 +135,7 @@ export default function Login() {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2"
                                 tabIndex={-1}
                             >
                                 {showPassword ? (
