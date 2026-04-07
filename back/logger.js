@@ -26,16 +26,18 @@ class Logger {
         }
     }
 
-    //  вход в систему
+    // Вход в систему
     static async login(userId, username) {
         await this.log(userId, 'login', 'Вход в систему',
             `[user:${userId}:${username}] вошел в систему`);
     }
+    
     static async logout(userId, username) {
         await this.log(userId, 'logout', 'Выход из системы',
             `[user:${userId}:${username}] вышел из системы`);
     }
-    //  создания пользователя
+    
+    // Создание пользователя
     static async userCreated(adminId, adminUsername, createdUsername, createdUserId) {
         await this.log(
             adminId,
@@ -44,7 +46,8 @@ class Logger {
             `[user:${adminId}:${adminUsername}] создал пользователя [user:${createdUserId}:${createdUsername}]`
         );
     }
-    //delte
+    
+    // Удаление пользователя
     static async userDeleted(adminId, adminUsername, deletedUsername, deletedUserId) {
         await this.log(
             adminId,
@@ -54,8 +57,7 @@ class Logger {
         );
     }
 
-    //PROFILE
-
+    // Профиль
     static async profileUpdated(userId, username, changedFields) {
         const changesText = Object.entries(changedFields)
             .map(([field, values]) => `"${field}": "${values.old}" → "${values.new}"`)
@@ -100,17 +102,7 @@ class Logger {
         );
     }
 
-    static async adminPasswordChanged(adminId, adminUsername, targetUserId, targetUsername) {
-        await this.log(
-            adminId,
-            'admin_password_changed',
-            'Админ сменил пароль пользователя',
-            `Администратор ${adminUsername} сменил пароль пользователю ${targetUsername}`
-        );
-    }
-
-    ///// BACKUPS БЭКАПЫ \\\\\
-
+    // Бэкапы
     static async backupCreated(userId, username, backupName) {
         await this.log(
             userId,
@@ -138,8 +130,7 @@ class Logger {
         );
     }
 
-    ///// MATERIALS МАТЕРИАЛЫ \\\\\
-
+    // Материалы
     static async materialCreated(userId, username, materialName) {
         await this.log(
             userId,
@@ -167,6 +158,7 @@ class Logger {
         );
     }
 
+    // Категории
     static async categoryCreated(userId, username, categoryName) {
         await this.log(
             userId,
@@ -194,8 +186,7 @@ class Logger {
         );
     }
 
-    // ===== ЗАЯВКИ =====
-
+    // Заявки
     static async requestCreated(userId, username, title, requestType, itemsList) {
         const typeText = requestType === 'incoming' ? 'приход' : 'расход';
         const requestLink = this.currentRequestId ? `[request:${this.currentRequestId}]` : '';
@@ -203,7 +194,7 @@ class Logger {
             userId,
             'request_created',
             'Создание заявки',
-            `[user:${userId}:${username}] создал заявку ${requestLink} на ${typeText}: ${itemsList}`
+            `[user:${userId}:${username}] создал заявку ${requestLink} "${title}" на ${typeText}`
         );
     }
 
@@ -214,7 +205,7 @@ class Logger {
             userId,
             'request_approved',
             'Подтверждение заявки',
-            `[user:${userId}:${username}] подтвердил заявку ${requestLink} на ${typeText}: ${itemsList}`
+            `[user:${userId}:${username}] подтвердил заявку ${requestLink} "${title}" на ${typeText}`
         );
     }
 
@@ -225,27 +216,8 @@ class Logger {
             userId,
             'request_rejected',
             'Отклонение заявки',
-            `[user:${userId}:${username}] отклонил заявку ${requestLink} на ${typeText}. Причина: ${rejectionReason}`
+            `[user:${userId}:${username}] отклонил заявку ${requestLink} "${title}" на ${typeText}. Причина: ${rejectionReason}`
         );
-    }
-
-    static async notifyAccountantsAndAdmins(pool, type, title, message, requesterId) {
-        try {
-            const usersResult = await pool.query(
-                "SELECT id FROM users WHERE role IN ('admin', 'accountant') AND id != $1",
-                [requesterId]
-            );
-
-            for (const user of usersResult.rows) {
-                await pool.query(
-                    `INSERT INTO notifications (user_id, type, title, message) 
-                     VALUES ($1, $2, $3, $4)`,
-                    [user.id, type, title, message]
-                );
-            }
-        } catch (error) {
-            console.error('Ошибка отправки уведомлений:', error);
-        }
     }
 }
 

@@ -97,42 +97,48 @@ export default function Notifications({ onVisited }: LogsProps) {
     }
   };
 
-  const parseMessageWithLinks = (message: string) => {
-    const parts = message.split(/(\[user:\d+:\w+\])/g);
-
+const parseMessageWithLinks = (message: string) => {
+    // Разбиваем сообщение на части, сохраняя разделители
+    const parts = message.split(/(\[user:\d+:\w+\])|(\[request:\d+\])/g);
+    
     return parts.map((part, index) => {
-      const match = part.match(/\[user:(\d+):(\w+)\]/);
-      if (match) {
-        const userId = parseInt(match[1]);
-        const username = match[2];
-
-        return (
-          <Link
-            key={index}
-            to={`/profile/${userId}`}
-            className="text-blue-500 hover:underline mx-1"
-          >
-            {username}
-          </Link>
-        );
-      }
-      // Ссылка на заявку
-      const requestMatch = part.match(/\[request:(\d+)\]/);
-      if (requestMatch) {
-        const requestId = requestMatch[1];
-        return (
-          <Link
-            key={index}
-            to={`/requests/${requestId}`}
-            className="text-green-500 hover:underline mx-1"
-          >
-            заявка #{requestId}
-          </Link>
-        );
-      }
-      return part;
+        if (!part) return null;
+        
+        // Ссылка на пользователя
+        const userMatch = part.match(/\[user:(\d+):(\w+)\]/);
+        if (userMatch) {
+            const userId = parseInt(userMatch[1]);
+            const username = userMatch[2];
+            return (
+                <Link
+                    key={index}
+                    to={`/profile/${userId}`}
+                    className="text-blue-500 hover:underline mx-1"
+                >
+                    {username}
+                </Link>
+            );
+        }
+        
+        // Ссылка на заявку
+        const requestMatch = part.match(/\[request:(\d+)\]/);
+        if (requestMatch) {
+            const requestId = requestMatch[1];
+            return (
+                <Link
+                    key={index}
+                    to={`/requests/${requestId}`}
+                    className="text-green-500 hover:underline mx-1 font-semibold"
+                >
+                    заявка #{requestId}
+                </Link>
+            );
+        }
+        
+        // Обычный текст
+        return <span key={index}>{part}</span>;
     });
-  };
+};
 
   if (loading) {
     return <section className="mx-auto">

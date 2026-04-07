@@ -1133,6 +1133,7 @@ app.get('/requests/:id', async (req, res) => {
     }
 });
 
+
 // Создание заявки
 app.post('/requests', async (req, res) => {
     try {
@@ -1144,6 +1145,7 @@ app.post('/requests', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const { title, request_type, notes, items, is_public } = req.body;
 
+        // Валидация
         if (!title || !request_type || !items || !items.length) {
             return res.status(400).json({ error: 'Заполните обязательные поля (название, тип, хотя бы один товар)' });
         }
@@ -1152,12 +1154,14 @@ app.post('/requests', async (req, res) => {
             return res.status(400).json({ error: 'Неверный тип заявки' });
         }
 
+        // Проверяем все товары
         for (const item of items) {
             if (!item.material_id || !item.quantity || item.quantity <= 0) {
                 return res.status(400).json({ error: 'Неверные данные товаров' });
             }
         }
 
+        // Получаем информацию о товарах
         const materialIds = items.map(item => item.material_id);
         const materialsResult = await pool.query(
             'SELECT id, name, quantity FROM materials WHERE id = ANY($1)',
@@ -1167,12 +1171,14 @@ app.post('/requests', async (req, res) => {
         const materialsMap = new Map();
         materialsResult.rows.forEach(m => materialsMap.set(m.id, m));
 
+        // Проверяем, что все товары существуют
         for (const item of items) {
             if (!materialsMap.has(item.material_id)) {
                 return res.status(404).json({ error: `Товар с ID ${item.material_id} не найден` });
             }
         }
 
+        // Для расходных заявок проверяем достаточно ли товаров
         if (request_type === 'outgoing') {
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
@@ -1185,8 +1191,10 @@ app.post('/requests', async (req, res) => {
         }
 
         const isAdmin = decoded.role === 'admin';
+        // Админ может сразу подтвердить заявку
         const isApproved = isAdmin && req.body.is_approved === true;
         const status = isApproved ? 'approved' : 'pending';
+        // Только админ может сделать заявку приватной
         const publicStatus = isAdmin ? (is_public !== false) : true;
 
         const client = await pool.connect();
@@ -1194,6 +1202,7 @@ app.post('/requests', async (req, res) => {
         try {
             await client.query('BEGIN');
 
+            // Создаем заявку
             const requestResult = await client.query(
                 `INSERT INTO material_requests (title, request_type, status, created_by, notes, is_public, reviewed_by, reviewed_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -1203,8 +1212,10 @@ app.post('/requests', async (req, res) => {
 
             const newRequest = requestResult.rows[0];
 
+            // Устанавливаем ID заявки для логирования
             Logger.setCurrentRequestId(newRequest.id);
 
+            // Добавляем товары в заявку
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
                 await client.query(
@@ -1214,6 +1225,7 @@ app.post('/requests', async (req, res) => {
                 );
             }
 
+            // Если заявка сразу подтверждена админом, обновляем количество товаров
             if (isApproved) {
                 for (const item of items) {
                     const material = materialsMap.get(item.material_id);
@@ -1230,14 +1242,17 @@ app.post('/requests', async (req, res) => {
 
             await client.query('COMMIT');
 
+            // Формируем список товаров для лога
             const itemsList = items.map(i => {
                 const material = materialsMap.get(i.material_id);
                 return `${material.name} (${i.quantity})`;
             }).join(', ');
             
+            // Логируем создание заявки
             await Logger.requestCreated(decoded.id, decoded.username, title, request_type, itemsList);
 
             if (isApproved) {
+                // Логируем автоматическое подтверждение админом
                 await Logger.requestApproved(decoded.id, decoded.username, title, request_type, itemsList);
                 res.json({
                     message: 'Заявка создана и подтверждена',
@@ -1245,16 +1260,6 @@ app.post('/requests', async (req, res) => {
                     autoApproved: true
                 });
             } else {
-                if (decoded.role !== 'admin') {
-                    await Logger.notifyAccountantsAndAdmins(
-                        pool,
-                        'request_pending',
-                        'Новая заявка',
-                        `Создана новая заявка "${title}" на ${request_type === 'incoming' ? 'приход' : 'расход'} товаров: ${itemsList}`,
-                        decoded.id
-                    );
-                }
-                
                 res.json({
                     message: 'Заявка создана',
                     request: newRequest,
