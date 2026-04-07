@@ -1057,8 +1057,8 @@ app.get('/requests', async (req, res) => {
             paramIndex++;
         }
         
-        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
-        if (!isAdminOrAccountant) {
+        const isAdmin = decoded.role === 'admin';
+        if (!isAdmin) {
             query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
             params.push(decoded.id);
             paramIndex++;
