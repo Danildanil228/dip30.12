@@ -85,7 +85,7 @@ export default function Login() {
     };
 
     return (
-        <section className="flex justify-center items-center min-h-screen container">
+        <section className="flex justify-center items-center sm:h-screen h-140">
             <form onSubmit={handleSubmit} className="text-center">
                 <h1 className="mb-4 text-wrap"> {isFirst ? 'Создание админа' : 'Авторизация в систему'} </h1>
                 <div className="grid gap-5">

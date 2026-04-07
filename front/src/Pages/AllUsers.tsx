@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import AddUserDialog from "@/components/Dialog/AddUserDialog";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface User {
     id: number;
@@ -313,6 +314,7 @@ export default function AllUsers() {
 
     return (
         <section className="mx-auto">
+            <ScrollToTop/>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Все пользователи</h1>
                 <AddUserDialog onUserCreated={fetchUsers} />

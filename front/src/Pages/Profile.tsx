@@ -11,6 +11,7 @@ import { API_BASE_URL } from "@/components/api";
 import axios from "axios";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface UserProfile {
     id: number;
@@ -230,6 +231,7 @@ export default function Profile() {
 
     return (
         <section className="grid gap-3">
+            <ScrollToTop/>
             <div className="flex flex-wrap justify-between items-center">
                 <h1>{isOwnProfile ? 'Ваш профиль' : `Профиль: ${user.name} ${user.secondname}`}</h1>
                 {!isOwnProfile && (

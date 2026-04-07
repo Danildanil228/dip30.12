@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Log {
   id: number;
@@ -181,6 +182,7 @@ const parseMessageWithLinks = (message: string) => {
 
   return (
     <div className="lg:my-0 my-10">
+      <ScrollToTop/>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl mb-4">
           Журнал действий {logs.length !== filteredLogs.length && `(${filteredLogs.length}/${logs.length})`}

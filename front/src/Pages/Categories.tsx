@@ -13,6 +13,7 @@ import { useUser } from "@/hooks/useUser";
 import ExportButton from "@/components/ExportButton";
 import EditCategoryDialog from "@/components/Dialog/EditCategoryDialog";
 import CreateCategoryDialog from "@/components/Dialog/CreateCategoryDialog";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Category {
     id: number;
@@ -344,6 +345,7 @@ export default function Categories() {
 
     return (
         <section className="mx-auto">
+            <ScrollToTop/>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Категории материалов</h1>
                 {isAdmin && (

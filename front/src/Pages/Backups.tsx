@@ -12,6 +12,7 @@ import { useUser } from "@/hooks/useUser";
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import CreateBackupDialog from "@/components/Dialog/CreateBackupDialog";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Backup {
     id: number;
@@ -374,6 +375,7 @@ export default function Backups() {
 
     return (
         <section className="mx-auto">
+            <ScrollToTop/>
             <div className="flex justify-between items-center mb-6 gap-1">
                 <h1 className="text-2xl font-bold text-wrap">Бэкапы базы данных</h1>
                 {isAdmin && (

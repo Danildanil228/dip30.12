@@ -13,6 +13,7 @@ import { useUser } from "@/hooks/useUser";
 import ExportButton from "@/components/ExportButton";
 import EditMaterialDialog from "@/components/Dialog/EditMaterialDialog";
 import CreateMaterialDialog from "@/components/Dialog/CreateMaterialDialog";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Material {
     id: number;
@@ -375,6 +376,7 @@ export default function Materials() {
 
     return (
         <section className="mx-auto">
+            <ScrollToTop/>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Материалы</h1>
                 {isAdmin && (
