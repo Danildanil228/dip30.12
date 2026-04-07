@@ -3,13 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Plus, Trash2, AlertCircle, ChevronLeft, ChevronRight, Package, Minus, X } from "lucide-react";
+import { Search, Plus, Trash2, AlertCircle, ChevronLeft, ChevronRight} from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollToTop } from "./ScrollToTop";
 
 interface Material {
     id: number;

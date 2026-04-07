@@ -4,9 +4,9 @@ import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, 
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
 import { Loader2 } from "lucide-react";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
 
 interface CreateBackupDialogProps {
     onBackupCreated?: () => void;

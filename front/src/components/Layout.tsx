@@ -1,6 +1,6 @@
 import React from 'react';
-import DesktopNavigation from './DesktopNavigation';
-import MobileNavigation from './MobileNavigation';
+import DesktopNavigation from './Navigation/DesktopNavigation';
+import MobileNavigation from './Navigation/MobileNavigation';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 

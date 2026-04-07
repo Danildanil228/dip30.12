@@ -9,8 +9,8 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
-import AddUserDialog from "@/components/AddUserDialog";
 import ExportButton from "@/components/ExportButton";
+import AddUserDialog from "@/components/Dialog/AddUserDialog";
 
 interface User {
     id: number;

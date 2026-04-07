@@ -10,9 +10,9 @@ import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
-import CreateMaterialDialog from "@/components/CreateMaterialDialog";
-import EditMaterialDialog from "@/components/EditMaterialDialog";
 import ExportButton from "@/components/ExportButton";
+import EditMaterialDialog from "@/components/Dialog/EditMaterialDialog";
+import CreateMaterialDialog from "@/components/Dialog/CreateMaterialDialog";
 
 interface Material {
     id: number;

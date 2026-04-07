@@ -10,9 +10,9 @@ import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
-import CreateCategoryDialog from "@/components/CreateCategoryDialog";
-import EditCategoryDialog from "@/components/EditCategoryDialog";
 import ExportButton from "@/components/ExportButton";
+import EditCategoryDialog from "@/components/Dialog/EditCategoryDialog";
+import CreateCategoryDialog from "@/components/Dialog/CreateCategoryDialog";
 
 interface Category {
     id: number;

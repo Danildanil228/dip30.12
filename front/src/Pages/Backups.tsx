@@ -9,9 +9,9 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
-import CreateBackupDialog from "@/components/CreateBackupDialog";
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
+import CreateBackupDialog from "@/components/Dialog/CreateBackupDialog";
 
 interface Backup {
     id: number;
