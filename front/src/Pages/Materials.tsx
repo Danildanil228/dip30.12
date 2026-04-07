@@ -40,10 +40,7 @@ export default function Materials() {
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = useState({});
-    const [pagination, setPagination] = useState({
-        pageIndex: 0,
-        pageSize: 10
-    });
+    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [loading, setLoading] = useState(true);
 
     const handleToggleShowAll = () => {
@@ -162,12 +159,18 @@ export default function Materials() {
                 }
 
                 return (
-                    <Link
-                        to={`/profile/${createdById}`}
-                        className="text-blue-500"
-                    >
-                        {username}
-                    </Link>
+                    <>
+                        {isAdmin ? (
+                            <Link
+                                to={`/profile/${createdById}`}
+                                className="underline"
+                            >
+                                {username}
+                            </Link>
+                        ) : (
+                            <p>{username}</p>
+                        )}
+                    </>
                 );
             }
         },
@@ -219,12 +222,19 @@ export default function Materials() {
                         }
 
                         return (
-                            <Link
-                                to={`/profile/${userId}`}
-                                className="text-blue-500 hover:underline"
-                            >
-                                {username}
-                            </Link>
+                            <>
+                                {isAdmin ? (
+                                    <Link
+                                        to={`/profile/${userId}`}
+                                        className="underline"
+                                    >
+                                        {username}
+                                    </Link>
+                                ) : (
+                                    <p>{username}</p>
+                                )}
+
+                            </>
                         );
                     }
                 }
@@ -376,7 +386,7 @@ export default function Materials() {
 
     return (
         <section className="mx-auto">
-            <ScrollToTop/>
+            <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Материалы</h1>
                 {isAdmin && (
@@ -395,7 +405,7 @@ export default function Materials() {
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm">
                                 Выбрано: {selectedCount}
                             </span>
                             {isAdmin && (
@@ -483,7 +493,7 @@ export default function Materials() {
                     </Table>
                 </div>
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm">
                         Материалов: {table.getFilteredRowModel().rows.length}
                     </div>
                     <div className="flex items-center space-x-2">
