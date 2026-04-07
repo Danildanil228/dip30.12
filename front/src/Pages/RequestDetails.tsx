@@ -171,7 +171,7 @@ export default function RequestDetails() {
     }
 
     return (
-        <div className="container mx-auto p-4 max-w-5xl">
+        <div className="">
             {/* Кнопка назад */}
             <Button
                 variant="ghost"
