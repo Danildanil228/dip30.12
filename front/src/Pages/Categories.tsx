@@ -128,12 +128,14 @@ export default function Categories() {
                 }
 
                 return (
-                    <Link
-                        to={`/profile/${createdById}`}
-                        className="text-blue-500"
-                    >
-                        {username}
-                    </Link>
+                    <>
+                        {isAdmin ? (<Link
+                            to={`/profile/${createdById}`}
+                            className="underline"
+                        >
+                            {username}
+                        </Link>) : (<p>{username}</p>)}
+                    </>
                 );
             }
         },
@@ -185,12 +187,15 @@ export default function Categories() {
                         }
 
                         return (
-                            <Link
+                            <>
+                            {isAdmin ? (<Link
                                 to={`/profile/${userId}`}
-                                className="text-blue-500 hover:underline"
+                                className="underline"
                             >
                                 {username}
-                            </Link>
+                            </Link>):(<p>{username}</p>)}
+                            </>
+                            
                         );
                     }
                 }
@@ -345,7 +350,7 @@ export default function Categories() {
 
     return (
         <section className="mx-auto">
-            <ScrollToTop/>
+            <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Категории материалов</h1>
                 {isAdmin && (
@@ -364,7 +369,7 @@ export default function Categories() {
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm">
                                 Выбрано: {selectedCount}
                             </span>
                             {isAdmin && (
@@ -453,7 +458,7 @@ export default function Categories() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm">
                         Категорий: {table.getFilteredRowModel().rows.length}
                     </div>
                     <div className="flex items-center space-x-2">
