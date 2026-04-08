@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, CheckCircle, XCircle, Package, User, Calendar, FileText, Eye } from "lucide-react";
@@ -52,9 +52,9 @@ export default function RequestDetails() {
     const [rejectionReason, setRejectionReason] = useState("");
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [processing, setProcessing] = useState(false);
-
     const isAccountant = user?.role === 'accountant';
     const canApprove = (isAdmin || isAccountant) && request?.status === 'pending';
+    const [notesExpanded, setNotesExpanded] = useState(false);
 
     useEffect(() => {
         fetchRequestDetails();
@@ -90,7 +90,6 @@ export default function RequestDetails() {
             await axios.put(`${API_BASE_URL}/requests/${id}/approve`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            alert("Заявка подтверждена");
             fetchRequestDetails();
         } catch (error: any) {
             console.error("Ошибка подтверждения:", error);
@@ -129,11 +128,11 @@ export default function RequestDetails() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'pending':
-                return <Badge className="bg-yellow-500">На рассмотрении</Badge>;
+                return <Badge>На рассмотрении</Badge>;
             case 'approved':
-                return <Badge className="bg-green-500">Подтверждена</Badge>;
+                return <Badge>Подтверждена</Badge>;
             case 'rejected':
-                return <Badge className="bg-red-500">Отклонена</Badge>;
+                return <Badge>Отклонена</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
@@ -142,9 +141,9 @@ export default function RequestDetails() {
     const getTypeBadge = (type: string) => {
         switch (type) {
             case 'incoming':
-                return <Badge variant="outline" className="text-green-600 border-green-600">Приход</Badge>;
+                return <Badge variant="outline">Приход</Badge>;
             case 'outgoing':
-                return <Badge variant="outline" className="text-orange-600 border-orange-600">Расход</Badge>;
+                return <Badge variant="outline">Расход</Badge>;
             default:
                 return <Badge variant="outline">{type}</Badge>;
         }
@@ -172,7 +171,6 @@ export default function RequestDetails() {
 
     return (
         <div className="">
-            {/* Кнопка назад */}
             <Button
                 variant="ghost"
                 onClick={() => navigate("/requests")}
@@ -182,7 +180,6 @@ export default function RequestDetails() {
                 Назад к заявкам
             </Button>
 
-            {/* Основная информация */}
             <Card className="mb-6">
                 <CardHeader>
                     <div className="flex flex-wrap justify-between items-start gap-4">
@@ -196,26 +193,7 @@ export default function RequestDetails() {
                                 )}
                             </div>
                         </div>
-                        {canApprove && (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={handleApprove}
-                                    disabled={processing}
-                                    className="bg-green-500 hover:bg-green-600"
-                                >
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Подтвердить
-                                </Button>
-                                <Button
-                                    onClick={() => setShowRejectDialog(true)}
-                                    disabled={processing}
-                                    variant="destructive"
-                                >
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Отклонить
-                                </Button>
-                            </div>
-                        )}
+
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -224,7 +202,7 @@ export default function RequestDetails() {
                             <User className="h-5 w-5 text-gray-400 mt-0.5" />
                             <div>
                                 <div className="text-sm text-gray-500">Создал</div>
-                                <div>
+                                <div className="text-base">
                                     {request.created_by_name} {request.created_by_secondname} ({request.created_by_username})
                                 </div>
                             </div>
@@ -233,7 +211,7 @@ export default function RequestDetails() {
                             <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
                             <div>
                                 <div className="text-sm text-gray-500">Дата создания</div>
-                                <div>{format(new Date(request.created_at), "dd MMMM yyyy, HH:mm", { locale: ru })}</div>
+                                <div className="text-base">{format(new Date(request.created_at), "dd MMMM yyyy, HH:mm", { locale: ru })}</div>
                             </div>
                         </div>
                         {request.reviewed_by_username && (
@@ -241,7 +219,7 @@ export default function RequestDetails() {
                                 <User className="h-5 w-5 text-gray-400 mt-0.5" />
                                 <div>
                                     <div className="text-sm text-gray-500">Рассмотрел</div>
-                                    <div>{request.reviewed_by_username}</div>
+                                    <div className="text-base">{request.reviewed_by_username}</div>
                                 </div>
                             </div>
                         )}
@@ -250,19 +228,32 @@ export default function RequestDetails() {
                                 <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
                                 <div>
                                     <div className="text-sm text-gray-500">Дата рассмотрения</div>
-                                    <div>{format(new Date(request.reviewed_at), "dd MMMM yyyy, HH:mm", { locale: ru })}</div>
+                                    <div className="text-base">{format(new Date(request.reviewed_at), "dd MMMM yyyy, HH:mm", { locale: ru })}</div>
                                 </div>
                             </div>
                         )}
                     </div>
-                    
+
                     {request.notes && (
                         <div className="mt-4 flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
-                            <div>
+                            <FileText className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
                                 <div className="text-sm text-gray-500">Примечания</div>
-                                <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                                    {request.notes}
+                                <div className="mt-1">
+                                    <div
+                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
+                                            }`}
+                                    >
+                                        {request.notes}
+                                    </div>
+                                    {request.notes.length > 100 && (
+                                        <button
+                                            onClick={() => setNotesExpanded(!notesExpanded)}
+                                            className="text-sm mt-1 underline"
+                                        >
+                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -270,10 +261,10 @@ export default function RequestDetails() {
 
                     {request.rejection_reason && (
                         <div className="mt-4 flex items-start gap-2">
-                            <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                            <XCircle className="h-5 w-5 mt-0.5 text-gray-400" />
                             <div>
                                 <div className="text-sm text-gray-500">Причина отклонения</div>
-                                <div className="mt-1 p-3 bg-red-50 dark:bg-red-900/20 rounded text-red-600">
+                                <div className="mt-1 text-base rounded">
                                     {request.rejection_reason}
                                 </div>
                             </div>
@@ -291,39 +282,88 @@ export default function RequestDetails() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Код</TableHead>
-                                    <TableHead>Название</TableHead>
-                                    <TableHead>Ед.</TableHead>
-                                    <TableHead>Доступно на момент заявки</TableHead>
-                                    <TableHead>Запрошено</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {items.length === 0 ? (
+                    <div className="grid gap-4">
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center">
-                                            Нет товаров
-                                        </TableCell>
+                                        <TableHead>Код</TableHead>
+                                        <TableHead>Название</TableHead>
+                                        <TableHead className="text-center">Ед.</TableHead>
+                                        <TableHead className="text-center">Остаток</TableHead>
+                                        <TableHead className="text-center">Запрошено</TableHead>
                                     </TableRow>
-                                ) : (
-                                    items.map((item) => (
-                                        <TableRow key={item.id}>
-                                            <TableCell className="font-mono">{item.code}</TableCell>
-                                            <TableCell>{item.name}</TableCell>
-                                            <TableCell>{item.unit}</TableCell>
-                                            <TableCell>{item.current_quantity_at_request}</TableCell>
-                                            <TableCell className="font-semibold">
-                                                {item.quantity}
+                                </TableHeader>
+                                <TableBody>
+                                    {items.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center">
+                                                Нет товаров
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        items.map((item) => (
+                                            <TableRow key={item.id}>
+                                                <TableCell className="font-mono">{item.code}</TableCell>
+                                                <TableCell>{item.name}</TableCell>
+                                                <TableCell className="text-center">{item.unit}</TableCell>
+                                                <TableCell className="text-center">{item.current_quantity_at_request}</TableCell>
+                                                <TableCell className="text-center">
+                                                    {item.quantity}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        {canApprove && (
+                            <div className="sm:flex gap-2 grid sm:justify-end">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            disabled={processing}
+                                            className=""
+                                        >
+                                            Подтвердить
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Подтвердить заявку?</AlertDialogTitle>
+                                            <div className="py-2">
+                                                <p>{request?.title}</p>
+                                                {request?.request_type === 'incoming' && (
+                                                    <p className="text-sm mt-2">
+                                                        После подтверждения товары будут добавлены на склад.
+                                                    </p>
+                                                )}
+                                                {request?.request_type === 'outgoing' && (
+                                                    <p className="text-sm mt-2">
+                                                        После подтверждения товары будут списаны со склада.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleApprove}
+                                            >
+                                                Подтвердить
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                <Button
+                                    onClick={() => setShowRejectDialog(true)}
+                                    disabled={processing}
+                                    variant="destructive"
+                                >
+                                    Отклонить
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
