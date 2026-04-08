@@ -20,13 +20,9 @@ interface CreateMaterialDialogProps {
 }
 
 const MATERIAL_UNITS = [
-    "шт", "кг", "г", "т",
-    "м", "см", "мм",
-    "м²", "м³",
-    "л", "мл",
-    "упак.", "рулон", "лист",
-    "мешок", "банка", "ведро",
-    "пара", "комплект", "набор"
+    "шт", "кг", "г", "т","м", "см", "мм",
+    "м²", "м³","л", "мл","упак.", "рулон", 
+    "лист","мешок", "банка", "ведро", "пара", "комплект", "набор"
 ];
 
 export default function CreateMaterialDialog({
@@ -173,7 +169,7 @@ export default function CreateMaterialDialog({
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-1 gap-4">
                             <div className="grid gap-4">
-                                <Label htmlFor="material-name">Название материала *</Label>
+                                <Label htmlFor="material-name">Название материала</Label>
                                 <Input
                                     id="material-name"
                                     placeholder="Например: Цемент М500"
@@ -186,7 +182,7 @@ export default function CreateMaterialDialog({
 
                             <div className="grid gap-">
                                 <div className="flex justify-between items-center">
-                                    <Label htmlFor="material-code">Код *</Label>
+                                    <Label htmlFor="material-code">Код</Label>
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -222,7 +218,7 @@ export default function CreateMaterialDialog({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="material-unit">Единица измерения *</Label>
+                                <Label htmlFor="material-unit">Единица измерения</Label>
                                 <Select value={unit} onValueChange={setUnit} disabled={loading}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Выберите единицу" />
