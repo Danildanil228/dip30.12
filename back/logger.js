@@ -194,7 +194,7 @@ class Logger {
             userId,
             'request_created',
             'Создание заявки',
-            `[user:${userId}:${username}] создал заявку ${requestLink} "${title}" на ${typeText}`
+            `[user:${userId}:${username}] создал ${requestLink} "${title}" на ${typeText}`
         );
     }
 
@@ -205,7 +205,7 @@ class Logger {
             userId,
             'request_approved',
             'Подтверждение заявки',
-            `[user:${userId}:${username}] подтвердил заявку ${requestLink} "${title}" на ${typeText}`
+            `[user:${userId}:${username}] подтвердил ${requestLink} "${title}" на ${typeText}`
         );
     }
 
@@ -216,7 +216,7 @@ class Logger {
             userId,
             'request_rejected',
             'Отклонение заявки',
-            `[user:${userId}:${username}] отклонил заявку ${requestLink} "${title}" на ${typeText}. Причина: ${rejectionReason}`
+            `[user:${userId}:${username}] отклонил ${requestLink} "${title}" на ${typeText}. Причина: ${rejectionReason}`
         );
     }
 }
