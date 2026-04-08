@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,7 +58,8 @@ export default function SelectMaterialsDialog({
     const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
     const [showAll, setShowAll] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
-    const itemsPerPage = 10;
+    const itemsPerPage = 5;
+    const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
     useEffect(() => {
         if (open) {
@@ -133,8 +134,23 @@ export default function SelectMaterialsDialog({
         return tempSelected.some(item => item.material_id === materialId);
     };
 
-    const getSelectedQuantity = (materialId: number) => {
-        return quantities[materialId] || 1;
+    const handleQuantityBlur = (material: Material, inputValue: string) => {
+        let quantity = parseInt(inputValue);
+        
+        if (isNaN(quantity) || quantity < 1) {
+            quantity = 1;
+        }
+        
+        if (requestType === 'outgoing' && quantity > material.quantity) {
+            alert(`Недостаточно товара. Доступно: ${material.quantity} ${material.unit}`);
+            quantity = Math.min(quantity, material.quantity);
+            if (quantity < 1) quantity = 1;
+            if (inputRefs.current[material.id]) {
+                inputRefs.current[material.id]!.value = quantity.toString();
+            }
+        }
+        
+        setQuantities({ ...quantities, [material.id]: quantity });
     };
 
     const handleAddMaterial = (material: Material) => {
@@ -168,23 +184,27 @@ export default function SelectMaterialsDialog({
         setQuantities(newQuantities);
     };
 
-    const handleQuantityChange = (materialId: number, value: number) => {
-        if (value < 1) {
-            value = 1;
+    const handleSelectedItemQuantityBlur = (item: SelectedItem, inputValue: string) => {
+        let quantity = parseInt(inputValue);
+        
+        if (isNaN(quantity) || quantity < 1) {
+            quantity = 1;
         }
         
-        const material = materials.find(m => m.id === materialId);
-        if (requestType === 'outgoing' && material && value > material.quantity) {
-            alert(`Недостаточно товара. Доступно: ${material.quantity} ${material.unit}`);
-            return;
+        if (requestType === 'outgoing' && quantity > item.current_quantity) {
+            alert(`Недостаточно товара. Доступно: ${item.current_quantity} ${item.unit}`);
+            quantity = Math.min(quantity, item.current_quantity);
+            if (quantity < 1) quantity = 1;
+            if (inputRefs.current[item.material_id]) {
+                inputRefs.current[item.material_id]!.value = quantity.toString();
+            }
         }
-
-        setQuantities({ ...quantities, [materialId]: value });
         
-        setTempSelected(tempSelected.map(item =>
-            item.material_id === materialId
-                ? { ...item, quantity: value }
-                : item
+        setQuantities({ ...quantities, [item.material_id]: quantity });
+        setTempSelected(tempSelected.map(i =>
+            i.material_id === item.material_id
+                ? { ...i, quantity: quantity }
+                : i
         ));
     };
 
@@ -197,10 +217,9 @@ export default function SelectMaterialsDialog({
         onOpenChange(false);
     };
 
-    // Компонент карточки товара для мобильных
     const MaterialCard = ({ material }: { material: Material }) => {
         const isSelected = isMaterialSelected(material.id);
-        const quantity = getSelectedQuantity(material.id);
+        const currentQuantity = quantities[material.id] || 1;
         
         return (
             <Card className="mb-3">
@@ -219,14 +238,16 @@ export default function SelectMaterialsDialog({
                     </div>
                     
                     <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm">Кол-во:</span>
                             <Input
+                                ref={(el) => {
+                                    if (el) inputRefs.current[material.id] = el;
+                                }}
                                 type="number"
                                 min="1"
-                                max={requestType === 'outgoing' ? material.quantity : undefined}
-                                value={quantity}
-                                onChange={(e) => handleQuantityChange(material.id, parseInt(e.target.value) || 1)}
+                                defaultValue={currentQuantity}
+                                onBlur={(e) => handleQuantityBlur(material, e.target.value)}
                                 disabled={isSelected}
                                 className="w-20 h-8"
                             />
@@ -238,7 +259,7 @@ export default function SelectMaterialsDialog({
                             disabled={isSelected || (requestType === 'outgoing' && material.quantity === 0)}
                             variant={isSelected ? "secondary" : "default"}
                         >
-                            {isSelected ? "Добавлен" : <Plus className="h-4 w-4" />}
+                            {isSelected ? "✓" : <Plus className="h-4 w-4" />}
                         </Button>
                     </div>
                 </CardContent>
@@ -254,12 +275,11 @@ export default function SelectMaterialsDialog({
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    {/* Фильтры */}
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
+                    <div className="flex flex-col md:flex-row gap-4 items-center text-center">
+                        <div className="flex-1 relative w-full">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
-                                placeholder="Поиск по названию, коду или категории..."
+                                placeholder="код, категория, название"
                                 value={searchTerm}
                                 onChange={(e) => {
                                     setSearchTerm(e.target.value);
@@ -269,7 +289,7 @@ export default function SelectMaterialsDialog({
                                 className="pl-10"
                             />
                         </div>
-                        <div className="w-full md:w-64">
+                        <div className="w-full md:w-64 justify-center flex sm:justify-end">
                             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Все категории" />
@@ -286,7 +306,7 @@ export default function SelectMaterialsDialog({
                         </div>
                     </div>
 
-                    {/* Десктопная таблица (видна только на больших экранах) */}
+                    {/* Десктопная таблица */}
                     <div className="hidden md:block border rounded-lg overflow-hidden">
                         <Table>
                             <TableHeader>
@@ -318,6 +338,7 @@ export default function SelectMaterialsDialog({
                                 ) : (
                                     paginatedMaterials.map((material) => {
                                         const isSelected = isMaterialSelected(material.id);
+                                        const currentQuantity = quantities[material.id] || 1;
                                         return (
                                             <TableRow key={material.id}>
                                                 <TableCell className="font-mono">{material.code}</TableCell>
@@ -325,21 +346,17 @@ export default function SelectMaterialsDialog({
                                                 <TableCell>{material.category_name || "-"}</TableCell>
                                                 <TableCell>
                                                     {material.quantity}
-                                                    {material.quantity < 10 && material.quantity > 0 && (
-                                                        <AlertCircle className="inline ml-1 h-4 w-4 text-yellow-500" />
-                                                    )}
-                                                    {material.quantity === 0 && (
-                                                        <Badge variant="destructive" className="ml-1">Нет в наличии</Badge>
-                                                    )}
                                                 </TableCell>
                                                 <TableCell>{material.unit}</TableCell>
                                                 <TableCell className="w-24">
                                                     <Input
+                                                        ref={(el) => {
+                                                            if (el) inputRefs.current[material.id] = el;
+                                                        }}
                                                         type="number"
                                                         min="1"
-                                                        max={requestType === 'outgoing' ? material.quantity : undefined}
-                                                        value={getSelectedQuantity(material.id)}
-                                                        onChange={(e) => handleQuantityChange(material.id, parseInt(e.target.value) || 1)}
+                                                        defaultValue={currentQuantity}
+                                                        onBlur={(e) => handleQuantityBlur(material, e.target.value)}
                                                         disabled={isSelected}
                                                         className="w-20"
                                                     />
@@ -361,7 +378,6 @@ export default function SelectMaterialsDialog({
                         </Table>
                     </div>
 
-                    {/* Мобильные карточки (видно только на маленьких экранах) */}
                     <div className="md:hidden">
                         {loading ? (
                             <div className="flex justify-center items-center py-8">
@@ -378,7 +394,6 @@ export default function SelectMaterialsDialog({
                         )}
                     </div>
 
-                    {/* Пагинация */}
                     {!showAll && totalPages > 1 && (
                         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="text-sm text-gray-500 order-2 md:order-1">
@@ -432,42 +447,46 @@ export default function SelectMaterialsDialog({
                         </div>
                     )}
 
-                    {/* Выбранные товары */}
                     {tempSelected.length > 0 && (
                         <div className="border rounded-lg p-4">
-                            <h3 className="font-semibold mb-3">Выбранные товары ({tempSelected.length})</h3>
+                            <h3 className="font-semibold mb-3 text-base">Выбранные товары ({tempSelected.length})</h3>
                             <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {tempSelected.map((item) => (
-                                    <div key={item.material_id} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                                        <div className="flex-1">
-                                            <div className="font-medium">{item.name}</div>
-                                            <div className="text-sm text-gray-500">
-                                                Код: {item.code} | Доступно: {item.current_quantity} {item.unit}
+                                {tempSelected.map((item) => {
+                                    const currentQuantity = quantities[item.material_id] || item.quantity;
+                                    return (
+                                        <div key={item.material_id} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 rounded text-wrap">
+                                            <div className="flex-1">
+                                                <div className="text-base">{item.name}</div>
+                                                <div className="text-sm text-gray-500">
+                                                    Код: {item.code} | Доступно: {item.current_quantity} {item.unit}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start text-left justify-between gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm">Кол-во:</span>
+                                                    <Input
+                                                        ref={(el) => {
+                                                            if (el) inputRefs.current[item.material_id] = el;
+                                                        }}
+                                                        type="number"
+                                                        min="1"
+                                                        defaultValue={currentQuantity}
+                                                        onBlur={(e) => handleSelectedItemQuantityBlur(item, e.target.value)}
+                                                        className="w-20 h-8"
+                                                    />
+                                                    <span className="text-sm">{item.unit}</span>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleRemoveMaterial(item.material_id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between w-full md:w-auto gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm">Кол-во:</span>
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    max={requestType === 'outgoing' ? item.current_quantity : undefined}
-                                                    value={item.quantity}
-                                                    onChange={(e) => handleQuantityChange(item.material_id, parseInt(e.target.value) || 1)}
-                                                    className="w-20 h-8"
-                                                />
-                                                <span className="text-sm">{item.unit}</span>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleRemoveMaterial(item.material_id)}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
