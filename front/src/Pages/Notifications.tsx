@@ -277,7 +277,7 @@ const parseMessageWithLinks = (message: string) => {
         ))}
 
         {filteredLogs.length === 0 && (
-          <p className="text-center py-8">
+          <p className="text-center py-10 text-gray-500">
             {selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}
           </p>
         )}

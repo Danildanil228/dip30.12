@@ -128,7 +128,7 @@ export default function Login() {
                                 placeholder="Подтвердите пароль"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10"
+                                className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10 text-base"
                                 disabled={loading}
                                 required
                             />
