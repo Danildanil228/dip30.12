@@ -62,16 +62,6 @@ export default function Requests() {
         request.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-500';
-            case 'approved': return 'bg-green-500';
-            case 'rejected': return 'bg-red-500';
-            case 'draft': return 'bg-gray-500';
-            default: return 'bg-gray-500';
-        }
-    };
-
     const getStatusText = (status: string) => {
         switch (status) {
             case 'pending': return 'На рассмотрении';
@@ -84,10 +74,6 @@ export default function Requests() {
 
     const getTypeText = (type: string) => {
         return type === 'incoming' ? 'Приход' : 'Расход';
-    };
-
-    const getTypeColor = (type: string) => {
-        return type === 'incoming' ? 'text-green-600' : 'text-orange-600';
     };
 
     if (loading) {
@@ -108,10 +94,9 @@ export default function Requests() {
                 </Button>
             </div>
 
-            {/* Фильтры и поиск */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
                     <Input
                         placeholder="Поиск по названию..."
                         value={searchTerm}
@@ -129,28 +114,24 @@ export default function Requests() {
                     <Button
                         variant={statusFilter === "pending" ? "default" : "outline"}
                         onClick={() => setStatusFilter("pending")}
-                        className="bg-yellow-500 hover:bg-yellow-600"
                     >
                         На рассмотрении
                     </Button>
                     <Button
                         variant={statusFilter === "approved" ? "default" : "outline"}
                         onClick={() => setStatusFilter("approved")}
-                        className="bg-green-500 hover:bg-green-600"
                     >
                         Подтверждены
                     </Button>
                     <Button
                         variant={statusFilter === "rejected" ? "default" : "outline"}
                         onClick={() => setStatusFilter("rejected")}
-                        className="bg-red-500 hover:bg-red-600"
                     >
                         Отклонены
                     </Button>
                 </div>
             </div>
 
-            {/* Список заявок */}
             <div className="grid gap-4">
                 {filteredRequests.length === 0 ? (
                     <div className="text-center py-10 text-gray-500">
@@ -165,19 +146,19 @@ export default function Requests() {
                         >
                             <div className="flex justify-between items-start mb-3">
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
                                         <h3 className="text-lg font-semibold">{request.title}</h3>
-                                        <Badge className={getStatusColor(request.status)}>
+                                        <Badge className={request.status}>
                                             {getStatusText(request.status)}
                                         </Badge>
-                                        <Badge variant="outline" className={getTypeColor(request.request_type)}>
+                                        <Badge variant="outline" className={request.request_type}>
                                             {getTypeText(request.request_type)}
                                         </Badge>
                                         {!request.is_public && isAdmin && (
                                             <Badge variant="secondary">Приватная</Badge>
                                         )}
                                     </div>
-                                    <div className="text-sm text-gray-500 mb-2">
+                                    <div className="text-sm mb-2">
                                         Создал: {request.created_by_username} • {format(new Date(request.created_at), "dd MMM yyyy, HH:mm", { locale: ru })}
                                     </div>
                                     {request.items_preview && request.items_preview.length > 0 && (
@@ -204,7 +185,6 @@ export default function Requests() {
                 )}
             </div>
 
-            {/* Диалог создания заявки */}
             <CreateRequestDialog
                 open={showCreateDialog}
                 onOpenChange={setShowCreateDialog}
