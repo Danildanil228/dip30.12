@@ -114,7 +114,7 @@ export default function Categories() {
         {
             accessorKey: "description",
             header: "Описание",
-            cell: ({ row }) => <div>{row.getValue("description") || "-"}</div>
+            cell: ({ row }) => <div className="max-w-50 truncate">{row.getValue("description") || "-"}</div>
         },
         {
             accessorKey: "created_by_username",
