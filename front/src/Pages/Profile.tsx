@@ -4,9 +4,11 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { ChevronDownIcon, ArrowLeft } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
+import { ChevronDownIcon, ArrowLeft, Mail, Phone, Calendar as CalendarIcon, User, Shield, Clock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL } from "@/components/api";
 import axios from "axios";
 import { format } from "date-fns";
@@ -136,8 +138,6 @@ export default function Profile() {
                 return;
             }
 
-            console.log('Отправляемые данные:', updateData);
-
             const response = await axios.put(`${API_BASE_URL}/users/${targetUserId}`, updateData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -203,69 +203,137 @@ export default function Profile() {
         }
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleString('ru-RU');
+    const getRoleBadge = (role: string) => {
+        switch (role) {
+            case 'admin':
+                return <Badge className="text-base">Администратор</Badge>;
+            case 'accountant':
+                return <Badge className="text-base">Бухгалтер</Badge>;
+            case 'storekeeper':
+                return <Badge className="text-base">Кладовщик</Badge>;
+            default:
+                return <Badge>{role}</Badge>;
+        }
     };
 
     if (loading) {
         return (
-            <section className="grid gap-3">
-                <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-                </div>
-            </section>
+            <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
+            </div>
         );
     }
 
     if (!user) {
         return (
-            <section className="grid gap-3">
-                <h1>Профиль не найден</h1>
+            <div className="text-center py-20">
+                <h1 className="text-2xl mb-4">Профиль не найден</h1>
                 <Button onClick={() => navigate(-1)}>
-                    <ArrowLeft className="mr-2" /> Назад
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Назад
                 </Button>
-            </section>
+            </div>
         );
     }
 
     return (
-        <section className="grid gap-3">
-            <ScrollToTop/>
-            <div className="flex flex-wrap justify-between items-center">
-                <h1>{isOwnProfile ? 'Ваш профиль' : `Профиль: ${user.name} ${user.secondname}`}</h1>
+        <div className=" mx-auto">
+            <ScrollToTop />
+            {!isOwnProfile && (
+                <Button
+                    variant="ghost"
+                    onClick={() => navigate(-1)}
+                    className="mb-6"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Назад
+                </Button>
+            )}
+            <div className="text-center mb-4">
                 {!isOwnProfile && (
-                    <Button variant="outline" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="mr-2" /> Назад
-                    </Button>
+                    <h1 className="text-3xl font-bold">
+                        {user.name} {user.secondname}
+                    </h1>
                 )}
-            </div>
-
-            <div className="flex gap-4 flex-wrap">
-                <p className="text-lg">{user.name} {user.secondname}</p>
-            </div>
-
-            <h1 className="text-xl font-semibold mt-6">Данные пользователя</h1>
-            <div className="grid gap-2">
-                <p>Логин: {user.username}</p>
-                <p>Email: {user.email || 'Не указан'}</p>
-                <p>Телефон: {user.phone || 'Не указан'}</p>
-                <p>Дата рождения: {user.birthday ? new Date(user.birthday).toLocaleDateString() : 'Не указана'}</p>
-                <div className="grid ">
-
-                    <p className="text-xs opacity-50">Последнее обновление: {formatDate(user.updated_at)}</p>
-                    <p className="text-xs opacity-50">Аккаунт создан: {formatDate(user.created_at)}</p>
+                <div className="mt-2">
+                    {getRoleBadge(user.role)}
                 </div>
+                <p className="text-muted-foreground mt-1">{user.username}</p>
             </div>
 
-            <div className="flex flex-wrap gap-4 mt-6">
+            <Card className="mb-6">
+                <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Личная информация
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-start gap-3">
+                            <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Пользователь</p>
+                                <p className="text-base">{user.name} {user.secondname}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Email</p>
+                                <p className="text-base">{user.email || 'Не указан'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Телефон</p>
+                                <p className="text-base">{user.phone || 'Не указан'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <CalendarIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Дата рождения</p>
+                                <p className="text-base">
+                                    {user.birthday ? new Date(user.birthday).toLocaleDateString('ru-RU') : 'Не указана'}
+                                </p>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Информация об аккаунте */}
+            <Card className="mb-6">
+                <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Информация об аккаунте
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-muted-foreground text-sm">Аккаунт создан</span>
+                        <span className="text-base">{new Date(user.created_at).toLocaleString('ru-RU')}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground text-sm">Последнее обновление</span>
+                        <span className="text-base">{new Date(user.updated_at).toLocaleString('ru-RU')}</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Кнопки действий */}
+            <div className="flex flex-wrap gap-4 justify-center">
                 <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
                     <AlertDialogTrigger asChild>
-                        <Button className="w-fit" variant='outline'>
-                            Изменить данные <img src="/edit.png" className="icon w-5 ml-2" alt="" />
+                        <Button variant="outline" className="gap-2">
+                            <img src="/edit.png" className="icon w-4" alt="" />
+                            Изменить данные
                         </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="max-w-md">
+                    <AlertDialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                         <AlertDialogHeader>
                             <AlertDialogTitle className="text-2xl">
                                 {isOwnProfile ? 'Изменить ваши данные' : 'Изменить данные пользователя'}
@@ -273,7 +341,7 @@ export default function Profile() {
                             <AlertDialogDescription className="grid gap-4 pt-4 text-left">
                                 {isAdmin && (
                                     <div className="grid gap-2">
-                                        <label className="text-sm font-medium ">Логин</label>
+                                        <label className="text-sm font-medium">Логин</label>
                                         <Input
                                             type="text"
                                             placeholder="Логин"
@@ -345,7 +413,6 @@ export default function Profile() {
                                     </div>
                                 )}
 
-
                                 <div className="grid gap-2">
                                     <label className="text-sm font-medium">Дата рождения</label>
                                     <Popover>
@@ -382,7 +449,7 @@ export default function Profile() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setEditOpen(false)}>
-                                Закрыть
+                                Отмена
                             </AlertDialogCancel>
                             <Button onClick={handleSaveData}>
                                 Сохранить
@@ -393,8 +460,9 @@ export default function Profile() {
 
                 <AlertDialog open={passwordOpen} onOpenChange={setPasswordOpen}>
                     <AlertDialogTrigger asChild>
-                        <Button className="w-fit" variant='outline'>
-                            Сменить пароль <img src="/padlock.png" className="icon w-5 ml-2" alt="" />
+                        <Button variant="outline" className="gap-2">
+                            <img src="/padlock.png" className="icon w-4" alt="" />
+                            Сменить пароль
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="max-w-md">
@@ -457,7 +525,7 @@ export default function Profile() {
                                 setNewPassword('');
                                 setConfirmPassword('');
                             }}>
-                                Закрыть
+                                Отмена
                             </AlertDialogCancel>
                             <Button onClick={handleChangePassword}>
                                 Сменить пароль
@@ -466,6 +534,6 @@ export default function Profile() {
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
-        </section>
+        </div>
     );
 }
