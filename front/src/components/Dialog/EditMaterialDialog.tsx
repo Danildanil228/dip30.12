@@ -166,7 +166,7 @@ export default function EditMaterialDialog({
                 <AlertDialogHeader>
                     <AlertDialogTitle>Редактировать материал</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {material ? `Редактирование: ${material.name}` : "Загрузка данных..."}
+                        {material ? `${material.name}` : "Загрузка данных..."}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
@@ -179,7 +179,7 @@ export default function EditMaterialDialog({
                         <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="edit-material-name">Название материала *</Label>
+                                    <Label htmlFor="edit-material-name">Название материала</Label>
                                     <Input
                                         id="edit-material-name"
                                         placeholder="Например: Цемент М500"
@@ -191,7 +191,7 @@ export default function EditMaterialDialog({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="edit-material-code">Код *</Label>
+                                    <Label htmlFor="edit-material-code">Код</Label>
                                     <Input
                                         id="edit-material-code"
                                         placeholder="Например: CEM-001"
@@ -217,7 +217,7 @@ export default function EditMaterialDialog({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="edit-material-unit">Единица измерения *</Label>
+                                    <Label htmlFor="edit-material-unit">Единица измерения</Label>
                                     <Select value={unit} onValueChange={setUnit} disabled={loading}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Выберите единицу" />
@@ -241,7 +241,7 @@ export default function EditMaterialDialog({
                                         className="bg-gray-50"
                                     />
                                     <p className="text-xs text-gray-500">
-                                        Количество изменяется только через операции <Link to='/coming' className="underline dark:text-gray-100 text-black">прихода/расхода</Link>
+                                        Количество изменяется только через операции <Link to='/requests' className="underline dark:text-gray-100 text-black">прихода/расхода</Link>
                                     </p>
                                 </div>
                             </div>
