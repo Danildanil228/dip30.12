@@ -304,7 +304,6 @@ export default function Profile() {
                 </CardContent>
             </Card>
 
-            {/* Информация об аккаунте */}
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
@@ -324,7 +323,6 @@ export default function Profile() {
                 </CardContent>
             </Card>
 
-            {/* Кнопки действий */}
             <div className="flex flex-wrap gap-4 justify-center">
                 <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
                     <AlertDialogTrigger asChild>
