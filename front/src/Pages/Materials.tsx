@@ -125,7 +125,7 @@ export default function Materials() {
                     </Button>
                 );
             },
-            cell: ({ row }) => <div>{row.getValue("quantity")}</div>
+            cell: ({ row }) => <div className="justify-center flex">{row.getValue("quantity")}</div>
         },
         {
             accessorKey: "category_name",
