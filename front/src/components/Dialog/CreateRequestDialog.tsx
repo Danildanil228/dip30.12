@@ -70,13 +70,12 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Сброс формы
             setTitle("");
             setRequestType("incoming");
             setNotes("");
             setIsPublic(true);
             setSelectedItems([]);
-            
+
             onOpenChange(false);
             onRequestCreated();
 
@@ -99,23 +98,18 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                     <DialogHeader>
                         <DialogTitle>Создание новой заявки</DialogTitle>
                     </DialogHeader>
-
                     <div className="space-y-4">
-                        {/* Название заявки */}
-                        <div>
-                            <Label htmlFor="title">Название заявки *</Label>
+                        <div className="gap-2 grid">
+                            <Label htmlFor="title">Название заявки</Label>
                             <Input
                                 id="title"
-                                placeholder="Например: Заявка на пополнение склада"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 disabled={loading}
                             />
                         </div>
-
-                        {/* Тип заявки */}
-                        <div>
-                            <Label htmlFor="type">Тип заявки *</Label>
+                        <div className="gap-2 grid">
+                            <Label htmlFor="type">Тип заявки</Label>
                             <Select
                                 value={requestType}
                                 onValueChange={(value: "incoming" | "outgoing") => setRequestType(value)}
@@ -125,15 +119,13 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="incoming">Приход (пополнение склада)</SelectItem>
-                                    <SelectItem value="outgoing">Расход (списание со склада)</SelectItem>
+                                    <SelectItem value="incoming">Приход</SelectItem>
+                                    <SelectItem value="outgoing">Расход</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-
-                        {/* Выбор товаров */}
-                        <div>
-                            <Label>Товары *</Label>
+                        <div className="grid gap-2">
+                            <Label>Товары</Label>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -142,19 +134,17 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                                 disabled={loading}
                             >
                                 <Package className="mr-2 h-4 w-4" />
-                                {selectedItems.length === 0 
-                                    ? "Выбрать товары" 
+                                {selectedItems.length === 0
+                                    ? "Выбрать товары"
                                     : `Выбрано товаров: ${selectedItems.length}`}
                             </Button>
                             {selectedItems.length > 0 && (
                                 <div className="mt-2 text-sm text-green-600">
-                                    ✓ {selectedItems.length} товар(ов) добавлено
+                                    {selectedItems.length} товар(ов) добавлено
                                 </div>
                             )}
                         </div>
-
-                        {/* Примечания */}
-                        <div>
+                        <div className="grid gap-2">
                             <Label htmlFor="notes">Примечания</Label>
                             <Textarea
                                 id="notes"
@@ -166,7 +156,6 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                             />
                         </div>
 
-                        {/* Видимость (только для админа) */}
                         {isAdmin && (
                             <div className="flex items-center space-x-2">
                                 <Checkbox
@@ -181,7 +170,6 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                             </div>
                         )}
 
-                        {/* Ошибка */}
                         {error && (
                             <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded">
                                 <AlertCircle className="h-4 w-4" />
