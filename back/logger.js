@@ -31,12 +31,12 @@ class Logger {
         await this.log(userId, 'login', 'Вход в систему',
             `[user:${userId}:${username}] вошел в систему`);
     }
-    
+
     static async logout(userId, username) {
         await this.log(userId, 'logout', 'Выход из системы',
             `[user:${userId}:${username}] вышел из системы`);
     }
-    
+
     // Создание пользователя
     static async userCreated(adminId, adminUsername, createdUsername, createdUserId) {
         await this.log(
@@ -46,7 +46,7 @@ class Logger {
             `[user:${adminId}:${adminUsername}] создал пользователя [user:${createdUserId}:${createdUsername}]`
         );
     }
-    
+
     // Удаление пользователя
     static async userDeleted(adminId, adminUsername, deletedUsername, deletedUserId) {
         await this.log(
@@ -219,6 +219,42 @@ class Logger {
             `[user:${userId}:${username}] отклонил ${requestLink} "${title}" на ${typeText}. Причина: ${rejectionReason}`
         );
     }
+
+
+    // Инвентаризация
+    
+    static async inventoryCreated(userId, username, title) {
+        await this.log(userId, 'inventory_created', 'Создание инвентаризации', `[user:${userId}:${username}] создал инвентаризацию "${title}"`);
+    }
+
+    static async inventoryStarted(userId, username, title) {
+        await this.log(userId, 'inventory_started', 'Начало инвентаризации', `[user:${userId}:${username}] начал инвентаризацию "${title}"`);
+    }
+
+    static async inventorySaved(userId, username, title) {
+        await this.log(userId, 'inventory_saved', 'Сохранение результатов', `[user:${userId}:${username}] сохранил результаты инвентаризации "${title}"`);
+    }
+
+    static async inventoryCompleted(userId, username, title) {
+        await this.log(userId, 'inventory_completed', 'Завершение инвентаризации', `[user:${userId}:${username}] завершил инвентаризацию "${title}" и отправил на проверку`);
+    }
+
+    static async inventoryApproved(userId, username, title, changesCount) {
+        await this.log(userId, 'inventory_approved', 'Подтверждение инвентаризации', `[user:${userId}:${username}] подтвердил инвентаризацию "${title}", обновлено ${changesCount} позиций`);
+    }
+
+    static async inventoryCancelled(userId, username, title) {
+        await this.log(userId, 'inventory_cancelled', 'Отмена инвентаризации', `[user:${userId}:${username}] отменил инвентаризацию "${title}"`);
+    }
+
+    static async inventoryUpdated(userId, username, title, changes) {
+        await this.log(userId, 'inventory_updated', 'Изменение инвентаризации', `[user:${userId}:${username}] изменил инвентаризацию "${title}": ${changes}`);
+    }
+
+    static async inventoryDeleted(userId, username, title) {
+        await this.log(userId, 'inventory_deleted', 'Удаление инвентаризации', `[user:${userId}:${username}] удалил инвентаризацию "${title}"`);
+    }
+
 }
 
 module.exports = Logger;
