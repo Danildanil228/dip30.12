@@ -33,6 +33,7 @@ export default function Header() {
                         {isAdmin && (
                             <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
                         )}
+                        <DropdownMenuItem><Link to='/profile'>Профиль</Link></DropdownMenuItem>
                         <DropdownMenuItem><Link to='/inventories'>Инвентаризация</Link></DropdownMenuItem>
                         <DropdownMenuItem onSelect={(e) => {
                             e.preventDefault();
