@@ -1425,6 +1425,587 @@ app.put('/requests/:id/reject', async (req, res) => {
 });
 
 
+
+
+// =========== ИНВЕНТАРИЗАЦИЯ =============
+
+// Получение списка инвентаризаций
+app.get('/inventories', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        
+        let query = `
+            SELECT i.*, 
+                   u1.username as created_by_username,
+                   u2.username as responsible_username,
+                   u3.username as approved_by_username,
+                   COUNT(ir.id) as total_items,
+                   COUNT(CASE WHEN ir.actual_quantity IS NOT NULL THEN 1 END) as checked_items
+            FROM inventories i
+            LEFT JOIN users u1 ON i.created_by = u1.id
+            LEFT JOIN users u2 ON i.responsible_person = u2.id
+            LEFT JOIN users u3 ON i.approved_by = u3.id
+            LEFT JOIN inventory_results ir ON i.id = ir.inventory_id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        let paramIndex = 1;
+        
+        if (!isAdminOrAccountant) {
+            query += ` AND i.responsible_person = $${paramIndex}`;
+            params.push(decoded.id);
+            paramIndex++;
+        }
+        
+        query += ` GROUP BY i.id, u1.username, u2.username, u3.username ORDER BY i.created_at DESC`;
+        
+        const result = await pool.query(query, params);
+        res.json({ inventories: result.rows });
+        
+    } catch (error) {
+        console.error('Ошибка получения инвентаризаций:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получение деталей инвентаризации
+app.get('/inventories/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const inventoryId = parseInt(req.params.id);
+        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        
+        const inventoryResult = await pool.query(
+            `SELECT i.*, 
+                    u1.username as created_by_username,
+                    u2.username as responsible_username,
+                    u3.username as approved_by_username
+             FROM inventories i
+             LEFT JOIN users u1 ON i.created_by = u1.id
+             LEFT JOIN users u2 ON i.responsible_person = u2.id
+             LEFT JOIN users u3 ON i.approved_by = u3.id
+             WHERE i.id = $1`,
+            [inventoryId]
+        );
+        
+        if (inventoryResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        const inventory = inventoryResult.rows[0];
+        
+        const canView = isAdminOrAccountant || decoded.id === inventory.responsible_person;
+        if (!canView) {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+        
+        const categoriesResult = await pool.query(
+            `SELECT ic.category_id, c.name 
+             FROM inventory_categories ic
+             LEFT JOIN materialcategories c ON ic.category_id = c.id
+             WHERE ic.inventory_id = $1`,
+            [inventoryId]
+        );
+        
+        const materialsResult = await pool.query(
+            `SELECT im.material_id, m.name, m.code
+             FROM inventory_materials im
+             LEFT JOIN materials m ON im.material_id = m.id
+             WHERE im.inventory_id = $1`,
+            [inventoryId]
+        );
+        
+        const resultsResult = await pool.query(
+            `SELECT ir.*, m.name, m.code, m.unit
+             FROM inventory_results ir
+             LEFT JOIN materials m ON ir.material_id = m.id
+             WHERE ir.inventory_id = $1
+             ORDER BY m.name`,
+            [inventoryId]
+        );
+        
+        res.json({
+            inventory: inventory,
+            categories: categoriesResult.rows,
+            selected_materials: materialsResult.rows,
+            results: resultsResult.rows
+        });
+        
+    } catch (error) {
+        console.error('Ошибка получения инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Создание инвентаризации (только admin/accountant)
+app.post('/inventories', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+        
+        const { title, responsible_person, start_date, end_date, description, categories, materials } = req.body;
+        
+        if (!title || !responsible_person || !start_date || !end_date) {
+            return res.status(400).json({ error: 'Заполните обязательные поля' });
+        }
+        
+        if (new Date(start_date) > new Date(end_date)) {
+            return res.status(400).json({ error: 'Дата начала не может быть позже даты окончания' });
+        }
+        
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            const inventoryResult = await client.query(
+                `INSERT INTO inventories (title, created_by, responsible_person, start_date, end_date, description, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'draft')
+                 RETURNING *`,
+                [title, decoded.id, responsible_person, start_date, end_date, description || null]
+            );
+            
+            const inventory = inventoryResult.rows[0];
+            
+            if (categories && categories.length > 0) {
+                for (const categoryId of categories) {
+                    await client.query(
+                        `INSERT INTO inventory_categories (inventory_id, category_id) VALUES ($1, $2)`,
+                        [inventory.id, categoryId]
+                    );
+                }
+            }
+            
+            if (materials && materials.length > 0) {
+                for (const materialId of materials) {
+                    await client.query(
+                        `INSERT INTO inventory_materials (inventory_id, material_id) VALUES ($1, $2)`,
+                        [inventory.id, materialId]
+                    );
+                }
+            }
+            
+            let materialsQuery = `
+                SELECT m.id, m.name, m.code, m.unit, m.quantity
+                FROM materials m
+                WHERE 1=1
+            `;
+            const queryParams = [];
+            
+            if (categories && categories.length > 0) {
+                materialsQuery += ` AND m.category_id = ANY($${queryParams.length + 1})`;
+                queryParams.push(categories);
+            }
+            
+            if (materials && materials.length > 0) {
+                materialsQuery += ` AND m.id = ANY($${queryParams.length + 1})`;
+                queryParams.push(materials);
+            }
+            
+            const materialsList = await client.query(materialsQuery, queryParams);
+            
+            for (const material of materialsList.rows) {
+                await client.query(
+                    `INSERT INTO inventory_results (inventory_id, material_id, system_quantity)
+                     VALUES ($1, $2, $3)`,
+                    [inventory.id, material.id, material.quantity]
+                );
+            }
+            
+            await client.query('COMMIT');
+            
+            await Logger.inventoryCreated(decoded.id, decoded.username, title);
+            
+            res.json({
+                message: 'Инвентаризация создана',
+                inventory: inventory
+            });
+            
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+        
+    } catch (error) {
+        console.error('Ошибка создания инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Обновление инвентаризации (только admin)
+app.put('/inventories/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+        
+        const inventoryId = parseInt(req.params.id);
+        const { title, responsible_person, start_date, end_date, description } = req.body;
+        
+        const inventoryCheck = await pool.query(
+            'SELECT title FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventoryCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        const oldTitle = inventoryCheck.rows[0].title;
+        
+        const result = await pool.query(
+            `UPDATE inventories 
+             SET title = COALESCE($1, title),
+                 responsible_person = COALESCE($2, responsible_person),
+                 start_date = COALESCE($3, start_date),
+                 end_date = COALESCE($4, end_date),
+                 description = COALESCE($5, description),
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $6
+             RETURNING *`,
+            [title, responsible_person, start_date, end_date, description, inventoryId]
+        );
+        
+        // Логирование
+        await Logger.inventoryUpdated(decoded.id, decoded.username, oldTitle, 'данные изменены');
+        
+        res.json({
+            message: 'Инвентаризация обновлена',
+            inventory: result.rows[0]
+        });
+        
+    } catch (error) {
+        console.error('Ошибка обновления инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Начать инвентаризацию (только ответственный)
+app.put('/inventories/:id/start', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const inventoryId = parseInt(req.params.id);
+        
+        const inventory = await pool.query(
+            'SELECT title, responsible_person, status FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        if (inventory.rows[0].responsible_person !== decoded.id) {
+            return res.status(403).json({ error: 'Только ответственный может начать инвентаризацию' });
+        }
+        
+        if (inventory.rows[0].status !== 'draft') {
+            return res.status(400).json({ error: 'Инвентаризация уже начата или завершена' });
+        }
+        
+        await pool.query(
+            `UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+            [inventoryId]
+        );
+        
+        await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title);
+        
+        res.json({ message: 'Инвентаризация начата' });
+        
+    } catch (error) {
+        console.error('Ошибка начала инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Сохранение результатов (черновик)
+app.put('/inventories/:id/results', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const inventoryId = parseInt(req.params.id);
+        const { results } = req.body;
+        
+        const inventory = await pool.query(
+            'SELECT title, responsible_person, status FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        if (inventory.rows[0].responsible_person !== decoded.id) {
+            return res.status(403).json({ error: 'Только ответственный может сохранять результаты' });
+        }
+        
+        if (inventory.rows[0].status !== 'in_progress') {
+            return res.status(400).json({ error: 'Инвентаризация не в процессе' });
+        }
+        
+        for (const result of results) {
+            await pool.query(
+                `UPDATE inventory_results 
+                 SET actual_quantity = $1, reason = $2, updated_at = CURRENT_TIMESTAMP
+                 WHERE inventory_id = $3 AND material_id = $4`,
+                [result.actual_quantity, result.reason || null, inventoryId, result.material_id]
+            );
+        }
+        
+        await Logger.inventorySaved(decoded.id, decoded.username, inventory.rows[0].title);
+        
+        res.json({ message: 'Результаты сохранены' });
+        
+    } catch (error) {
+        console.error('Ошибка сохранения результатов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Завершить инвентаризацию и отправить на проверку
+app.put('/inventories/:id/complete', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const inventoryId = parseInt(req.params.id);
+        
+        const inventory = await pool.query(
+            'SELECT title, responsible_person, status FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        if (inventory.rows[0].responsible_person !== decoded.id) {
+            return res.status(403).json({ error: 'Только ответственный может завершить инвентаризацию' });
+        }
+        
+        if (inventory.rows[0].status !== 'in_progress') {
+            return res.status(400).json({ error: 'Инвентаризация не в процессе' });
+        }
+        
+        const checkResult = await pool.query(
+            'SELECT COUNT(*) as total, COUNT(CASE WHEN actual_quantity IS NOT NULL THEN 1 END) as checked FROM inventory_results WHERE inventory_id = $1',
+            [inventoryId]
+        );
+        
+        if (checkResult.rows[0].total !== checkResult.rows[0].checked) {
+            return res.status(400).json({ error: 'Не все товары проверены' });
+        }
+        
+        await pool.query(
+            `UPDATE inventories SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+            [inventoryId]
+        );
+        
+        await Logger.inventoryCompleted(decoded.id, decoded.username, inventory.rows[0].title);
+        
+        res.json({ message: 'Инвентаризация завершена и отправлена на проверку' });
+        
+    } catch (error) {
+        console.error('Ошибка завершения инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Подтвердить инвентаризацию (admin/accountant)
+app.put('/inventories/:id/approve', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+        
+        const inventoryId = parseInt(req.params.id);
+        
+        const inventory = await pool.query(
+            'SELECT title, status FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        if (inventory.rows[0].status !== 'completed') {
+            return res.status(400).json({ error: 'Инвентаризация не завершена' });
+        }
+        
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            const results = await client.query(
+                `SELECT ir.*, m.quantity as current_quantity
+                 FROM inventory_results ir
+                 LEFT JOIN materials m ON ir.material_id = m.id
+                 WHERE ir.inventory_id = $1 AND ir.actual_quantity IS NOT NULL AND ir.actual_quantity != ir.system_quantity`,
+                [inventoryId]
+            );
+            
+            for (const result of results.rows) {
+                await client.query(
+                    'UPDATE materials SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                    [result.actual_quantity, result.material_id]
+                );
+            }
+            
+            await client.query(
+                `UPDATE inventories 
+                 SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = $1, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $2`,
+                [decoded.id, inventoryId]
+            );
+            
+            await client.query('COMMIT');
+            
+            await Logger.inventoryApproved(decoded.id, decoded.username, inventory.rows[0].title, results.rows.length);
+            
+            res.json({ message: 'Инвентаризация подтверждена, остатки обновлены' });
+            
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+        
+    } catch (error) {
+        console.error('Ошибка подтверждения инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Отмена инвентаризации (admin)
+app.put('/inventories/:id/cancel', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+        
+        const inventoryId = parseInt(req.params.id);
+        
+        const inventory = await pool.query(
+            'SELECT title FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        await pool.query(
+            `UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+            [decoded.id, inventoryId]
+        );
+        
+        await Logger.inventoryCancelled(decoded.id, decoded.username, inventory.rows[0].title);
+        
+        res.json({ message: 'Инвентаризация отменена' });
+        
+    } catch (error) {
+        console.error('Ошибка отмены инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Удаление инвентаризации (admin)
+app.delete('/inventories/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
+        }
+        
+        const inventoryId = parseInt(req.params.id);
+        
+        const inventory = await pool.query(
+            'SELECT title FROM inventories WHERE id = $1',
+            [inventoryId]
+        );
+        
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+        }
+        
+        await pool.query('DELETE FROM inventories WHERE id = $1', [inventoryId]);
+        
+        await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title);
+        
+        res.json({ message: 'Инвентаризация удалена' });
+        
+    } catch (error) {
+        console.error('Ошибка удаления инвентаризации:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+
+
 // тест
 app.get('/test', (req, res) => { res.json({ message: 'hello world' }) });
 
