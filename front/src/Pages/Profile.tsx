@@ -525,6 +525,7 @@ export default function Profile() {
                             }}>
                                 Отмена
                             </AlertDialogCancel>
+                            
                             <Button onClick={handleChangePassword}>
                                 Сменить пароль
                             </Button>
