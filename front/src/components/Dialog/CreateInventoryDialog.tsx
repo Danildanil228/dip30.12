@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, AlertCircle } from "lucide-react";
+import { CalendarIcon, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -32,6 +32,7 @@ interface Material {
     name: string;
     code: string;
     category_id: number | null;
+    category_name?: string;
 }
 
 interface CreateInventoryDialogProps {
@@ -46,25 +47,59 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
     const [materials, setMaterials] = useState<Material[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    
+
     const [title, setTitle] = useState("");
     const [responsiblePerson, setResponsiblePerson] = useState("");
     const [startDate, setStartDate] = useState<Date>();
     const [endDate, setEndDate] = useState<Date>();
     const [description, setDescription] = useState("");
-    
+
+    // Поиск для пользователей
+    const [userSearch, setUserSearch] = useState("");
+
     // Выбор товаров
     const [selectionMode, setSelectionMode] = useState<"all" | "categories" | "materials">("all");
     const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
     const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
+
+    // Поиск для категорий
+    const [categorySearch, setCategorySearch] = useState("");
+
+    // Поиск для товаров
+    const [materialSearch, setMaterialSearch] = useState("");
+    const [materialSelectedCategory, setMaterialSelectedCategory] = useState<string>("all");
+
+    // Пагинация для товаров
+    const [currentPage, setCurrentPage] = useState(0);
+    const [showAllMaterials, setShowAllMaterials] = useState(false);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         if (open) {
             fetchUsers();
             fetchCategories();
             fetchMaterials();
+            resetForm();
         }
     }, [open]);
+
+    const resetForm = () => {
+        setTitle("");
+        setResponsiblePerson("");
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setDescription("");
+        setSelectionMode("all");
+        setSelectedCategories([]);
+        setSelectedMaterials([]);
+        setUserSearch("");
+        setCategorySearch("");
+        setMaterialSearch("");
+        setMaterialSelectedCategory("all");
+        setCurrentPage(0);
+        setShowAllMaterials(false);
+        setError("");
+    };
 
     const fetchUsers = async () => {
         try {
@@ -72,9 +107,8 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
             const response = await axios.get(`${API_BASE_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Только кладовщики могут быть ответственными
-            const storekeepers = response.data.users.filter((u: User) => u.role === 'storekeeper');
-            setUsers(storekeepers);
+            // Все пользователи могут быть ответственными
+            setUsers(response.data.users || []);
         } catch (error) {
             console.error("Ошибка загрузки пользователей:", error);
         }
@@ -104,6 +138,38 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         }
     };
 
+    // Фильтрация пользователей
+    const filteredUsers = users.filter(user => {
+        const search = userSearch.toLowerCase();
+        return user.name?.toLowerCase().includes(search) ||
+            user.secondname?.toLowerCase().includes(search) ||
+            user.username?.toLowerCase().includes(search);
+    });
+
+    // Фильтрация категорий
+    const filteredCategories = categories.filter(category =>
+        category.name.toLowerCase().includes(categorySearch.toLowerCase())
+    );
+
+    // Фильтрация товаров
+    const filteredMaterials = materials.filter(material => {
+        const matchesSearch = materialSearch === "" ||
+            material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+            material.code.toLowerCase().includes(materialSearch.toLowerCase());
+
+        const matchesCategory = materialSelectedCategory === "all" ||
+            (material.category_id && material.category_id.toString() === materialSelectedCategory);
+
+        return matchesSearch && matchesCategory;
+    });
+
+    // Пагинация для товаров
+    const totalMaterials = filteredMaterials.length;
+    const totalPages = Math.ceil(totalMaterials / itemsPerPage);
+    const paginatedMaterials = showAllMaterials
+        ? filteredMaterials
+        : filteredMaterials.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+
     const handleCategoryToggle = (categoryId: number) => {
         setSelectedCategories(prev =>
             prev.includes(categoryId)
@@ -118,6 +184,18 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 ? prev.filter(id => id !== materialId)
                 : [...prev, materialId]
         );
+    };
+
+    const handleSelectAllInCategory = (categoryId: number) => {
+        const categoryMaterials = materials.filter(m => m.category_id === categoryId);
+        const allSelected = categoryMaterials.every(m => selectedMaterials.includes(m.id));
+
+        if (allSelected) {
+            setSelectedMaterials(prev => prev.filter(id => !categoryMaterials.some(m => m.id === id)));
+        } else {
+            const newIds = categoryMaterials.map(m => m.id);
+            setSelectedMaterials(prev => [...new Set([...prev, ...newIds])]);
+        }
     };
 
     const handleSubmit = async () => {
@@ -165,16 +243,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Сброс формы
-            setTitle("");
-            setResponsiblePerson("");
-            setStartDate(undefined);
-            setEndDate(undefined);
-            setDescription("");
-            setSelectionMode("all");
-            setSelectedCategories([]);
-            setSelectedMaterials([]);
-            
+            resetForm();
             onOpenChange(false);
             onInventoryCreated();
 
@@ -186,9 +255,11 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         }
     };
 
-    const getMaterialsByCategory = (categoryId: number) => {
-        return materials.filter(m => m.category_id === categoryId);
-    };
+    // Группировка товаров по категориям
+    const materialsByCategory = categories.map(category => ({
+        ...category,
+        materials: materials.filter(m => m.category_id === category.id)
+    })).filter(c => c.materials.length > 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -210,23 +281,51 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                         />
                     </div>
 
-                    {/* Ответственный */}
+                    {/* Ответственный с поиском */}
+                    {/* Ответственный с поиском (как список, не Select) */}
                     <div>
-                        <Label htmlFor="responsible">Ответственный (кладовщик) *</Label>
-                        <Select value={responsiblePerson} onValueChange={setResponsiblePerson} disabled={loading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Выберите ответственного" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {users.map((user) => (
-                                    <SelectItem key={user.id} value={user.id.toString()}>
-                                        {user.name} {user.secondname} ({user.username})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                        <Label>Ответственный *</Label>
+                        <div className="relative mb-2">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <Input
+                                placeholder="Поиск по имени, фамилии или логину..."
+                                value={userSearch}
+                                onChange={(e) => setUserSearch(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
 
+                        {/* Список пользователей */}
+                        <div className="border rounded-lg max-h-48 overflow-y-auto">
+                            {filteredUsers.length === 0 ? (
+                                <div className="p-3 text-center text-gray-500">Пользователи не найдены</div>
+                            ) : (
+                                filteredUsers.map((user) => (
+                                    <div
+                                        key={user.id}
+                                        className={`flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 ${responsiblePerson === user.id.toString() ? 'bg-primary/10 border-l-4 border-l-primary' : ''
+                                            }`}
+                                        onClick={() => setResponsiblePerson(user.id.toString())}
+                                    >
+                                        <div>
+                                            <div className="font-medium">
+                                                {user.name} {user.secondname}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                @{user.username} • {
+                                                    user.role === 'admin' ? 'Администратор' :
+                                                        user.role === 'accountant' ? 'Бухгалтер' : 'Кладовщик'
+                                                }
+                                            </div>
+                                        </div>
+                                        {responsiblePerson === user.id.toString() && (
+                                            <div className="text-green-500 text-sm">Выбран</div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
                     {/* Даты */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -286,7 +385,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                     {/* Выбор товаров */}
                     <div className="border rounded-lg p-4">
                         <Label className="mb-3 block">Что инвентаризируем?</Label>
-                        
+
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <input
@@ -298,7 +397,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                 />
                                 <label htmlFor="all">Все товары</label>
                             </div>
-                            
+
                             <div className="flex items-center gap-2">
                                 <input
                                     type="radio"
@@ -309,24 +408,39 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                 />
                                 <label htmlFor="categories">Выбрать категории</label>
                             </div>
-                            
+
                             {selectionMode === "categories" && (
-                                <div className="ml-6 space-y-2 max-h-48 overflow-y-auto border rounded p-2">
-                                    {categories.map((category) => (
-                                        <div key={category.id} className="flex items-center gap-2">
-                                            <Checkbox
-                                                id={`cat-${category.id}`}
-                                                checked={selectedCategories.includes(category.id)}
-                                                onCheckedChange={() => handleCategoryToggle(category.id)}
-                                            />
-                                            <label htmlFor={`cat-${category.id}`}>
-                                                {category.name} ({getMaterialsByCategory(category.id).length} товаров)
-                                            </label>
-                                        </div>
-                                    ))}
+                                <div className="ml-6">
+                                    <div className="relative mb-2">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                        <Input
+                                            placeholder="Поиск категорий..."
+                                            value={categorySearch}
+                                            onChange={(e) => setCategorySearch(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2">
+                                        {filteredCategories.length === 0 ? (
+                                            <div className="text-center text-gray-500 py-2">Категории не найдены</div>
+                                        ) : (
+                                            filteredCategories.map((category) => (
+                                                <div key={category.id} className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id={`cat-${category.id}`}
+                                                        checked={selectedCategories.includes(category.id)}
+                                                        onCheckedChange={() => handleCategoryToggle(category.id)}
+                                                    />
+                                                    <label htmlFor={`cat-${category.id}`}>
+                                                        {category.name}
+                                                    </label>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             )}
-                            
+
                             <div className="flex items-center gap-2">
                                 <input
                                     type="radio"
@@ -337,32 +451,110 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                 />
                                 <label htmlFor="materials">Выбрать конкретные товары</label>
                             </div>
-                            
+
                             {selectionMode === "materials" && (
-                                <div className="ml-6 space-y-2 max-h-48 overflow-y-auto border rounded p-2">
-                                    {categories.map((category) => {
-                                        const categoryMaterials = getMaterialsByCategory(category.id);
-                                        if (categoryMaterials.length === 0) return null;
-                                        return (
-                                            <div key={category.id} className="mb-3">
-                                                <div className="font-semibold text-sm mb-2">{category.name}</div>
-                                                <div className="ml-4 space-y-1">
-                                                    {categoryMaterials.map((material) => (
-                                                        <div key={material.id} className="flex items-center gap-2">
-                                                            <Checkbox
-                                                                id={`mat-${material.id}`}
-                                                                checked={selectedMaterials.includes(material.id)}
-                                                                onCheckedChange={() => handleMaterialToggle(material.id)}
-                                                            />
-                                                            <label htmlFor={`mat-${material.id}`} className="text-sm">
-                                                                {material.name} ({material.code})
-                                                            </label>
-                                                        </div>
-                                                    ))}
+                                <div className="ml-6">
+                                    {/* Фильтры для товаров */}
+                                    <div className="flex flex-col gap-2 mb-3">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                            <Input
+                                                placeholder="Поиск по названию или коду..."
+                                                value={materialSearch}
+                                                onChange={(e) => {
+                                                    setMaterialSearch(e.target.value);
+                                                    setCurrentPage(0);
+                                                    setShowAllMaterials(false);
+                                                }}
+                                                className="pl-10"
+                                            />
+                                        </div>
+                                        <Select value={materialSelectedCategory} onValueChange={setMaterialSelectedCategory}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Все категории" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Все категории</SelectItem>
+                                                {categories.map((category) => (
+                                                    <SelectItem key={category.id} value={category.id.toString()}>
+                                                        {category.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Список товаров */}
+                                    <div className="space-y-3 max-h-60 overflow-y-auto border rounded p-2">
+                                        {paginatedMaterials.length === 0 ? (
+                                            <div className="text-center text-gray-500 py-2">Товары не найдены</div>
+                                        ) : (
+                                            paginatedMaterials.map((material) => (
+                                                <div key={material.id} className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id={`mat-${material.id}`}
+                                                        checked={selectedMaterials.includes(material.id)}
+                                                        onCheckedChange={() => handleMaterialToggle(material.id)}
+                                                    />
+                                                    <label htmlFor={`mat-${material.id}`} className="text-sm">
+                                                        {material.name} ({material.code})
+                                                    </label>
                                                 </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    {/* Пагинация для товаров */}
+                                    {!showAllMaterials && totalPages > 1 && (
+                                        <div className="flex items-center justify-between mt-3">
+                                            <div className="text-xs text-gray-500">
+                                                Всего: {totalMaterials}
                                             </div>
-                                        );
-                                    })}
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                                                    disabled={currentPage === 0}
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                </Button>
+                                                <span className="text-sm">
+                                                    {currentPage + 1} / {totalPages}
+                                                </span>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                                                    disabled={currentPage === totalPages - 1}
+                                                >
+                                                    <ChevronRight className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setShowAllMaterials(true)}
+                                                >
+                                                    Развернуть
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {showAllMaterials && totalMaterials > 10 && (
+                                        <div className="flex justify-end mt-3">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setShowAllMaterials(false);
+                                                    setCurrentPage(0);
+                                                }}
+                                            >
+                                                Свернуть
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

@@ -1,0 +1,295 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+    ArrowLeft, 
+    Package, 
+    User, 
+    Calendar,
+    FileText,
+    CheckCircle
+} from "lucide-react";
+import axios from "axios";
+import { API_BASE_URL } from "@/components/api";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale/ru";
+
+interface InventoryItem {
+    id: number;
+    inventory_id: number;
+    material_id: number;
+    name: string;
+    code: string;
+    unit: string;
+    system_quantity: number;
+    actual_quantity: number | null;
+    difference: number | null;
+    reason: string | null;
+}
+
+interface Inventory {
+    id: number;
+    title: string;
+    status: string;
+    created_by: number;
+    created_by_username: string;
+    responsible_person: number;
+    responsible_username: string;
+    start_date: string;
+    end_date: string;
+    description: string | null;
+    created_at: string;
+    completed_at: string | null;
+    approved_at: string | null;
+    approved_by_username: string | null;
+}
+
+export default function InventoryDetails() {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [inventory, setInventory] = useState<Inventory | null>(null);
+    const [items, setItems] = useState<InventoryItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    // Загружаем пользователя из localStorage
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setCurrentUser(JSON.parse(userData));
+        }
+    }, []);
+
+    // Функция проверки прав для admin/accountant
+    const isAdminOrAccountant = () => {
+        if (!currentUser) return false;
+        return currentUser.role === 'admin' || currentUser.role === 'accountant';
+    };
+
+    // Функция проверки, является ли пользователь ответственным
+    const isResponsible = () => {
+        if (!inventory || !currentUser) return false;
+        return inventory.responsible_person === currentUser.id;
+    };
+
+    // Кнопка "Проверить" видна только для admin/accountant и когда статус 'completed'
+    const canReview = () => {
+        return isAdminOrAccountant() && inventory?.status === 'completed';
+    };
+
+    useEffect(() => {
+        if (currentUser !== null) {
+            fetchInventory();
+        }
+    }, [id, currentUser]);
+
+    const fetchInventory = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem("token");
+            const response = await axios.get(`${API_BASE_URL}/inventories/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setInventory(response.data.inventory);
+            setItems(response.data.results || []);
+        } catch (error: any) {
+            console.error("Ошибка загрузки:", error);
+            setError(error.response?.data?.error || "Ошибка загрузки");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReview = () => {
+        navigate(`/inventories/${id}/review`);
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'draft':
+                return <Badge variant="outline" className="text-gray-500">Черновик</Badge>;
+            case 'in_progress':
+                return <Badge className="bg-yellow-500">В процессе</Badge>;
+            case 'completed':
+                return <Badge className="bg-blue-500">Завершена, ожидает проверки</Badge>;
+            case 'approved':
+                return <Badge className="bg-green-500">Утверждена</Badge>;
+            case 'cancelled':
+                return <Badge variant="destructive">Отменена</Badge>;
+            default:
+                return <Badge>{status}</Badge>;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
+            </div>
+        );
+    }
+
+    if (!inventory || error) {
+        return (
+            <div className="text-center py-20">
+                <p className="text-gray-500">{error || "Инвентаризация не найдена"}</p>
+                <Button onClick={() => navigate("/inventories")} className="mt-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Назад
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto p-4 max-w-5xl">
+            {/* Кнопка назад */}
+            <Button
+                variant="ghost"
+                onClick={() => navigate("/inventories")}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Назад к списку
+            </Button>
+
+            {/* Информация об инвентаризации */}
+            <Card className="mb-6">
+                <CardHeader>
+                    <div className="flex flex-wrap justify-between items-start gap-4">
+                        <div>
+                            <CardTitle className="text-2xl mb-2">{inventory.title}</CardTitle>
+                            <div className="flex flex-wrap gap-2">
+                                {getStatusBadge(inventory.status)}
+                            </div>
+                        </div>
+                        {/* Кнопка проверки - только для admin/accountant и статус completed */}
+                        {canReview() && (
+                            <Button 
+                                onClick={handleReview}
+                                className="bg-blue-500 hover:bg-blue-600"
+                            >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Проверить
+                            </Button>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                                {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span className={isResponsible() ? "text-red-500 font-semibold" : "text-gray-600"}>
+                                Ответственный: {inventory.responsible_username}
+                                {isResponsible() && " (Вы)"}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <User className="h-4 w-4" />
+                            <span>Создал: {inventory.created_by_username}</span>
+                        </div>
+                        {inventory.approved_by_username && (
+                            <div className="flex items-center gap-2 text-gray-600">
+                                <User className="h-4 w-4" />
+                                <span>Утвердил: {inventory.approved_by_username}</span>
+                            </div>
+                        )}
+                        {inventory.completed_at && (
+                            <div className="flex items-center gap-2 text-gray-600">
+                                <Calendar className="h-4 w-4" />
+                                <span>Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}</span>
+                            </div>
+                        )}
+                        {inventory.approved_at && (
+                            <div className="flex items-center gap-2 text-gray-600">
+                                <Calendar className="h-4 w-4" />
+                                <span>Утверждена: {format(new Date(inventory.approved_at), "dd.MM.yyyy HH:mm")}</span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {inventory.description && (
+                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                            <div className="text-sm text-gray-500 mb-1">Описание</div>
+                            <p className="text-sm">{inventory.description}</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Список товаров */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        Результаты инвентаризации
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {items.map((item) => (
+                            <div key={item.id} className="border rounded-lg p-4">
+                                <div className="flex flex-wrap justify-between items-start mb-3">
+                                    <div>
+                                        <h3 className="font-semibold">{item.name}</h3>
+                                        <p className="text-sm text-gray-500">Код: {item.code}</p>
+                                    </div>
+                                    {item.actual_quantity !== null && item.actual_quantity !== item.system_quantity && (
+                                        <Badge variant={item.difference && item.difference > 0 ? "default" : "destructive"}>
+                                            {item.difference && item.difference > 0 ? `+${item.difference}` : item.difference} {item.unit}
+                                        </Badge>
+                                    )}
+                                    {item.actual_quantity !== null && item.actual_quantity === item.system_quantity && (
+                                        <Badge variant="outline" className="text-green-600">
+                                            Совпадает
+                                        </Badge>
+                                    )}
+                                    {item.actual_quantity === null && (
+                                        <Badge variant="outline" className="text-gray-500">
+                                            Не проверено
+                                        </Badge>
+                                    )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <div className="text-sm text-gray-500">В системе</div>
+                                        <div className="font-medium">{item.system_quantity} {item.unit}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-gray-500">Фактически</div>
+                                        <div className="font-medium">
+                                            {item.actual_quantity !== null ? `${item.actual_quantity} ${item.unit}` : "—"}
+                                        </div>
+                                    </div>
+                                    {item.reason && (
+                                        <div className="col-span-1 md:col-span-3 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                            <div className="text-sm text-gray-500">Причина расхождения</div>
+                                            <div className="text-sm">{item.reason}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {items.length === 0 && (
+                        <div className="text-center py-10 text-gray-500">
+                            Нет данных
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

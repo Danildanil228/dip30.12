@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Button } from "@/components/ui/button";
-import {AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle,AlertDialogTrigger,} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import {Popover,PopoverContent,PopoverTrigger,} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -111,40 +111,103 @@ export default function Notifications({ onVisited }: LogsProps) {
     };
 
     const parseMessageWithLinks = (message: string) => {
-        const parts = message.split(/(\[user:\d+:\w+\])|(\[request:\d+\])/g);
-
-        return parts.map((part, index) => {
-            if (!part) return null;
-            const userMatch = part.match(/\[user:(\d+):(\w+)\]/);
-            if (userMatch) {
-                const userId = parseInt(userMatch[1]);
-                const username = userMatch[2];
-                return (
-                    <Link
-                        key={index}
-                        to={`/profile/${userId}`}
-                        className="underline mx-1"
-                    >
-                        {username}
-                    </Link>
-                );
-            }
-            const requestMatch = part.match(/\[request:(\d+)\]/);
-            if (requestMatch) {
-                const requestId = requestMatch[1];
-                return (
-                    <Link
-                        key={index}
-                        to={`/requests/${requestId}`}
-                        className="underline mx-1 font-semibold"
-                    >
-                        заявку
-                    </Link>
-                );
-            }
-            return <span key={index}>{part}</span>;
+    // Регулярное выражение для поиска всех ссылок
+    const regex = /(\[user:\d+:\w+\])|(\[request:\d+\])|(\[inventory:\d+\])/g;
+    const parts: Array<{ type: 'text' | 'user' | 'request' | 'inventory'; content: string; id?: number; username?: string }> = [];
+    
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(message)) !== null) {
+        // Добавляем текст перед ссылкой
+        if (match.index > lastIndex) {
+            parts.push({
+                type: 'text',
+                content: message.substring(lastIndex, match.index)
+            });
+        }
+        
+        // Обрабатываем ссылку
+        const userMatch = match[0].match(/\[user:(\d+):(\w+)\]/);
+        if (userMatch) {
+            parts.push({
+                type: 'user',
+                content: userMatch[2],
+                id: parseInt(userMatch[1]),
+                username: userMatch[2]
+            });
+        }
+        
+        const requestMatch = match[0].match(/\[request:(\d+)\]/);
+        if (requestMatch) {
+            parts.push({
+                type: 'request',
+                content: `заявка #${requestMatch[1]}`,
+                id: parseInt(requestMatch[1])
+            });
+        }
+        
+        const inventoryMatch = match[0].match(/\[inventory:(\d+)\]/);
+        if (inventoryMatch) {
+            parts.push({
+                type: 'inventory',
+                content: `инвентаризация #${inventoryMatch[1]}`,
+                id: parseInt(inventoryMatch[1])
+            });
+        }
+        
+        lastIndex = match.index + match[0].length;
+    }
+    
+    // Добавляем остаток текста
+    if (lastIndex < message.length) {
+        parts.push({
+            type: 'text',
+            content: message.substring(lastIndex)
         });
-    };
+    }
+    
+    // Рендерим части
+    return parts.map((part, index) => {
+        if (part.type === 'text') {
+            return <span key={index}>{part.content}</span>;
+        }
+        if (part.type === 'user') {
+            return (
+                <Link
+                    key={index}
+                    to={`/profile/${part.id}`}
+                    className="text-blue-500 hover:underline mx-1"
+                >
+                    {part.username}
+                </Link>
+            );
+        }
+        if (part.type === 'request') {
+            return (
+                <Link
+                    key={index}
+                    to={`/requests/${part.id}`}
+                    className="text-green-500 hover:underline mx-1 font-semibold"
+                >
+                    {part.content}
+                </Link>
+            );
+        }
+        if (part.type === 'inventory') {
+            return (
+                <Link
+                    key={index}
+                    to={`/inventories/${part.id}`}
+                    className="text-purple-500 hover:underline mx-1 font-semibold"
+                >
+                    {part.content}
+                </Link>
+            );
+        }
+        return null;
+    });
+};
 
     if (loading) {
         return (

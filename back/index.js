@@ -1034,7 +1034,7 @@ app.get('/requests', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const { status } = req.query;
-        
+
         let query = `
             SELECT r.*, 
                    u.username as created_by_username,
@@ -1047,28 +1047,28 @@ app.get('/requests', async (req, res) => {
             LEFT JOIN users u ON r.created_by = u.id
             WHERE 1=1
         `;
-        
+
         const params = [];
         let paramIndex = 1;
-        
+
         if (status && status !== 'all') {
             query += ` AND r.status = $${paramIndex}`;
             params.push(status);
             paramIndex++;
         }
-        
+
         const isAdmin = decoded.role === 'admin';
         if (!isAdmin) {
             query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
             params.push(decoded.id);
             paramIndex++;
         }
-        
+
         query += ` ORDER BY r.created_at DESC`;
-        
+
         const result = await pool.query(query, params);
         res.json({ requests: result.rows });
-        
+
     } catch (error) {
         console.error('Ошибка получения заявок:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -1167,7 +1167,7 @@ app.post('/requests', async (req, res) => {
             'SELECT id, name, quantity FROM materials WHERE id = ANY($1)',
             [materialIds]
         );
-        
+
         const materialsMap = new Map();
         materialsResult.rows.forEach(m => materialsMap.set(m.id, m));
 
@@ -1183,7 +1183,7 @@ app.post('/requests', async (req, res) => {
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
                 if (material.quantity < item.quantity) {
-                    return res.status(400).json({ 
+                    return res.status(400).json({
                         error: `Недостаточно товара "${material.name}". Остаток: ${material.quantity}, запрошено: ${item.quantity}`
                     });
                 }
@@ -1198,7 +1198,7 @@ app.post('/requests', async (req, res) => {
         const publicStatus = isAdmin ? (is_public !== false) : true;
 
         const client = await pool.connect();
-        
+
         try {
             await client.query('BEGIN');
 
@@ -1229,10 +1229,10 @@ app.post('/requests', async (req, res) => {
             if (isApproved) {
                 for (const item of items) {
                     const material = materialsMap.get(item.material_id);
-                    const newQuantity = request_type === 'incoming' 
-                        ? material.quantity + item.quantity 
+                    const newQuantity = request_type === 'incoming'
+                        ? material.quantity + item.quantity
                         : material.quantity - item.quantity;
-                    
+
                     await client.query(
                         'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
                         [newQuantity, item.material_id]
@@ -1247,7 +1247,7 @@ app.post('/requests', async (req, res) => {
                 const material = materialsMap.get(i.material_id);
                 return `${material.name} (${i.quantity})`;
             }).join(', ');
-            
+
             // Логируем создание заявки
             await Logger.requestCreated(decoded.id, decoded.username, title, request_type, itemsList);
 
@@ -1319,7 +1319,7 @@ app.put('/requests/:id/approve', async (req, res) => {
                     'SELECT quantity FROM materials WHERE id = $1',
                     [item.material_id]
                 );
-                
+
                 if (currentMaterial.rows[0].quantity < item.quantity) {
                     return res.status(400).json({
                         error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`
@@ -1331,7 +1331,7 @@ app.put('/requests/:id/approve', async (req, res) => {
         Logger.setCurrentRequestId(requestId);
 
         const client = await pool.connect();
-        
+
         try {
             await client.query('BEGIN');
 
@@ -1346,7 +1346,7 @@ app.put('/requests/:id/approve', async (req, res) => {
                 const newQuantity = request.request_type === 'incoming'
                     ? item.current_quantity + item.quantity
                     : item.current_quantity - item.quantity;
-                
+
                 await client.query(
                     'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
                     [newQuantity, item.material_id]
@@ -1439,7 +1439,7 @@ app.get('/inventories', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
-        
+
         let query = `
             SELECT i.*, 
                    u1.username as created_by_username,
@@ -1454,21 +1454,21 @@ app.get('/inventories', async (req, res) => {
             LEFT JOIN inventory_results ir ON i.id = ir.inventory_id
             WHERE 1=1
         `;
-        
+
         const params = [];
         let paramIndex = 1;
-        
+
         if (!isAdminOrAccountant) {
             query += ` AND i.responsible_person = $${paramIndex}`;
             params.push(decoded.id);
             paramIndex++;
         }
-        
+
         query += ` GROUP BY i.id, u1.username, u2.username, u3.username ORDER BY i.created_at DESC`;
-        
+
         const result = await pool.query(query, params);
         res.json({ inventories: result.rows });
-        
+
     } catch (error) {
         console.error('Ошибка получения инвентаризаций:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -1486,7 +1486,7 @@ app.get('/inventories/:id', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const inventoryId = parseInt(req.params.id);
         const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
-        
+
         const inventoryResult = await pool.query(
             `SELECT i.*, 
                     u1.username as created_by_username,
@@ -1499,18 +1499,18 @@ app.get('/inventories/:id', async (req, res) => {
              WHERE i.id = $1`,
             [inventoryId]
         );
-        
+
         if (inventoryResult.rows.length === 0) {
             return res.status(404).json({ error: 'Инвентаризация не найдена' });
         }
-        
+
         const inventory = inventoryResult.rows[0];
-        
+
         const canView = isAdminOrAccountant || decoded.id === inventory.responsible_person;
         if (!canView) {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
-        
+
         const categoriesResult = await pool.query(
             `SELECT ic.category_id, c.name 
              FROM inventory_categories ic
@@ -1518,7 +1518,7 @@ app.get('/inventories/:id', async (req, res) => {
              WHERE ic.inventory_id = $1`,
             [inventoryId]
         );
-        
+
         const materialsResult = await pool.query(
             `SELECT im.material_id, m.name, m.code
              FROM inventory_materials im
@@ -1526,7 +1526,7 @@ app.get('/inventories/:id', async (req, res) => {
              WHERE im.inventory_id = $1`,
             [inventoryId]
         );
-        
+
         const resultsResult = await pool.query(
             `SELECT ir.*, m.name, m.code, m.unit
              FROM inventory_results ir
@@ -1535,14 +1535,14 @@ app.get('/inventories/:id', async (req, res) => {
              ORDER BY m.name`,
             [inventoryId]
         );
-        
+
         res.json({
             inventory: inventory,
             categories: categoriesResult.rows,
             selected_materials: materialsResult.rows,
             results: resultsResult.rows
         });
-        
+
     } catch (error) {
         console.error('Ошибка получения инвентаризации:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -1587,6 +1587,7 @@ app.post('/inventories', async (req, res) => {
             
             const inventory = inventoryResult.rows[0];
             
+            // Добавляем выбранные категории
             if (categories && categories.length > 0) {
                 for (const categoryId of categories) {
                     await client.query(
@@ -1596,6 +1597,7 @@ app.post('/inventories', async (req, res) => {
                 }
             }
             
+            // Добавляем выбранные товары
             if (materials && materials.length > 0) {
                 for (const materialId of materials) {
                     await client.query(
@@ -1605,6 +1607,7 @@ app.post('/inventories', async (req, res) => {
                 }
             }
             
+            // Определяем список товаров для инвентаризации
             let materialsQuery = `
                 SELECT m.id, m.name, m.code, m.unit, m.quantity
                 FROM materials m
@@ -1634,7 +1637,8 @@ app.post('/inventories', async (req, res) => {
             
             await client.query('COMMIT');
             
-            await Logger.inventoryCreated(decoded.id, decoded.username, title);
+            // Логирование с передачей ID
+            await Logger.inventoryCreated(decoded.id, decoded.username, title, inventory.id);
             
             res.json({
                 message: 'Инвентаризация создана',
@@ -1663,25 +1667,25 @@ app.put('/inventories/:id', async (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
+
         if (decoded.role !== 'admin') {
             return res.status(403).json({ error: 'Недостаточно прав' });
         }
-        
+
         const inventoryId = parseInt(req.params.id);
         const { title, responsible_person, start_date, end_date, description } = req.body;
-        
+
         const inventoryCheck = await pool.query(
             'SELECT title FROM inventories WHERE id = $1',
             [inventoryId]
         );
-        
+
         if (inventoryCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Инвентаризация не найдена' });
         }
-        
+
         const oldTitle = inventoryCheck.rows[0].title;
-        
+
         const result = await pool.query(
             `UPDATE inventories 
              SET title = COALESCE($1, title),
@@ -1694,15 +1698,15 @@ app.put('/inventories/:id', async (req, res) => {
              RETURNING *`,
             [title, responsible_person, start_date, end_date, description, inventoryId]
         );
-        
+
         // Логирование
         await Logger.inventoryUpdated(decoded.id, decoded.username, oldTitle, 'данные изменены');
-        
+
         res.json({
             message: 'Инвентаризация обновлена',
             inventory: result.rows[0]
         });
-        
+
     } catch (error) {
         console.error('Ошибка обновления инвентаризации:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -1742,7 +1746,8 @@ app.put('/inventories/:id/start', async (req, res) => {
             [inventoryId]
         );
         
-        await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title);
+        // Логирование с передачей ID
+        await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
         
         res.json({ message: 'Инвентаризация начата' });
         
@@ -1790,7 +1795,8 @@ app.put('/inventories/:id/results', async (req, res) => {
             );
         }
         
-        await Logger.inventorySaved(decoded.id, decoded.username, inventory.rows[0].title);
+        // Логирование с передачей ID
+        await Logger.inventorySaved(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
         
         res.json({ message: 'Результаты сохранены' });
         
@@ -1828,6 +1834,7 @@ app.put('/inventories/:id/complete', async (req, res) => {
             return res.status(400).json({ error: 'Инвентаризация не в процессе' });
         }
         
+        // Проверяем, все ли товары проверены
         const checkResult = await pool.query(
             'SELECT COUNT(*) as total, COUNT(CASE WHEN actual_quantity IS NOT NULL THEN 1 END) as checked FROM inventory_results WHERE inventory_id = $1',
             [inventoryId]
@@ -1842,7 +1849,8 @@ app.put('/inventories/:id/complete', async (req, res) => {
             [inventoryId]
         );
         
-        await Logger.inventoryCompleted(decoded.id, decoded.username, inventory.rows[0].title);
+        // Логирование с передачей ID
+        await Logger.inventoryCompleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
         
         res.json({ message: 'Инвентаризация завершена и отправлена на проверку' });
         
@@ -1886,6 +1894,7 @@ app.put('/inventories/:id/approve', async (req, res) => {
         try {
             await client.query('BEGIN');
             
+            // Получаем результаты с расхождениями
             const results = await client.query(
                 `SELECT ir.*, m.quantity as current_quantity
                  FROM inventory_results ir
@@ -1894,6 +1903,7 @@ app.put('/inventories/:id/approve', async (req, res) => {
                 [inventoryId]
             );
             
+            // Обновляем количество товаров
             for (const result of results.rows) {
                 await client.query(
                     'UPDATE materials SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
@@ -1910,7 +1920,8 @@ app.put('/inventories/:id/approve', async (req, res) => {
             
             await client.query('COMMIT');
             
-            await Logger.inventoryApproved(decoded.id, decoded.username, inventory.rows[0].title, results.rows.length);
+            // Логирование с передачей ID
+            await Logger.inventoryApproved(decoded.id, decoded.username, inventory.rows[0].title, results.rows.length, inventoryId);
             
             res.json({ message: 'Инвентаризация подтверждена, остатки обновлены' });
             
@@ -1957,7 +1968,8 @@ app.put('/inventories/:id/cancel', async (req, res) => {
             [decoded.id, inventoryId]
         );
         
-        await Logger.inventoryCancelled(decoded.id, decoded.username, inventory.rows[0].title);
+        // Логирование с передачей ID
+        await Logger.inventoryCancelled(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
         
         res.json({ message: 'Инвентаризация отменена' });
         
@@ -1994,7 +2006,8 @@ app.delete('/inventories/:id', async (req, res) => {
         
         await pool.query('DELETE FROM inventories WHERE id = $1', [inventoryId]);
         
-        await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title);
+        // Логирование с передачей ID
+        await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
         
         res.json({ message: 'Инвентаризация удалена' });
         

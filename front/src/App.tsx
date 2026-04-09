@@ -14,6 +14,10 @@ import Materials from './Pages/Materials';
 import Backups from './Pages/Backups';
 import Requests from './Pages/Requests/Requests';
 import RequestDetails from './Pages/Requests/RequestDetails';
+import Inventories from './Pages/Inventories/Inventories';
+import InventoryConduct from './Pages/Inventories/InventoryConduct';
+import InventoryReview from './Pages/Inventories/InventoryReview';
+import InventoryDetails from './Pages/Inventories/InventoryDetails';
 
 function App() {
   return (
@@ -29,6 +33,31 @@ function App() {
             <Route path="/main" element={
               <ProtectedRoute>
                 <Main />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/inventories" element={
+              <ProtectedRoute>
+                <Inventories />
+              </ProtectedRoute>
+            } />
+
+
+
+            <Route path="/inventories/:id/conduct" element={
+              <ProtectedRoute>
+                <InventoryConduct />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/inventories/:id/review" element={
+              <ProtectedRoute>
+                <InventoryReview />
+              </ProtectedRoute>
+            } />
+            <Route path="/inventories/:id" element={
+              <ProtectedRoute>
+                <InventoryDetails />
               </ProtectedRoute>
             } />
 
