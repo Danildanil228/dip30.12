@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {Search,Plus,Calendar,User,FileText,Eye,Play,Send,MoreHorizontal,Package} from "lucide-react";
+import {Search,Calendar,User,FileText,Eye,Play,Send,MoreHorizontal,Package} from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale/ru";
 import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
 import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 
