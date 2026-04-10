@@ -257,13 +257,34 @@ app.post('/createUser', checkAdmin, async (req, res) => {
 });
 
 
-app.get('/users', checkAdmin, async (req, res) => {
+app.get('/users', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT id, username, role, name, secondname, created_at FROM users'
-        );
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
 
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        let query = 'SELECT id, username, role, name, secondname, created_at FROM users';
+        const params = [];
+        
+        // Админ видит всех
+        if (decoded.role === 'admin') {
+            query += ' ORDER BY name, secondname';
+        } 
+        // Бухгалтер видит бухгалтеров и кладовщиков
+        else if (decoded.role === 'accountant') {
+            query += " WHERE role IN ('storekeeper', 'accountant') ORDER BY name, secondname";
+        }
+        // Кладовщик не видит пользователей
+        else {
+            return res.json({ users: [] });
+        }
+        
+        const result = await pool.query(query, params);
         res.json({ users: result.rows });
+        
     } catch (error) {
         console.error('Ошибка при получении пользователей:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
