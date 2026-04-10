@@ -5,15 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-    ArrowLeft, 
-    Save, 
-    Send, 
-    Package, 
-    User, 
-    Calendar,
-    AlertCircle
-} from "lucide-react";
+import { ArrowLeft, Save, Send, Package, User, Calendar, AlertCircle } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
@@ -52,15 +44,13 @@ export default function InventoryConduct() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
-    // Загружаем пользователя из localStorage
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = localStorage.getItem("user");
         if (userData) {
             setCurrentUser(JSON.parse(userData));
         }
     }, []);
 
-    // Функция для проверки, является ли пользователь ответственным
     const isResponsible = () => {
         if (!inventory || !currentUser) return false;
         return inventory.responsible_person === currentUser.id;
@@ -79,18 +69,17 @@ export default function InventoryConduct() {
             const response = await axios.get(`${API_BASE_URL}/inventories/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             setInventory(response.data.inventory);
             setItems(response.data.results || []);
-            
-            // Проверка прав после загрузки данных
+
             if (response.data.inventory.responsible_person !== currentUser?.id) {
                 setError(`Вы не являетесь ответственным за эту инвентаризацию. 
                     Ответственный: ${response.data.inventory.responsible_username} (ID: ${response.data.inventory.responsible_person})`);
                 return;
             }
-            
-            if (response.data.inventory.status !== 'in_progress') {
+
+            if (response.data.inventory.status !== "in_progress") {
                 setError(`Инвентаризация не в процессе. Текущий статус: ${response.data.inventory.status}`);
                 return;
             }
@@ -104,19 +93,11 @@ export default function InventoryConduct() {
 
     const handleQuantityChange = (materialId: number, value: string) => {
         const numValue = value === "" ? null : parseInt(value);
-        setItems(prev => prev.map(item =>
-            item.material_id === materialId
-                ? { ...item, actual_quantity: numValue }
-                : item
-        ));
+        setItems((prev) => prev.map((item) => (item.material_id === materialId ? { ...item, actual_quantity: numValue } : item)));
     };
 
     const handleReasonChange = (materialId: number, value: string) => {
-        setItems(prev => prev.map(item =>
-            item.material_id === materialId
-                ? { ...item, reason: value || null }
-                : item
-        ));
+        setItems((prev) => prev.map((item) => (item.material_id === materialId ? { ...item, reason: value || null } : item)));
     };
 
     const handleSave = async () => {
@@ -124,22 +105,26 @@ export default function InventoryConduct() {
             setError("Вы не являетесь ответственным");
             return;
         }
-        
+
         setSaving(true);
         setError("");
-        
+
         try {
             const token = localStorage.getItem("token");
-            const results = items.map(item => ({
+            const results = items.map((item) => ({
                 material_id: item.material_id,
                 actual_quantity: item.actual_quantity,
                 reason: item.reason
             }));
-            
-            await axios.put(`${API_BASE_URL}/inventories/${id}/results`, { results }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+
+            await axios.put(
+                `${API_BASE_URL}/inventories/${id}/results`,
+                { results },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
             alert("Результаты сохранены");
         } catch (error: any) {
             console.error("Ошибка сохранения:", error);
@@ -154,40 +139,45 @@ export default function InventoryConduct() {
             setError("Вы не являетесь ответственным");
             return;
         }
-        
-        // Проверяем, все ли товары проверены
-        const uncheckedItems = items.filter(item => item.actual_quantity === null);
+
+        const uncheckedItems = items.filter((item) => item.actual_quantity === null);
         if (uncheckedItems.length > 0) {
             setError(`Осталось не проверенных товаров: ${uncheckedItems.length}`);
             return;
         }
-        
+
         if (!confirm("Завершить инвентаризацию и отправить на проверку? После этого нельзя будет редактировать результаты.")) {
             return;
         }
-        
+
         setSaving(true);
         setError("");
-        
+
         try {
             const token = localStorage.getItem("token");
-            
-            // Сначала сохраняем результаты
-            const results = items.map(item => ({
+
+            const results = items.map((item) => ({
                 material_id: item.material_id,
                 actual_quantity: item.actual_quantity,
                 reason: item.reason
             }));
-            
-            await axios.put(`${API_BASE_URL}/inventories/${id}/results`, { results }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            // Затем завершаем
-            await axios.put(`${API_BASE_URL}/inventories/${id}/complete`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+
+            await axios.put(
+                `${API_BASE_URL}/inventories/${id}/results`,
+                { results },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            await axios.put(
+                `${API_BASE_URL}/inventories/${id}/complete`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
             alert("Инвентаризация завершена и отправлена на проверку");
             navigate("/inventories");
         } catch (error: any) {
@@ -200,17 +190,17 @@ export default function InventoryConduct() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'in_progress':
-                return <Badge className="bg-yellow-500">В процессе</Badge>;
-            case 'completed':
-                return <Badge className="bg-blue-500">Завершена</Badge>;
+            case "in_progress":
+                return <Badge>В процессе</Badge>;
+            case "completed":
+                return <Badge>Завершена</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
     };
 
     const getProgress = () => {
-        const checked = items.filter(item => item.actual_quantity !== null).length;
+        const checked = items.filter((item) => item.actual_quantity !== null).length;
         const total = items.length;
         return { checked, total, percent: total === 0 ? 0 : Math.round((checked / total) * 100) };
     };
@@ -250,39 +240,25 @@ export default function InventoryConduct() {
     const progress = getProgress();
 
     return (
-        <div className="container mx-auto p-4 max-w-5xl">
-            <Button
-                variant="ghost"
-                onClick={() => navigate("/inventories")}
-                className="mb-4"
-            >
+        <div>
+            <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
             </Button>
 
             <Card className="mb-6">
                 <CardHeader>
-                    <div className="flex flex-wrap justify-between items-start gap-4">
+                    <div className="sm:flex grid justify-between items-start gap-4">
                         <div>
-                            <CardTitle className="text-2xl mb-2">{inventory.title}</CardTitle>
-                            <div className="flex flex-wrap gap-2">
-                                {getStatusBadge(inventory.status)}
-                            </div>
+                            <CardTitle className="text-base mb-2">{inventory.title}</CardTitle>
+                            <div className="flex flex-wrap gap-2">{getStatusBadge(inventory.status)}</div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button 
-                                onClick={handleSave} 
-                                disabled={saving || inventory.status !== 'in_progress' || !isResponsible()}
-                                variant="outline"
-                            >
+                        <div className="  items-center justify-center">
+                            <Button onClick={handleSave} disabled={saving || inventory.status !== "in_progress" || !isResponsible()} variant="outline">
                                 <Save className="mr-2 h-4 w-4" />
                                 Сохранить
                             </Button>
-                            <Button 
-                                onClick={handleComplete} 
-                                disabled={saving || inventory.status !== 'in_progress' || !isResponsible()}
-                                className="bg-green-500 hover:bg-green-600"
-                            >
+                            <Button onClick={handleComplete} disabled={saving || inventory.status !== "in_progress" || !isResponsible()}>
                                 <Send className="mr-2 h-4 w-4" />
                                 Завершить
                             </Button>
@@ -305,31 +281,30 @@ export default function InventoryConduct() {
                             </span>
                         </div>
                     </div>
-                    
+
                     {inventory.description && (
                         <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
                             <p className="text-sm">{inventory.description}</p>
                         </div>
                     )}
-                    
+
                     {error && (
                         <div className="mb-4 flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded">
                             <AlertCircle className="h-4 w-4" />
                             <span className="text-sm whitespace-pre-line">{error}</span>
                         </div>
                     )}
-                    
-                    {inventory.status === 'in_progress' && (
+
+                    {inventory.status === "in_progress" && (
                         <div>
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Прогресс</span>
-                                <span>{progress.percent}% ({progress.checked}/{progress.total})</span>
+                                <span>
+                                    {progress.percent}% ({progress.checked}/{progress.total})
+                                </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                    className="bg-yellow-500 h-2 rounded-full transition-all"
-                                    style={{ width: `${progress.percent}%` }}
-                                />
+                                <div className="bg-gray-600 h-2 rounded-full transition-all" style={{ width: `${progress.percent}%` }} />
                             </div>
                         </div>
                     )}
@@ -356,7 +331,7 @@ export default function InventoryConduct() {
                                         {item.system_quantity} {item.unit} в системе
                                     </Badge>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <Label>Фактическое количество</Label>
@@ -366,14 +341,12 @@ export default function InventoryConduct() {
                                             placeholder="Введите количество"
                                             value={item.actual_quantity === null ? "" : item.actual_quantity}
                                             onChange={(e) => handleQuantityChange(item.material_id, e.target.value)}
-                                            disabled={inventory.status !== 'in_progress' || !isResponsible()}
+                                            disabled={inventory.status !== "in_progress" || !isResponsible()}
                                             className="mt-1"
                                         />
                                         {item.actual_quantity !== null && item.actual_quantity !== item.system_quantity && (
-                                            <p className={`text-sm mt-1 ${item.actual_quantity > item.system_quantity ? 'text-green-600' : 'text-red-600'}`}>
-                                                {item.actual_quantity > item.system_quantity 
-                                                    ? `+${item.actual_quantity - item.system_quantity} излишек` 
-                                                    : `${item.actual_quantity - item.system_quantity} недостача`}
+                                            <p className={`text-sm mt-1 ${item.actual_quantity > item.system_quantity ? "text-green-600" : "text-red-600"}`}>
+                                                {item.actual_quantity > item.system_quantity ? `+${item.actual_quantity - item.system_quantity} излишек` : `${item.actual_quantity - item.system_quantity} недостача`}
                                             </p>
                                         )}
                                     </div>
@@ -383,7 +356,7 @@ export default function InventoryConduct() {
                                             placeholder="Укажите причину"
                                             value={item.reason || ""}
                                             onChange={(e) => handleReasonChange(item.material_id, e.target.value)}
-                                            disabled={inventory.status !== 'in_progress' || !isResponsible() || item.actual_quantity === item.system_quantity}
+                                            disabled={inventory.status !== "in_progress" || !isResponsible() || item.actual_quantity === item.system_quantity}
                                             className="mt-1"
                                         />
                                     </div>
@@ -391,15 +364,10 @@ export default function InventoryConduct() {
                             </div>
                         ))}
                     </div>
-                    
-                    {items.length === 0 && (
-                        <div className="text-center py-10 text-gray-500">
-                            Нет товаров для проверки
-                        </div>
-                    )}
+
+                    {items.length === 0 && <div className="text-center py-10 text-gray-500">Нет товаров для проверки</div>}
                 </CardContent>
             </Card>
         </div>
     );
 }
-
