@@ -164,15 +164,15 @@ export default function Inventories() {
             case 'draft':
                 return <Badge variant="outline" className="text-gray-500">Черновик</Badge>;
             case 'in_progress':
-                return <Badge className="bg-yellow-500">В процессе</Badge>;
+                return <Badge>В процессе</Badge>;
             case 'completed':
-                return <Badge className="bg-blue-500">Завершена</Badge>;
+                return <Badge>Завершена</Badge>;
             case 'approved':
-                return <Badge className="bg-green-500">Утверждена</Badge>;
+                return <Badge>Утверждена</Badge>;
             case 'cancelled':
-                return <Badge variant="destructive">Отменена</Badge>;
+                return <Badge >Отменена</Badge>;
             case 'expired':
-                return <Badge variant="destructive" className="bg-red-800">Просрочена</Badge>;
+                return <Badge>Просрочена</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
@@ -197,13 +197,12 @@ export default function Inventories() {
     }
 
     return (
-        <div className="container mx-auto p-4">
+        <div>
             {/* Заголовок */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold">Инвентаризация</h1>
                 {isAdminOrAccountant && (
                     <Button onClick={() => setShowCreateDialog(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
                         Создать
                     </Button>
                 )}
@@ -306,7 +305,7 @@ export default function Inventories() {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <User className="h-4 w-4" />
+                                            <User className="h-4 w-4 text-gray-600" />
                                             <span className={isResponsible(inventory) ? "text-red-500 font-semibold" : "text-gray-600"}>
                                                 Ответственный: {inventory.responsible_username || '-'}
                                                 {isResponsible(inventory) && " (Вы)"}
