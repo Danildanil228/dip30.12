@@ -4,29 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-    Search,
-    Plus,
-    Calendar,
-    User,
-    FileText,
-    Eye,
-    Play,
-    Send,
-    MoreHorizontal,
-    Package
-} from "lucide-react";
+import {Search,Plus,Calendar,User,FileText,Eye,Play,Send,MoreHorizontal,Package} from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
 import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 
 interface Inventory {
@@ -54,7 +38,6 @@ export default function Inventories() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
-
     const isAdminOrAccountant = isAdmin || user?.role === 'accountant';
     const isResponsible = (inventory: Inventory) => inventory.responsible_person === user?.id;
 
@@ -141,20 +124,14 @@ export default function Inventories() {
         }
     };
 
-    // === НАВИГАЦИЯ ПО СТРАНИЦАМ ===
-
-    // Просмотр деталей (для всех)
     const handleView = (id: number) => {
         navigate(`/inventories/${id}`);
     };
-
-    // Проведение инвентаризации (для ответственного, статус in_progress)
 
     const handleConduct = (id: number) => {
         navigate(`/inventories/${id}/conduct`);
     };
 
-    // Проверка инвентаризации (для админа/бухгалтера, статус completed)
     const handleReview = (id: number) => {
         navigate(`/inventories/${id}/review`);
     };
@@ -198,7 +175,6 @@ export default function Inventories() {
 
     return (
         <div>
-            {/* Заголовок */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold">Инвентаризация</h1>
                 {isAdminOrAccountant && (
@@ -208,9 +184,8 @@ export default function Inventories() {
                 )}
             </div>
 
-            {/* Поиск */}
             <div className="relative mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
                 <Input
                     placeholder="Поиск по названию или ответственному..."
                     value={searchTerm}
@@ -219,7 +194,6 @@ export default function Inventories() {
                 />
             </div>
 
-            {/* Список инвентаризаций */}
             <div className="space-y-4">
                 {filteredInventories.length === 0 ? (
                     <div className="text-center py-10 text-gray-500">
@@ -230,14 +204,11 @@ export default function Inventories() {
                         <Card key={inventory.id} className="overflow-hidden">
                             <CardContent className="p-0">
                                 <div className="p-4">
-                                    {/* Заголовок и статус */}
                                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <h3 className="text-lg font-semibold">{inventory.title}</h3>
                                             {getStatusBadge(inventory.status)}
                                         </div>
-
-                                        {/* Действия - меню с тремя точками */}
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="sm">
@@ -245,13 +216,11 @@ export default function Inventories() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                {/* Просмотр (всегда доступен) */}
                                                 <DropdownMenuItem onClick={() => handleView(inventory.id)}>
                                                     <Eye className="mr-2 h-4 w-4" />
                                                     Просмотр
                                                 </DropdownMenuItem>
 
-                                                {/* Проведение - для ответственного, статус in_progress */}
                                                 {isResponsible(inventory) && inventory.status === 'in_progress' && (
                                                     <DropdownMenuItem onClick={() => handleConduct(inventory.id)}>
                                                         <Package className="mr-2 h-4 w-4" />
@@ -259,7 +228,6 @@ export default function Inventories() {
                                                     </DropdownMenuItem>
                                                 )}
 
-                                                {/* Начать - для ответственного, статус draft */}
                                                 {isResponsible(inventory) && inventory.status === 'draft' && (
                                                     <DropdownMenuItem onClick={() => handleStart(inventory.id)}>
                                                         <Play className="mr-2 h-4 w-4" />
@@ -267,7 +235,6 @@ export default function Inventories() {
                                                     </DropdownMenuItem>
                                                 )}
 
-                                                {/* Завершить - для ответственного, статус in_progress (альтернатива) */}
                                                 {isResponsible(inventory) && inventory.status === 'in_progress' && (
                                                     <DropdownMenuItem onClick={() => handleComplete(inventory.id)}>
                                                         <Send className="mr-2 h-4 w-4" />
@@ -275,9 +242,6 @@ export default function Inventories() {
                                                     </DropdownMenuItem>
                                                 )}
 
-                                                
-
-                                                {/* Отменить - только admin, для draft/in_progress */}
                                                 {isAdmin && (inventory.status === 'draft' || inventory.status === 'in_progress') && (
                                                     <DropdownMenuItem onClick={() => handleCancel(inventory.id, inventory.title)}>
 
@@ -285,7 +249,6 @@ export default function Inventories() {
                                                     </DropdownMenuItem>
                                                 )}
 
-                                                {/* Удалить - только admin, для cancelled */}
                                                 {isAdmin && inventory.status === 'cancelled' && (
                                                     <DropdownMenuItem onClick={() => handleDelete(inventory.id, inventory.title)}>
 
@@ -295,8 +258,6 @@ export default function Inventories() {
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
-
-                                    {/* Информация */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-3">
                                         <div className="flex items-center gap-2 text-gray-600">
                                             <Calendar className="h-4 w-4" />
@@ -317,7 +278,6 @@ export default function Inventories() {
                                         </div>
                                     </div>
 
-                                    {/* Прогресс (для in_progress) */}
                                     {inventory.status === 'in_progress' && (
                                         <div className="mt-3">
                                             <div className="flex justify-between text-sm mb-1">
@@ -326,14 +286,13 @@ export default function Inventories() {
                                             </div>
                                             <div className="w-full bg-gray-200 rounded-full h-2">
                                                 <div
-                                                    className="bg-yellow-500 h-2 rounded-full transition-all"
+                                                    className="bg-gray-600 h-2 rounded-full transition-all"
                                                     style={{ width: `${getProgress(inventory)}%` }}
                                                 />
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Даты завершения/подтверждения */}
                                     {inventory.completed_at && (
                                         <div className="text-xs text-gray-500 mt-2">
                                             Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}
@@ -350,8 +309,6 @@ export default function Inventories() {
                     ))
                 )}
             </div>
-
-            {/* Диалог создания */}
             <CreateInventoryDialog
                 open={showCreateDialog}
                 onOpenChange={setShowCreateDialog}
