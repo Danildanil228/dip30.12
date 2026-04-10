@@ -3,15 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-    ArrowLeft, 
-    CheckCircle, 
-    XCircle, 
-    Package, 
-    User, 
-    Calendar,
-    AlertCircle
-} from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, User, Calendar, AlertCircle } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
@@ -55,18 +47,16 @@ export default function InventoryReview() {
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState("");
 
-    // Загружаем пользователя из localStorage
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = localStorage.getItem("user");
         if (userData) {
             setCurrentUser(JSON.parse(userData));
         }
     }, []);
 
-    // Проверка прав
     const isAdminOrAccountant = () => {
         if (!currentUser) return false;
-        return currentUser.role === 'admin' || currentUser.role === 'accountant';
+        return currentUser.role === "admin" || currentUser.role === "accountant";
     };
 
     useEffect(() => {
@@ -82,18 +72,16 @@ export default function InventoryReview() {
             const response = await axios.get(`${API_BASE_URL}/inventories/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             setInventory(response.data.inventory);
             setItems(response.data.results || []);
-            
-            // Проверка прав - только admin/accountant
+
             if (!isAdminOrAccountant()) {
                 setError(`Недостаточно прав для проверки инвентаризации. Ваша роль: ${currentUser?.role}`);
                 return;
             }
-            
-            // Проверка статуса
-            if (response.data.inventory.status !== 'completed') {
+
+            if (response.data.inventory.status !== "completed") {
                 setError(`Эта инвентаризация не ожидает проверки. Текущий статус: ${response.data.inventory.status}`);
                 return;
             }
@@ -109,16 +97,20 @@ export default function InventoryReview() {
         if (!confirm("Подтвердить инвентаризацию? Остатки на складе будут обновлены согласно результатам.")) {
             return;
         }
-        
+
         setProcessing(true);
         setError("");
-        
+
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`${API_BASE_URL}/inventories/${id}/approve`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+            await axios.put(
+                `${API_BASE_URL}/inventories/${id}/approve`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
             alert("Инвентаризация подтверждена, остатки обновлены");
             navigate("/inventories");
         } catch (error: any) {
@@ -133,16 +125,20 @@ export default function InventoryReview() {
         if (!confirm("Отменить инвентаризацию? Все результаты будут отклонены.")) {
             return;
         }
-        
+
         setProcessing(true);
         setError("");
-        
+
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`${API_BASE_URL}/inventories/${id}/cancel`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+            await axios.put(
+                `${API_BASE_URL}/inventories/${id}/cancel`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
             alert("Инвентаризация отменена");
             navigate("/inventories");
         } catch (error: any) {
@@ -155,7 +151,7 @@ export default function InventoryReview() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'completed':
+            case "completed":
                 return <Badge className="bg-blue-500">Завершена, ожидает проверки</Badge>;
             default:
                 return <Badge>{status}</Badge>;
@@ -165,9 +161,9 @@ export default function InventoryReview() {
     // Подсчет статистики расхождений
     const getStats = () => {
         const total = items.length;
-        const withDifference = items.filter(item => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity).length;
-        const surplus = items.filter(item => item.actual_quantity !== null && item.actual_quantity > item.system_quantity).length;
-        const shortage = items.filter(item => item.actual_quantity !== null && item.actual_quantity < item.system_quantity).length;
+        const withDifference = items.filter((item) => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity).length;
+        const surplus = items.filter((item) => item.actual_quantity !== null && item.actual_quantity > item.system_quantity).length;
+        const shortage = items.filter((item) => item.actual_quantity !== null && item.actual_quantity < item.system_quantity).length;
         return { total, withDifference, surplus, shortage };
     };
 
@@ -196,11 +192,7 @@ export default function InventoryReview() {
     return (
         <div className="container mx-auto p-4 max-w-5xl">
             {/* Кнопка назад */}
-            <Button
-                variant="ghost"
-                onClick={() => navigate("/inventories")}
-                className="mb-4"
-            >
+            <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
             </Button>
@@ -211,24 +203,14 @@ export default function InventoryReview() {
                     <div className="flex flex-wrap justify-between items-start gap-4">
                         <div>
                             <CardTitle className="text-2xl mb-2">{inventory.title}</CardTitle>
-                            <div className="flex flex-wrap gap-2">
-                                {getStatusBadge(inventory.status)}
-                            </div>
+                            <div className="flex flex-wrap gap-2">{getStatusBadge(inventory.status)}</div>
                         </div>
                         <div className="flex gap-2">
-                            <Button 
-                                onClick={handleApprove} 
-                                disabled={processing}
-                                className="bg-green-500 hover:bg-green-600"
-                            >
+                            <Button onClick={handleApprove} disabled={processing} className="bg-green-500 hover:bg-green-600">
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Подтвердить
                             </Button>
-                            <Button 
-                                onClick={handleCancel} 
-                                disabled={processing}
-                                variant="destructive"
-                            >
+                            <Button onClick={handleCancel} disabled={processing} variant="destructive">
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Отменить
                             </Button>
@@ -258,13 +240,13 @@ export default function InventoryReview() {
                             </div>
                         )}
                     </div>
-                    
+
                     {inventory.description && (
                         <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
                             <p className="text-sm">{inventory.description}</p>
                         </div>
                     )}
-                    
+
                     {/* Статистика */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                         <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
@@ -296,7 +278,7 @@ export default function InventoryReview() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {items.filter(item => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity).length === 0 ? (
+                    {items.filter((item) => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity).length === 0 ? (
                         <div className="text-center py-10 text-green-600">
                             <CheckCircle className="h-12 w-12 mx-auto mb-2" />
                             <p>Расхождений не обнаружено!</p>
@@ -305,7 +287,7 @@ export default function InventoryReview() {
                     ) : (
                         <div className="space-y-4">
                             {items
-                                .filter(item => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity)
+                                .filter((item) => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity)
                                 .map((item) => (
                                     <div key={item.id} className="border rounded-lg p-4">
                                         <div className="flex flex-wrap justify-between items-start mb-3">
@@ -317,24 +299,30 @@ export default function InventoryReview() {
                                                 {item.difference && item.difference > 0 ? `+${item.difference}` : item.difference} {item.unit}
                                             </Badge>
                                         </div>
-                                        
+
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                                             <div>
                                                 <div className="text-sm text-gray-500">В системе</div>
-                                                <div className="font-medium">{item.system_quantity} {item.unit}</div>
+                                                <div className="font-medium">
+                                                    {item.system_quantity} {item.unit}
+                                                </div>
                                             </div>
                                             <div>
                                                 <div className="text-sm text-gray-500">Фактически</div>
-                                                <div className="font-medium">{item.actual_quantity} {item.unit}</div>
+                                                <div className="font-medium">
+                                                    {item.actual_quantity} {item.unit}
+                                                </div>
                                             </div>
                                             <div>
                                                 <div className="text-sm text-gray-500">Разница</div>
-                                                <div className={`font-medium ${item.difference && item.difference > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                <div
+                                                    className={`font-medium ${item.difference && item.difference > 0 ? "text-green-600" : "text-red-600"}`}
+                                                >
                                                     {item.difference && item.difference > 0 ? `+${item.difference}` : item.difference} {item.unit}
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {item.reason && (
                                             <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
                                                 <div className="text-sm text-gray-500">Причина расхождения</div>

@@ -13,7 +13,6 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { RadioGroup } from "../ui/radio-group";
 
 interface User {
     id: number;
@@ -63,7 +62,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
     const [currentPage, setCurrentPage] = useState(0);
     const [showAllMaterials, setShowAllMaterials] = useState(false);
     const itemsPerPage = 10;
-    const today = new Date();
 
     useEffect(() => {
         if (open) {
@@ -196,10 +194,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         }
         if (startDate > endDate) {
             setError("Дата начала не может быть позже даты окончания");
-            return;
-        }
-        if (today > startDate) {
-            setError("Дата начала не может быть раньше сегодняшней даты");
             return;
         }
 
