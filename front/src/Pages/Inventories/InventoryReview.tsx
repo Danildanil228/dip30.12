@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle, XCircle, Package, User, Calendar, AlertCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, User, Calendar, AlertCircle, FileText } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
@@ -46,6 +46,7 @@ export default function InventoryReview() {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState("");
+    const [notesExpanded, setNotesExpanded] = useState(false);
 
     useEffect(() => {
         const userData = localStorage.getItem("user");
@@ -53,6 +54,11 @@ export default function InventoryReview() {
             setCurrentUser(JSON.parse(userData));
         }
     }, []);
+
+    const isResponsible = () => {
+        if (!inventory || !currentUser) return false;
+        return inventory.responsible_person === currentUser.id;
+    };
 
     const isAdminOrAccountant = () => {
         if (!currentUser) return false;
@@ -152,13 +158,12 @@ export default function InventoryReview() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "completed":
-                return <Badge className="bg-blue-500">Завершена, ожидает проверки</Badge>;
+                return <Badge className="h-5">Завершена, ожидает проверки</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
     };
 
-    // Подсчет статистики расхождений
     const getStats = () => {
         const total = items.length;
         const withDifference = items.filter((item) => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity).length;
@@ -190,34 +195,20 @@ export default function InventoryReview() {
     const stats = getStats();
 
     return (
-        <div className="container mx-auto p-4 max-w-5xl">
-            {/* Кнопка назад */}
+        <div>
             <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
             </Button>
 
-            {/* Информация об инвентаризации */}
             <Card className="mb-6">
                 <CardHeader>
-                    <div className="flex flex-wrap justify-between items-start gap-4">
-                        <div>
-                            <CardTitle className="text-2xl mb-2">{inventory.title}</CardTitle>
-                            <div className="flex flex-wrap gap-2">{getStatusBadge(inventory.status)}</div>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button onClick={handleApprove} disabled={processing} className="bg-green-500 hover:bg-green-600">
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Подтвердить
-                            </Button>
-                            <Button onClick={handleCancel} disabled={processing} variant="destructive">
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Отменить
-                            </Button>
-                        </div>
+                    <div className="sm:flex sm:justify-between grid gap-2 flex-wrap items-center">
+                        <p className="text-lg">{inventory.title}</p>
+                        {getStatusBadge(inventory.status)}
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="text-base">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div className="flex items-center gap-2 text-gray-600">
                             <Calendar className="h-4 w-4" />
@@ -225,9 +216,12 @@ export default function InventoryReview() {
                                 {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <User className="h-4 w-4" />
-                            <span>Ответственный: {inventory.responsible_username}</span>
+                        <div className="flex items-center gap-2 text-base">
+                            <User className={isResponsible() ? "h-4 w-4" : "text-gray-600 h-4 w-4"} />
+                            <span className={isResponsible() ? "underline" : "text-gray-600"}>
+                                Ответственный: {inventory.responsible_username}
+                                {isResponsible() && " (Вы)"}
+                            </span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600">
                             <User className="h-4 w-4" />
@@ -242,34 +236,61 @@ export default function InventoryReview() {
                     </div>
 
                     {inventory.description && (
-                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                            <p className="text-sm">{inventory.description}</p>
+                        <div className="mt-4 flex items-start gap-2">
+                            <FileText className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <div className="text-sm text-gray-600">Примечания</div>
+                                <div className="mt-1">
+                                    <div
+                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
+                                            }`}
+                                    >
+                                        {inventory.description}
+                                    </div>
+                                    {inventory.description.length > 100 && (
+                                        <button
+                                            onClick={() => setNotesExpanded(!notesExpanded)}
+                                            className="text-sm mt-1 underline"
+                                        >
+                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
-                    {/* Статистика */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                        <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 ">
+                        <div className="text-center p-3 border rounded">
                             <div className="text-2xl font-bold">{stats.total}</div>
-                            <div className="text-sm text-gray-500">Всего товаров</div>
+                            <div className="text-sm text-gray-500">Всего</div>
                         </div>
-                        <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                            <div className="text-2xl font-bold text-orange-500">{stats.withDifference}</div>
-                            <div className="text-sm text-gray-500">С расхождениями</div>
+                        <div className="text-center p-3 border rounded">
+                            <div className="text-2xl font-bold">{stats.withDifference}</div>
+                            <div className="text-sm text-gray-500">Расходятся</div>
                         </div>
-                        <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded">
-                            <div className="text-2xl font-bold text-green-600">+{stats.surplus}</div>
+                        <div className="text-center p-3 border rounded">
+                            <div className="text-2xl font-bold">+{stats.surplus}</div>
                             <div className="text-sm text-gray-500">Излишек</div>
                         </div>
-                        <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                            <div className="text-2xl font-bold text-red-600">-{stats.shortage}</div>
+                        <div className="text-center p-3 border rounded">
+                            <div className="text-2xl font-bold">-{stats.shortage}</div>
                             <div className="text-sm text-gray-500">Недостача</div>
                         </div>
+                    </div>
+                    <div className="grid gap-3 mt-3 sm:flex sm:justify-end">
+                        <Button onClick={handleApprove} disabled={processing}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Подтвердить
+                        </Button>
+                        <Button onClick={handleCancel} disabled={processing} variant="outline">
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Отменить
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Список товаров с расхождениями */}
             <Card>
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
@@ -279,7 +300,7 @@ export default function InventoryReview() {
                 </CardHeader>
                 <CardContent>
                     {items.filter((item) => item.actual_quantity !== null && item.actual_quantity !== item.system_quantity).length === 0 ? (
-                        <div className="text-center py-10 text-green-600">
+                        <div className="text-center py-10">
                             <CheckCircle className="h-12 w-12 mx-auto mb-2" />
                             <p>Расхождений не обнаружено!</p>
                             <p className="text-sm text-gray-500 mt-1">Все товары сошлись с системными данными</p>
@@ -316,7 +337,7 @@ export default function InventoryReview() {
                                             <div>
                                                 <div className="text-sm text-gray-500">Разница</div>
                                                 <div
-                                                    className={`font-medium ${item.difference && item.difference > 0 ? "text-green-600" : "text-red-600"}`}
+                                                    className={`font-medium ${item.difference && item.difference > 0 ? "" : ""}`}
                                                 >
                                                     {item.difference && item.difference > 0 ? `+${item.difference}` : item.difference} {item.unit}
                                                 </div>
@@ -324,7 +345,7 @@ export default function InventoryReview() {
                                         </div>
 
                                         {item.reason && (
-                                            <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                            <div className="mt-2 p-2 rounded">
                                                 <div className="text-sm text-gray-500">Причина расхождения</div>
                                                 <div className="text-sm">{item.reason}</div>
                                             </div>

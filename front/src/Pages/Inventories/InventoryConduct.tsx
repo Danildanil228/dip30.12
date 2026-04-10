@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Send, Package, User, Calendar, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Send, Package, User, Calendar, AlertCircle, FileText } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
@@ -43,6 +43,7 @@ export default function InventoryConduct() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+    const [notesExpanded, setNotesExpanded] = useState(false);
 
     useEffect(() => {
         const userData = localStorage.getItem("user");
@@ -191,9 +192,9 @@ export default function InventoryConduct() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "in_progress":
-                return <Badge>В процессе</Badge>;
+                return <Badge className="h-5">В процессе</Badge>;
             case "completed":
-                return <Badge>Завершена</Badge>;
+                return <Badge className="h-5">Завершена</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
@@ -248,34 +249,22 @@ export default function InventoryConduct() {
 
             <Card className="mb-6">
                 <CardHeader>
-                    <div className="sm:flex grid justify-between items-start gap-4">
-                        <div>
-                            <CardTitle className="text-base mb-2">{inventory.title}</CardTitle>
-                            <div className="flex flex-wrap gap-2">{getStatusBadge(inventory.status)}</div>
-                        </div>
-                        <div className="  items-center justify-center">
-                            <Button onClick={handleSave} disabled={saving || inventory.status !== "in_progress" || !isResponsible()} variant="outline">
-                                <Save className="mr-2 h-4 w-4" />
-                                Сохранить
-                            </Button>
-                            <Button onClick={handleComplete} disabled={saving || inventory.status !== "in_progress" || !isResponsible()}>
-                                <Send className="mr-2 h-4 w-4" />
-                                Завершить
-                            </Button>
-                        </div>
+                    <div className="flex justify-between items-center flex-wrap">
+                        <p className="text-lg">{inventory.title}</p>
+                        {getStatusBadge(inventory.status)}
                     </div>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-gray-600 text-base">
                             <Calendar className="h-4 w-4" />
                             <span>
                                 {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span className={isResponsible() ? "text-green-600 font-semibold" : "text-gray-600"}>
+                        <div className="flex items-center gap-2 text-base">
+                            <User className={isResponsible() ? "h-4 w-4" : " w-4 h-4 text-gray-600"}/>
+                            <span className={isResponsible() ? "underline" : "text-gray-600"}>
                                 Ответственный: {inventory.responsible_username}
                                 {isResponsible() && " (Вы)"}
                             </span>
@@ -283,8 +272,27 @@ export default function InventoryConduct() {
                     </div>
 
                     {inventory.description && (
-                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                            <p className="text-sm">{inventory.description}</p>
+                        <div className="mt-4 flex items-start gap-2">
+                            <FileText className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <div className="text-sm text-gray-600">Примечания</div>
+                                <div className="mt-1">
+                                    <div
+                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
+                                            }`}
+                                    >
+                                        {inventory.description}
+                                    </div>
+                                    {inventory.description.length > 100 && (
+                                        <button
+                                            onClick={() => setNotesExpanded(!notesExpanded)}
+                                            className="text-sm mt-1 underline"
+                                        >
+                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -296,7 +304,7 @@ export default function InventoryConduct() {
                     )}
 
                     {inventory.status === "in_progress" && (
-                        <div>
+                        <div className="mt-4">
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Прогресс</span>
                                 <span>
@@ -308,6 +316,17 @@ export default function InventoryConduct() {
                             </div>
                         </div>
                     )}
+
+                    <div className="sm:flex gap-3 mt-4 grid sm:justify-end">
+                        <Button onClick={handleSave} disabled={saving || inventory.status !== "in_progress" || !isResponsible()} variant="outline" >
+                            <Save className="mr-2 h-4 w-4" />
+                            Сохранить
+                        </Button>
+                        <Button onClick={handleComplete} disabled={saving || inventory.status !== "in_progress" || !isResponsible()}>
+                            <Send className="mr-2 h-4 w-4" />
+                            Завершить
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
