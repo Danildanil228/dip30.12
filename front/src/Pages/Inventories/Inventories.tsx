@@ -265,8 +265,8 @@ export default function Inventories() {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <User className="h-4 w-4 text-gray-600" />
-                                            <span className={isResponsible(inventory) ? "text-red-500 font-semibold" : "text-gray-600"}>
+                                            <User className={isResponsible(inventory) ? "h-4 w-4" : "h-4 w-4 text-gray-600"} />
+                                            <span className={isResponsible(inventory) ? "underline " : "text-gray-600"}>
                                                 Ответственный: {inventory.responsible_username || '-'}
                                                 {isResponsible(inventory) && " (Вы)"}
                                             </span>
