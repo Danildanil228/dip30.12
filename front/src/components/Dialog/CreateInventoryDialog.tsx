@@ -73,6 +73,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
     const [currentPage, setCurrentPage] = useState(0);
     const [showAllMaterials, setShowAllMaterials] = useState(false);
     const itemsPerPage = 10;
+    const today = new Date();
 
     useEffect(() => {
         if (open) {
@@ -107,7 +108,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
             const response = await axios.get(`${API_BASE_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Все пользователи могут быть ответственными
             setUsers(response.data.users || []);
         } catch (error) {
             console.error("Ошибка загрузки пользователей:", error);
@@ -217,6 +217,10 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         }
         if (startDate > endDate) {
             setError("Дата начала не может быть позже даты окончания");
+            return;
+        }
+        if (today > startDate) {
+            setError("Дата начала не может быть раньше сегодняшней даты");
             return;
         }
 
