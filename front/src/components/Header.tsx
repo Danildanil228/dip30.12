@@ -26,7 +26,7 @@ export default function Header() {
 
 
                 <DropdownMenu>
-                    <DropdownMenuTrigger><Button variant='outline'><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger><Button variant='outline' className="px-3"><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
                         <DropdownMenuSeparator />
@@ -35,7 +35,7 @@ export default function Header() {
                         )}
                         <DropdownMenuItem><Link to='/profile'>Профиль</Link></DropdownMenuItem>
                         <DropdownMenuItem><Link to='/inventories'>Инвентаризация</Link></DropdownMenuItem>
-                        <DropdownMenuItem onSelect={(e) => {
+                        <DropdownMenuItem className="cursor-pointer" onSelect={(e) => {
                             e.preventDefault();
                             setIsLogoutDialogOpen(true);
                         }}>

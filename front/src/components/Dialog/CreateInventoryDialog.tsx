@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { RadioGroup } from "../ui/radio-group";
 
 interface User {
     id: number;
@@ -47,29 +48,18 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
     const [materials, setMaterials] = useState<Material[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
     const [title, setTitle] = useState("");
     const [responsiblePerson, setResponsiblePerson] = useState("");
     const [startDate, setStartDate] = useState<Date>();
     const [endDate, setEndDate] = useState<Date>();
     const [description, setDescription] = useState("");
-
-    // Поиск для пользователей
     const [userSearch, setUserSearch] = useState("");
-
-    // Выбор товаров
     const [selectionMode, setSelectionMode] = useState<"all" | "categories" | "materials">("all");
     const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
     const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
-
-    // Поиск для категорий
     const [categorySearch, setCategorySearch] = useState("");
-
-    // Поиск для товаров
     const [materialSearch, setMaterialSearch] = useState("");
     const [materialSelectedCategory, setMaterialSelectedCategory] = useState<string>("all");
-
-    // Пагинация для товаров
     const [currentPage, setCurrentPage] = useState(0);
     const [showAllMaterials, setShowAllMaterials] = useState(false);
     const itemsPerPage = 10;
@@ -138,32 +128,29 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         }
     };
 
-    // Фильтрация пользователей
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = users.filter((user) => {
         const search = userSearch.toLowerCase();
-        return user.name?.toLowerCase().includes(search) ||
+        return (
+            user.name?.toLowerCase().includes(search) ||
             user.secondname?.toLowerCase().includes(search) ||
-            user.username?.toLowerCase().includes(search);
+            user.username?.toLowerCase().includes(search)
+        );
     });
 
-    // Фильтрация категорий
-    const filteredCategories = categories.filter(category =>
-        category.name.toLowerCase().includes(categorySearch.toLowerCase())
-    );
+    const filteredCategories = categories.filter((category) => category.name.toLowerCase().includes(categorySearch.toLowerCase()));
 
-    // Фильтрация товаров
-    const filteredMaterials = materials.filter(material => {
-        const matchesSearch = materialSearch === "" ||
+    const filteredMaterials = materials.filter((material) => {
+        const matchesSearch =
+            materialSearch === "" ||
             material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
             material.code.toLowerCase().includes(materialSearch.toLowerCase());
 
-        const matchesCategory = materialSelectedCategory === "all" ||
-            (material.category_id && material.category_id.toString() === materialSelectedCategory);
+        const matchesCategory =
+            materialSelectedCategory === "all" || (material.category_id && material.category_id.toString() === materialSelectedCategory);
 
         return matchesSearch && matchesCategory;
     });
 
-    // Пагинация для товаров
     const totalMaterials = filteredMaterials.length;
     const totalPages = Math.ceil(totalMaterials / itemsPerPage);
     const paginatedMaterials = showAllMaterials
@@ -171,30 +158,22 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         : filteredMaterials.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
     const handleCategoryToggle = (categoryId: number) => {
-        setSelectedCategories(prev =>
-            prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
-        );
+        setSelectedCategories((prev) => (prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]));
     };
 
     const handleMaterialToggle = (materialId: number) => {
-        setSelectedMaterials(prev =>
-            prev.includes(materialId)
-                ? prev.filter(id => id !== materialId)
-                : [...prev, materialId]
-        );
+        setSelectedMaterials((prev) => (prev.includes(materialId) ? prev.filter((id) => id !== materialId) : [...prev, materialId]));
     };
 
     const handleSelectAllInCategory = (categoryId: number) => {
-        const categoryMaterials = materials.filter(m => m.category_id === categoryId);
-        const allSelected = categoryMaterials.every(m => selectedMaterials.includes(m.id));
+        const categoryMaterials = materials.filter((m) => m.category_id === categoryId);
+        const allSelected = categoryMaterials.every((m) => selectedMaterials.includes(m.id));
 
         if (allSelected) {
-            setSelectedMaterials(prev => prev.filter(id => !categoryMaterials.some(m => m.id === id)));
+            setSelectedMaterials((prev) => prev.filter((id) => !categoryMaterials.some((m) => m.id === id)));
         } else {
-            const newIds = categoryMaterials.map(m => m.id);
-            setSelectedMaterials(prev => [...new Set([...prev, ...newIds])]);
+            const newIds = categoryMaterials.map((m) => m.id);
+            setSelectedMaterials((prev) => [...new Set([...prev, ...newIds])]);
         }
     };
 
@@ -234,7 +213,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 responsible_person: parseInt(responsiblePerson),
                 start_date: format(startDate, "yyyy-MM-dd"),
                 end_date: format(endDate, "yyyy-MM-dd"),
-                description: description.trim() || null,
+                description: description.trim() || null
             };
 
             if (selectionMode === "categories" && selectedCategories.length > 0) {
@@ -250,7 +229,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
             resetForm();
             onOpenChange(false);
             onInventoryCreated();
-
         } catch (error: any) {
             console.error("Ошибка создания:", error);
             setError(error.response?.data?.error || "Ошибка создания инвентаризации");
@@ -259,47 +237,38 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         }
     };
 
-    // Группировка товаров по категориям
-    const materialsByCategory = categories.map(category => ({
-        ...category,
-        materials: materials.filter(m => m.category_id === category.id)
-    })).filter(c => c.materials.length > 0);
+    const materialsByCategory = categories
+        .map((category) => ({
+            ...category,
+            materials: materials.filter((m) => m.category_id === category.id)
+        }))
+        .filter((c) => c.materials.length > 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl">Создание инвентаризации</DialogTitle>
+                    <DialogTitle className="text-lg">Создание инвентаризации</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    {/* Название */}
-                    <div>
-                        <Label htmlFor="title">Название *</Label>
+                    <div className="grid gap-2">
+                        <Label htmlFor="title">Название</Label>
                         <Input
                             id="title"
-                            placeholder="Инвентаризация склада Апрель 2025"
+                            placeholder="Инвентаризация склада"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             disabled={loading}
                         />
                     </div>
-
-                    {/* Ответственный с поиском */}
-                    {/* Ответственный с поиском (как список, не Select) */}
-                    <div>
-                        <Label>Ответственный *</Label>
+                    <div className="grid gap-2">
+                        <Label>Ответственный</Label>
                         <div className="relative mb-2">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                            <Input
-                                placeholder="Поиск по имени, фамилии или логину..."
-                                value={userSearch}
-                                onChange={(e) => setUserSearch(e.target.value)}
-                                className="pl-10"
-                            />
+                            <Input placeholder="Поиск" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className="pl-10" />
                         </div>
 
-                        {/* Список пользователей */}
                         <div className="border rounded-lg max-h-48 overflow-y-auto">
                             {filteredUsers.length === 0 ? (
                                 <div className="p-3 text-center text-gray-500">Пользователи не найдены</div>
@@ -307,33 +276,29 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                 filteredUsers.map((user) => (
                                     <div
                                         key={user.id}
-                                        className={`flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 ${responsiblePerson === user.id.toString() ? 'bg-primary/10 border-l-4 border-l-primary' : ''
-                                            }`}
+                                        className={`flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 ${
+                                            responsiblePerson === user.id.toString() ? "bg-primary/10 border-l-4 border-l-primary" : ""
+                                        }`}
                                         onClick={() => setResponsiblePerson(user.id.toString())}
                                     >
                                         <div>
-                                            <div className="font-medium">
+                                            <div className="text-base">
                                                 {user.name} {user.secondname}
                                             </div>
                                             <div className="text-sm text-gray-500">
-                                                @{user.username} • {
-                                                    user.role === 'admin' ? 'Администратор' :
-                                                        user.role === 'accountant' ? 'Бухгалтер' : 'Кладовщик'
-                                                }
+                                                {user.username} •{" "}
+                                                {user.role === "admin" ? "Администратор" : user.role === "accountant" ? "Бухгалтер" : "Кладовщик"}
                                             </div>
                                         </div>
-                                        {responsiblePerson === user.id.toString() && (
-                                            <div className="text-green-500 text-sm">Выбран</div>
-                                        )}
+                                        {responsiblePerson === user.id.toString() && <div className="text-gray-500 text-sm">Выбран</div>}
                                     </div>
                                 ))
                             )}
                         </div>
                     </div>
-                    {/* Даты */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label>Дата начала *</Label>
+                        <div className="grid gap-2">
+                            <Label>Дата начала</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full justify-start">
@@ -342,17 +307,12 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={startDate}
-                                        onSelect={setStartDate}
-                                        locale={ru}
-                                    />
+                                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} locale={ru} />
                                 </PopoverContent>
                             </Popover>
                         </div>
-                        <div>
-                            <Label>Дата окончания *</Label>
+                        <div className="grid gap-2">
+                            <Label>Дата окончания</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full justify-start">
@@ -366,15 +326,13 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         selected={endDate}
                                         onSelect={setEndDate}
                                         locale={ru}
-                                        disabled={(date) => startDate ? date < startDate : false}
+                                        disabled={(date) => (startDate ? date < startDate : false)}
                                     />
                                 </PopoverContent>
                             </Popover>
                         </div>
                     </div>
-
-                    {/* Описание */}
-                    <div>
+                    <div className="grid gap-2">
                         <Label htmlFor="description">Описание</Label>
                         <Textarea
                             id="description"
@@ -386,11 +344,10 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                         />
                     </div>
 
-                    {/* Выбор товаров */}
                     <div className="border rounded-lg p-4">
                         <Label className="mb-3 block">Что инвентаризируем?</Label>
 
-                        <div className="space-y-3">
+                        <div className="space-y-3 text-base">
                             <div className="flex items-center gap-2">
                                 <input
                                     type="radio"
@@ -435,9 +392,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                         checked={selectedCategories.includes(category.id)}
                                                         onCheckedChange={() => handleCategoryToggle(category.id)}
                                                     />
-                                                    <label htmlFor={`cat-${category.id}`}>
-                                                        {category.name}
-                                                    </label>
+                                                    <label htmlFor={`cat-${category.id}`}>{category.name}</label>
                                                 </div>
                                             ))
                                         )}
@@ -458,12 +413,11 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
 
                             {selectionMode === "materials" && (
                                 <div className="ml-6">
-                                    {/* Фильтры для товаров */}
                                     <div className="flex flex-col gap-2 mb-3">
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                                             <Input
-                                                placeholder="Поиск по названию или коду..."
+                                                placeholder="Поиск"
                                                 value={materialSearch}
                                                 onChange={(e) => {
                                                     setMaterialSearch(e.target.value);
@@ -488,7 +442,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         </Select>
                                     </div>
 
-                                    {/* Список товаров */}
                                     <div className="space-y-3 max-h-60 overflow-y-auto border rounded p-2">
                                         {paginatedMaterials.length === 0 ? (
                                             <div className="text-center text-gray-500 py-2">Товары не найдены</div>
@@ -508,17 +461,14 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         )}
                                     </div>
 
-                                    {/* Пагинация для товаров */}
                                     {!showAllMaterials && totalPages > 1 && (
                                         <div className="flex items-center justify-between mt-3">
-                                            <div className="text-xs text-gray-500">
-                                                Всего: {totalMaterials}
-                                            </div>
+                                            <div className="text-xs text-gray-500">Всего: {totalMaterials}</div>
                                             <div className="flex items-center gap-2">
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                                                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
                                                     disabled={currentPage === 0}
                                                 >
                                                     <ChevronLeft className="h-4 w-4" />
@@ -529,16 +479,12 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
                                                     disabled={currentPage === totalPages - 1}
                                                 >
                                                     <ChevronRight className="h-4 w-4" />
                                                 </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setShowAllMaterials(true)}
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => setShowAllMaterials(true)}>
                                                     Развернуть
                                                 </Button>
                                             </div>
@@ -564,7 +510,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                         </div>
                     </div>
 
-                    {/* Ошибка */}
                     {error && (
                         <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded">
                             <AlertCircle className="h-4 w-4" />
