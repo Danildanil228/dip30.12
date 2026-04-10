@@ -343,7 +343,6 @@ app.get('/logs', checkAdmin, async (req, res) => {
             FROM notifications n
             LEFT JOIN users u ON n.user_id = u.id
             ORDER BY n.created_at DESC
-            LIMIT 100
         `);
 
         await pool.query(

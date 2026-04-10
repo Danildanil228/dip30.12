@@ -224,42 +224,42 @@ class Logger {
     // Инвентаризация
     static async inventoryCreated(userId, username, title, inventoryId) {
         await this.log(userId, 'inventory_created', 'Создание инвентаризации',
-            `[user:${userId}:${username}] создал инвентаризацию [inventory:${inventoryId}] "${title}"`);
+            `[user:${userId}:${username}] создал [inventory:${inventoryId}] "${title}"`);
     }
 
     static async inventoryStarted(userId, username, title, inventoryId) {
         await this.log(userId, 'inventory_started', 'Начало инвентаризации',
-            `[user:${userId}:${username}] начал инвентаризацию [inventory:${inventoryId}] "${title}"`);
+            `[user:${userId}:${username}] начал [inventory:${inventoryId}] "${title}"`);
     }
 
     static async inventorySaved(userId, username, title, inventoryId) {
         await this.log(userId, 'inventory_saved', 'Сохранение результатов',
-            `[user:${userId}:${username}] сохранил результаты инвентаризации [inventory:${inventoryId}] "${title}"`);
+            `[user:${userId}:${username}] сохранил результаты [inventory:${inventoryId}] "${title}"`);
     }
 
     static async inventoryCompleted(userId, username, title, inventoryId) {
         await this.log(userId, 'inventory_completed', 'Завершение инвентаризации',
-            `[user:${userId}:${username}] завершил инвентаризацию [inventory:${inventoryId}] "${title}" и отправил на проверку`);
+            `[user:${userId}:${username}] завершил [inventory:${inventoryId}] "${title}" и отправил на проверку`);
     }
 
     static async inventoryApproved(userId, username, title, changesCount, inventoryId) {
         await this.log(userId, 'inventory_approved', 'Подтверждение инвентаризации',
-            `[user:${userId}:${username}] подтвердил инвентаризацию [inventory:${inventoryId}] "${title}", обновлено ${changesCount} позиций`);
+            `[user:${userId}:${username}] подтвердил [inventory:${inventoryId}] "${title}", обновлено ${changesCount} позиций`);
     }
 
     static async inventoryCancelled(userId, username, title, inventoryId) {
         await this.log(userId, 'inventory_cancelled', 'Отмена инвентаризации',
-            `[user:${userId}:${username}] отменил инвентаризацию [inventory:${inventoryId}] "${title}"`);
+            `[user:${userId}:${username}] отменил [inventory:${inventoryId}] "${title}"`);
     }
 
     static async inventoryUpdated(userId, username, title, changes, inventoryId) {
         await this.log(userId, 'inventory_updated', 'Изменение инвентаризации',
-            `[user:${userId}:${username}] изменил инвентаризацию [inventory:${inventoryId}] "${title}": ${changes}`);
+            `[user:${userId}:${username}] изменил [inventory:${inventoryId}] "${title}": ${changes}`);
     }
 
     static async inventoryDeleted(userId, username, title, inventoryId) {
         await this.log(userId, 'inventory_deleted', 'Удаление инвентаризации',
-            `[user:${userId}:${username}] удалил инвентаризацию [inventory:${inventoryId}] "${title}"`);
+            `[user:${userId}:${username}] удалил [inventory:${inventoryId}] "${title}"`);
     }
 }
 

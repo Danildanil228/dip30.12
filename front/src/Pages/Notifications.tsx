@@ -151,7 +151,7 @@ export default function Notifications({ onVisited }: LogsProps) {
         if (inventoryMatch) {
             parts.push({
                 type: 'inventory',
-                content: `инвентаризация #${inventoryMatch[1]}`,
+                content: "инвентаризаци(ю/и)",
                 id: parseInt(inventoryMatch[1])
             });
         }
