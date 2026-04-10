@@ -291,7 +291,7 @@ export default function SelectMaterialsDialog({
                         </div>
                         <div className="w-full md:w-64 justify-center flex sm:justify-end">
                             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger>
+                                <SelectTrigger className="sm:w-full max-w-70">
                                     <SelectValue placeholder="Все категории" />
                                 </SelectTrigger>
                                 <SelectContent>

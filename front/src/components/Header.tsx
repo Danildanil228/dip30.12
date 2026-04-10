@@ -5,10 +5,12 @@ import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { useUser } from "@/hooks/useUser";
+import { useState } from "react";
 
 export default function Header() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const { isAdmin } = useUser();
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
     return (
         <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
             <Link to='/profile'>
@@ -21,10 +23,28 @@ export default function Header() {
 
             <div className="items-center flex gap-2 ">
                 <DarkModeButtonToggle />
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="outline"><img src="/log.png" className="icon w-5" alt="" /></Button>
-                    </AlertDialogTrigger>
+
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger><Button variant='outline' className="px-3"><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {isAdmin && (
+                            <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem><Link to='/profile'>Профиль</Link></DropdownMenuItem>
+                        <DropdownMenuItem><Link to='/inventories'>Инвентаризация</Link></DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer" onSelect={(e) => {
+                            e.preventDefault();
+                            setIsLogoutDialogOpen(true);
+                        }}>
+                            Выйти
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Выйти из аккаунта?</AlertDialogTitle>
@@ -39,17 +59,6 @@ export default function Header() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                {isAdmin && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger><Button variant='outline'><img src="/setting.png" alt="" className="w-5 icon" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-
             </div>
         </section>
     )

@@ -89,13 +89,12 @@ export default function Requests() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Заявки</h1>
                 <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Создать заявку
+                    Создать
                 </Button>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="flex-1 relative">
+            <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+                <div className="flex-1 relative  w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
                     <Input
                         placeholder="Поиск по названию..."

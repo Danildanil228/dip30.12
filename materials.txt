@@ -65,9 +65,6 @@ create table material_requests (
 	rejection_reason text,
 	created_at timestamp default current_timestamp,
 	reviewed_at timestamp,
-
-
-	//добавлено
 	is_public BOOLEAN DEFAULT TRUE,
 	title VARCHAR(255)
 )
@@ -78,4 +75,56 @@ CREATE TABLE material_requests_items (
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     current_quantity_at_request INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+
+
+
+--INVENTORY
+
+-- Таблица инвентаризаций
+CREATE TABLE inventories (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    status VARCHAR(20) DEFAULT 'draft',
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    responsible_person INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    approved_at TIMESTAMP,
+    approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    cancelled_at TIMESTAMP,
+    cancelled_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT inventories_status_check CHECK (status IN ('draft', 'in_progress', 'completed', 'approved', 'cancelled', 'expired'))
+);
+
+-- Категории в инвентаризации
+CREATE TABLE inventory_categories (
+    id SERIAL PRIMARY KEY,
+    inventory_id INTEGER REFERENCES inventories(id) ON DELETE CASCADE,
+    category_id INTEGER REFERENCES materialcategories(id) ON DELETE CASCADE
+);
+
+-- Конкретные товары в инвентаризации
+CREATE TABLE inventory_materials (
+    id SERIAL PRIMARY KEY,
+    inventory_id INTEGER REFERENCES inventories(id) ON DELETE CASCADE,
+    material_id INTEGER REFERENCES materials(id) ON DELETE CASCADE
+);
+
+-- Результаты инвентаризации
+CREATE TABLE inventory_results (
+    id SERIAL PRIMARY KEY,
+    inventory_id INTEGER REFERENCES inventories(id) ON DELETE CASCADE,
+    material_id INTEGER REFERENCES materials(id) ON DELETE CASCADE,
+    system_quantity INTEGER NOT NULL,
+    actual_quantity INTEGER,
+    difference INTEGER GENERATED ALWAYS AS (actual_quantity - system_quantity) STORED,
+    reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
