@@ -94,7 +94,7 @@ export default function Requests() {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
-                <div className="flex-1 relative">
+                <div className="flex-1 relative  w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
                     <Input
                         placeholder="Поиск по названию..."
