@@ -50,8 +50,6 @@ export function MaterialMovementReport() {
     const fetchFilters = async () => {
         try {
             const token = localStorage.getItem("token");
-
-            // Загрузка категорий
             const categoriesRes = await axios.get(`${API_BASE_URL}/categories`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -62,7 +60,6 @@ export function MaterialMovementReport() {
                 }))
             );
 
-            // Загрузка материалов
             const materialsRes = await axios.get(`${API_BASE_URL}/reports/materials-list`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -125,7 +122,7 @@ export function MaterialMovementReport() {
     const columns = [
         { key: "date", header: "Дата", width: "100px", format: (v: string) => format(new Date(v), "dd.MM.yyyy") },
         { key: "request_title", header: "Заявка", width: "150px" },
-        { key: "request_type", header: "Тип", width: "80px", format: (v: string) => (v === "incoming" ? "➕ Приход" : "➖ Расход") },
+        { key: "request_type", header: "Тип", width: "80px", format: (v: string) => (v === "incoming" ? "Приход" : "Расход") },
         { key: "material_name", header: "Материал", width: "150px" },
         { key: "code", header: "Код", width: "100px" },
         { key: "category_name", header: "Категория", width: "120px" },

@@ -113,7 +113,7 @@ export function RequestsReport() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "pending":
-                return <Badge className="bg-yellow-500">На рассмотрении</Badge>;
+                return <Badge>На рассмотрении</Badge>;
             case "approved":
                 return <Badge className="bg-green-500">Подтверждена</Badge>;
             case "rejected":
@@ -126,7 +126,7 @@ export function RequestsReport() {
     const columns = [
         { key: "id", header: "№", width: "60px" },
         { key: "title", header: "Название", width: "200px" },
-        { key: "request_type", header: "Тип", width: "80px", format: (v: string) => (v === "incoming" ? "➕ Приход" : "➖ Расход") },
+        { key: "request_type", header: "Тип", width: "80px", format: (v: string) => (v === "incoming" ? "Приход" : "Расход") },
         { key: "status", header: "Статус", width: "120px", format: (v: string) => getStatusBadge(v) },
         { key: "created_by_username", header: "Создал", width: "120px" },
         { key: "reviewed_by_username", header: "Рассмотрел", width: "120px", format: (v: string) => v || "-" },
@@ -164,7 +164,7 @@ export function RequestsReport() {
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <Card>
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-yellow-600">На рассмотрении</CardTitle>
+                                <CardTitle className="text-sm">На рассмотрении</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{summary.pending}</div>

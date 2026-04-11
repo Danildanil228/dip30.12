@@ -11,42 +11,28 @@ interface FilterOption {
 }
 
 interface ReportFiltersProps {
-    // Даты
     startDate: Date;
     endDate: Date;
     onStartDateChange: (date: Date) => void;
     onEndDateChange: (date: Date) => void;
-
-    // Категория (опционально)
     categoryId?: string;
     onCategoryChange?: (value: string) => void;
     categories?: FilterOption[];
-
-    // Материал (опционально)
     materialId?: string;
     onMaterialChange?: (value: string) => void;
     materials?: FilterOption[];
-
-    // Тип (опционально)
     type?: string;
     onTypeChange?: (value: string) => void;
     types?: FilterOption[];
-
-    // Статус (опционально)
     status?: string;
     onStatusChange?: (value: string) => void;
     statuses?: FilterOption[];
-
-    // Пользователь (опционально)
     userId?: string;
     onUserChange?: (value: string) => void;
     users?: FilterOption[];
-
-    // Поиск (опционально)
     searchTerm?: string;
     onSearchChange?: (value: string) => void;
 
-    // Действия
     onApply: () => void;
     onReset: () => void;
     onExportPDF?: () => void;

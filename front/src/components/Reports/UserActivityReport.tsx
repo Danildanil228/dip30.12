@@ -50,7 +50,6 @@ export function UserActivityReport() {
             const userData = response.data.data || [];
             setData(userData);
 
-            // Подсчет итогов
             const totalRequests = userData.reduce((sum: number, u: UserActivity) => sum + (Number(u.requests_created) || 0), 0);
             const totalApproved = userData.reduce((sum: number, u: UserActivity) => sum + (Number(u.requests_approved) || 0), 0);
             const totalRejected = userData.reduce((sum: number, u: UserActivity) => sum + (Number(u.requests_rejected) || 0), 0);
@@ -88,11 +87,11 @@ export function UserActivityReport() {
     const getRoleBadge = (role: string) => {
         switch (role) {
             case "admin":
-                return <Badge className="bg-purple-500">Администратор</Badge>;
+                return <Badge>Администратор</Badge>;
             case "accountant":
-                return <Badge className="bg-blue-500">Бухгалтер</Badge>;
+                return <Badge>Бухгалтер</Badge>;
             case "storekeeper":
-                return <Badge className="bg-green-500">Кладовщик</Badge>;
+                return <Badge>Кладовщик</Badge>;
             default:
                 return <Badge>{role}</Badge>;
         }
@@ -145,7 +144,7 @@ export function UserActivityReport() {
             key: "inventories_completed",
             header: "Инвентаризаций проведено",
             width: "160px",
-            format: (v: number) => <span className="text-blue-600 font-medium">{formatNumber(v)}</span>
+            format: (v: number) => <span>{formatNumber(v)}</span>
         }
     ];
 
@@ -153,7 +152,6 @@ export function UserActivityReport() {
         navigate(`/profile/${row.id}`);
     };
 
-    // Фильтруем пользователей с нулевой активностью (опционально)
     const activeData = data.filter((u) => (Number(u.requests_created) || 0) > 0 || (Number(u.requests_approved) || 0) > 0 || (Number(u.inventories_completed) || 0) > 0);
 
     return (
@@ -201,10 +199,10 @@ export function UserActivityReport() {
                         </Card>
                         <Card>
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-blue-600">Инвентаризаций</CardTitle>
+                                <CardTitle className="text-sm">Инвентаризаций</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-blue-600">{summary.total_inventories.toLocaleString()}</div>
+                                <div className="text-2xl font-bold">{summary.total_inventories.toLocaleString()}</div>
                             </CardContent>
                         </Card>
                     </div>

@@ -17,21 +17,29 @@ export default function Reports() {
                 <h1 className="text-2xl font-bold">Аналитика и отчеты</h1>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-2 h-auto">
-                    <TabsTrigger value="movement" className="py-2">
-                        📦 Движение материалов
-                    </TabsTrigger>
-                    <TabsTrigger value="requests" className="py-2">
-                        📋 Заявки
-                    </TabsTrigger>
-                    <TabsTrigger value="turnover" className="py-2">
-                        📊 Оборотно-сальдовая ведомость
-                    </TabsTrigger>
-                    <TabsTrigger value="activity" className="py-2">
-                        👥 Активность пользователей
-                    </TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex!">
+                <div className="sm:flex grid gap-2 text-center! sm:justify-between text-wrap">
+                    <TabsList className="flex w-full">
+                        <TabsTrigger value="movement" className="py-2">
+                            Движение материалов
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsList className="w-full">
+                        <TabsTrigger value="requests" className="py-2">
+                            Заявки
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsList className="flex w-full">
+                        <TabsTrigger value="turnover" className="py-2">
+                            Оборотно-сальдовая ведомость
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsList className="w-full">
+                        <TabsTrigger value="activity" className="py-2">
+                            Активность пользователей
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="movement" className="mt-6">
                     <MaterialMovementReport />
