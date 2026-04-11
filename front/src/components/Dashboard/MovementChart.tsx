@@ -6,7 +6,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format, subDays, subMonths } from "date-fns";
-import { ru } from "date-fns/locale/ru";
 import { Loader2 } from "lucide-react";
 
 interface MovementData {

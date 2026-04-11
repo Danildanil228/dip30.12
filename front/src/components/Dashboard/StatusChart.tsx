@@ -93,7 +93,7 @@ export function StatusChart() {
                     <CardTitle>Статус {getEntityLabel()}</CardTitle>
                     <div className="flex flex-wrap gap-2">
                         <Select value={entityType} onValueChange={(v) => setEntityType(v as EntityType)}>
-                            <SelectTrigger className="w-40">
+                            <SelectTrigger className="w-50">
                                 <SelectValue placeholder="Выберите тип" />
                             </SelectTrigger>
                             <SelectContent>
@@ -116,7 +116,7 @@ export function StatusChart() {
                     <div className="flex justify-center items-center h-80 text-muted-foreground">Нет данных за выбранный период</div>
                 ) : (
                     <>
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={310}>
                             <PieChart>
                                 <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="count" labelLine={false}>
                                     {data.map((entry, index) => (

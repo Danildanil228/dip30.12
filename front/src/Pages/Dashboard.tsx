@@ -4,7 +4,6 @@ import { MovementChart } from "@/components/Dashboard/MovementChart";
 import { StatusChart } from "@/components/Dashboard/StatusChart";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Boxes, Clock, CheckCircle, RefreshCw } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
@@ -71,7 +70,7 @@ export default function Dashboard() {
         <div className="space-y-6">
             <ScrollToTop />
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex justify-between">
                 <h1 className="text-2xl font-bold">Дашборд</h1>
                 <div className="flex flex-wrap gap-2">
                     <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
