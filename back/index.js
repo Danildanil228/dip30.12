@@ -321,7 +321,6 @@ app.get("/logs", checkAdmin, async (req, res) => {
             FROM notifications n
             LEFT JOIN users u ON n.user_id = u.id
             ORDER BY n.created_at DESC
-            LIMIT 100
         `);
 
         await pool.query("UPDATE notifications SET read = true WHERE read = false");
@@ -2195,11 +2194,11 @@ app.get("/reports/material-movement", async (req, res) => {
 });
 
 // Отчет: Заявки
-app.get("/reports/requests", async (req, res) => {
+app.get('/reports/requests', async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
+        const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
+            return res.status(401).json({ error: 'Требуется авторизация' });
         }
 
         const { startDate, endDate, status, type, userId } = req.query;
@@ -2227,49 +2226,48 @@ app.get("/reports/requests", async (req, res) => {
             LEFT JOIN users u2 ON r.reviewed_by = u2.id
             WHERE r.created_at::date BETWEEN $1 AND $2
         `;
-
+        
         const params = [startDate, endDate];
         let paramIndex = 3;
 
-        if (status && status !== "all") {
+        if (status && status !== 'all') {
             query += ` AND r.status = $${paramIndex}`;
             params.push(status);
             paramIndex++;
         }
 
-        if (type && type !== "all") {
+        if (type && type !== 'all') {
             query += ` AND r.request_type = $${paramIndex}`;
             params.push(type);
             paramIndex++;
         }
 
-        if (userId && userId !== "all") {
+        if (userId && userId !== 'all') {
             query += ` AND r.created_by = $${paramIndex}`;
-            params.push(userId);
+            params.push(parseInt(userId));
             paramIndex++;
         }
 
         query += ` ORDER BY r.created_at DESC`;
 
         const result = await pool.query(query, params);
-
+        
         // Подсчет статистики
-        let pending = 0,
-            approved = 0,
-            rejected = 0;
-        result.rows.forEach((row) => {
-            if (row.status === "pending") pending++;
-            else if (row.status === "approved") approved++;
-            else if (row.status === "rejected") rejected++;
+        let pending = 0, approved = 0, rejected = 0;
+        result.rows.forEach(row => {
+            if (row.status === 'pending') pending++;
+            else if (row.status === 'approved') approved++;
+            else if (row.status === 'rejected') rejected++;
         });
 
-        res.json({
+        res.json({ 
             data: result.rows,
             summary: { pending, approved, rejected, total: result.rows.length }
         });
+
     } catch (error) {
-        console.error("Ошибка получения отчета заявок:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        console.error('Ошибка получения отчета заявок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -2396,40 +2394,59 @@ app.get("/reports/turnover-balance", async (req, res) => {
 });
 
 // Отчет: Активность пользователей
-app.get("/reports/user-activity", async (req, res) => {
+app.get('/reports/user-activity', async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
+        const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
+            return res.status(401).json({ error: 'Требуется авторизация' });
         }
 
         const { startDate, endDate } = req.query;
 
-        const result = await pool.query(
-            `
+        // Используем подзапросы вместо множественных JOIN, чтобы избежать дублирования
+        const result = await pool.query(`
             SELECT 
                 u.id,
                 u.username,
                 u.name,
                 u.secondname,
                 u.role,
-                COUNT(DISTINCT CASE WHEN r.status = 'approved' AND r.created_at::date BETWEEN $1 AND $2 THEN r.id END) as requests_approved,
-                COUNT(DISTINCT CASE WHEN r.status = 'rejected' AND r.created_at::date BETWEEN $1 AND $2 THEN r.id END) as requests_rejected,
-                COUNT(DISTINCT CASE WHEN r.created_at::date BETWEEN $1 AND $2 THEN r.id END) as requests_created,
-                COUNT(DISTINCT CASE WHEN i.status = 'approved' AND i.responsible_person = u.id AND i.created_at::date BETWEEN $1 AND $2 THEN i.id END) as inventories_completed
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM material_requests r 
+                    WHERE r.created_by = u.id 
+                    AND r.created_at::date BETWEEN $1 AND $2
+                ), 0) as requests_created,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM material_requests r 
+                    WHERE r.reviewed_by = u.id 
+                    AND r.status = 'approved'
+                    AND r.reviewed_at::date BETWEEN $1 AND $2
+                ), 0) as requests_approved,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM material_requests r 
+                    WHERE r.reviewed_by = u.id 
+                    AND r.status = 'rejected'
+                    AND r.reviewed_at::date BETWEEN $1 AND $2
+                ), 0) as requests_rejected,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM inventories i 
+                    WHERE i.responsible_person = u.id 
+                    AND i.status = 'approved'
+                    AND i.completed_at::date BETWEEN $1 AND $2
+                ), 0) as inventories_completed
             FROM users u
-            LEFT JOIN material_requests r ON r.created_by = u.id
-            LEFT JOIN inventories i ON i.responsible_person = u.id
-            GROUP BY u.id, u.username, u.name, u.secondname, u.role
             ORDER BY requests_created DESC
-        `,
-            [startDate, endDate]
-        );
+        `, [startDate, endDate]);
 
         res.json({ data: result.rows });
+
     } catch (error) {
-        console.error("Ошибка получения активности пользователей:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        console.error('Ошибка получения активности пользователей:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
