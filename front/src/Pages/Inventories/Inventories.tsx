@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
@@ -38,6 +39,10 @@ export default function Inventories() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+    const [completeDialog, setCompleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
+    const [cancelDialog, setCancelDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
+    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
 
     const isAdminOrAccountant = isAdmin || user?.role === 'accountant';
     const isResponsible = (inventory: Inventory) => inventory.responsible_person === user?.id;
@@ -74,16 +79,14 @@ export default function Inventories() {
         }
     };
 
-    const handleComplete = async (id: number) => {
-        if (!confirm("Вы уверены, что хотите завершить инвентаризацию? После этого нельзя будет редактировать результаты.")) {
-            return;
-        }
-
+    const handleComplete = async () => {
+        if (!completeDialog.id) return;
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`${API_BASE_URL}/inventories/${id}/complete`, {}, {
+            await axios.put(`${API_BASE_URL}/inventories/${completeDialog.id}/complete`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            setCompleteDialog({ open: false, id: null, title: "" });
             fetchInventories();
         } catch (error: any) {
             console.error("Ошибка завершения инвентаризации:", error);
@@ -91,16 +94,14 @@ export default function Inventories() {
         }
     };
 
-    const handleCancel = async (id: number, title: string) => {
-        if (!confirm(`Отменить инвентаризацию "${title}"?`)) {
-            return;
-        }
-
+    const handleCancel = async () => {
+        if (!cancelDialog.id) return;
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`${API_BASE_URL}/inventories/${id}/cancel`, {}, {
+            await axios.put(`${API_BASE_URL}/inventories/${cancelDialog.id}/cancel`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            setCancelDialog({ open: false, id: null, title: "" });
             fetchInventories();
         } catch (error: any) {
             console.error("Ошибка отмены инвентаризации:", error);
@@ -108,16 +109,14 @@ export default function Inventories() {
         }
     };
 
-    const handleDelete = async (id: number, title: string) => {
-        if (!confirm(`Удалить инвентаризацию "${title}"? Это действие нельзя отменить.`)) {
-            return;
-        }
-
+    const handleDelete = async () => {
+        if (!deleteDialog.id) return;
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/inventories/${id}`, {
+            await axios.delete(`${API_BASE_URL}/inventories/${deleteDialog.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            setDeleteDialog({ open: false, id: null, title: "" });
             fetchInventories();
         } catch (error: any) {
             console.error("Ошибка удаления инвентаризации:", error);
@@ -180,8 +179,8 @@ export default function Inventories() {
                 )}
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
-                <div className="flex-1 w-full relative">
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
                     <Input
                         placeholder="Поиск по названию или ответственному..."
@@ -274,20 +273,20 @@ export default function Inventories() {
                                                 )}
 
                                                 {isResponsible(inventory) && inventory.status === 'in_progress' && (
-                                                    <DropdownMenuItem onClick={() => handleComplete(inventory.id)}>
+                                                    <DropdownMenuItem onClick={() => setCompleteDialog({ open: true, id: inventory.id, title: inventory.title })}>
                                                         <Send className="mr-2 h-4 w-4" />
                                                         Завершить
                                                     </DropdownMenuItem>
                                                 )}
 
                                                 {isAdmin && (inventory.status === 'draft' || inventory.status === 'in_progress') && (
-                                                    <DropdownMenuItem onClick={() => handleCancel(inventory.id, inventory.title)}>
+                                                    <DropdownMenuItem onClick={() => setCancelDialog({ open: true, id: inventory.id, title: inventory.title })}>
                                                         Отменить
                                                     </DropdownMenuItem>
                                                 )}
 
                                                 {isAdmin && inventory.status === 'cancelled' && (
-                                                    <DropdownMenuItem onClick={() => handleDelete(inventory.id, inventory.title)}>
+                                                    <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>
                                                         Удалить
                                                     </DropdownMenuItem>
                                                 )}
@@ -345,11 +344,59 @@ export default function Inventories() {
                     ))
                 )}
             </div>
+
             <CreateInventoryDialog
                 open={showCreateDialog}
                 onOpenChange={setShowCreateDialog}
                 onInventoryCreated={fetchInventories}
             />
+
+            <AlertDialog open={completeDialog.open} onOpenChange={(open) => setCompleteDialog(prev => ({ ...prev, open }))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Завершить инвентаризацию?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Вы уверены, что хотите завершить инвентаризацию "{completeDialog.title}"?<br />
+                            После этого нельзя будет редактировать результаты.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleComplete}>Завершить</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog(prev => ({ ...prev, open }))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Отменить инвентаризацию?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Вы уверены, что хотите отменить инвентаризацию "{cancelDialog.title}"?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancel}>Отменить</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить инвентаризацию?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Вы уверены, что хотите удалить инвентаризацию "{deleteDialog.title}"?<br />
+                            Это действие нельзя отменить.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Удалить</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

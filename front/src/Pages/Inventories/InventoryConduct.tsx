@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Save, Send, Package, User, Calendar, AlertCircle, FileText } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
@@ -44,6 +45,8 @@ export default function InventoryConduct() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [notesExpanded, setNotesExpanded] = useState(false);
+    const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+    const [uncheckedCount, setUncheckedCount] = useState(0);
 
     useEffect(() => {
         const userData = localStorage.getItem("user");
@@ -135,22 +138,14 @@ export default function InventoryConduct() {
         }
     };
 
+    const handleCompleteClick = () => {
+        const unchecked = items.filter((item) => item.actual_quantity === null).length;
+        setUncheckedCount(unchecked);
+        setShowCompleteDialog(true);
+    };
+
     const handleComplete = async () => {
-        if (!isResponsible()) {
-            setError("Вы не являетесь ответственным");
-            return;
-        }
-
-        const uncheckedItems = items.filter((item) => item.actual_quantity === null);
-        if (uncheckedItems.length > 0) {
-            setError(`Осталось не проверенных товаров: ${uncheckedItems.length}`);
-            return;
-        }
-
-        if (!confirm("Завершить инвентаризацию и отправить на проверку? После этого нельзя будет редактировать результаты.")) {
-            return;
-        }
-
+        setShowCompleteDialog(false);
         setSaving(true);
         setError("");
 
@@ -192,11 +187,11 @@ export default function InventoryConduct() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "in_progress":
-                return <Badge className="h-5">В процессе</Badge>;
+                return <Badge variant="outline">В процессе</Badge>;
             case "completed":
-                return <Badge className="h-5">Завершена</Badge>;
+                return <Badge variant="outline">Завершена</Badge>;
             default:
-                return <Badge>{status}</Badge>;
+                return <Badge variant="outline">{status}</Badge>;
         }
     };
 
@@ -229,7 +224,7 @@ export default function InventoryConduct() {
     if (!inventory) {
         return (
             <div className="text-center py-20">
-                <p className="text-gray-500">Инвентаризация не найдена</p>
+                <p className="text-muted-foreground">Инвентаризация не найдена</p>
                 <Button onClick={() => navigate("/inventories")} className="mt-4">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Назад
@@ -256,15 +251,15 @@ export default function InventoryConduct() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="flex items-center gap-2 text-gray-600 text-base">
+                        <div className="flex items-center gap-2 text-muted-foreground text-base">
                             <Calendar className="h-4 w-4" />
                             <span>
                                 {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-base">
-                            <User className={isResponsible() ? "h-4 w-4" : " w-4 h-4 text-gray-600"}/>
-                            <span className={isResponsible() ? "underline" : "text-gray-600"}>
+                            <User className={isResponsible() ? "h-4 w-4" : " w-4 h-4 text-muted-foreground"} />
+                            <span className={isResponsible() ? "underline" : "text-muted-foreground"}>
                                 Ответственный: {inventory.responsible_username}
                                 {isResponsible() && " (Вы)"}
                             </span>
@@ -273,9 +268,9 @@ export default function InventoryConduct() {
 
                     {inventory.description && (
                         <div className="mt-4 flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <div className="text-sm text-gray-600">Примечания</div>
+                                <div className="text-sm text-muted-foreground">Примечания</div>
                                 <div className="mt-1">
                                     <div
                                         className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
@@ -297,7 +292,7 @@ export default function InventoryConduct() {
                     )}
 
                     {error && (
-                        <div className="mb-4 flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded">
+                        <div className="mb-4 flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded">
                             <AlertCircle className="h-4 w-4" />
                             <span className="text-sm whitespace-pre-line">{error}</span>
                         </div>
@@ -311,8 +306,8 @@ export default function InventoryConduct() {
                                     {progress.percent}% ({progress.checked}/{progress.total})
                                 </span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-gray-600 h-2 rounded-full transition-all" style={{ width: `${progress.percent}%` }} />
+                            <div className="w-full bg-muted rounded-full h-2">
+                                <div className="bg-foreground h-2 rounded-full transition-all" style={{ width: `${progress.percent}%` }} />
                             </div>
                         </div>
                     )}
@@ -322,7 +317,7 @@ export default function InventoryConduct() {
                             <Save className="mr-2 h-4 w-4" />
                             Сохранить
                         </Button>
-                        <Button onClick={handleComplete} disabled={saving || inventory.status !== "in_progress" || !isResponsible()}>
+                        <Button onClick={handleCompleteClick} disabled={saving || inventory.status !== "in_progress" || !isResponsible()}>
                             <Send className="mr-2 h-4 w-4" />
                             Завершить
                         </Button>
@@ -344,7 +339,7 @@ export default function InventoryConduct() {
                                 <div className="flex flex-wrap justify-between items-start mb-3">
                                     <div>
                                         <h3 className="font-semibold">{item.name}</h3>
-                                        <p className="text-sm text-gray-500">Код: {item.code}</p>
+                                        <p className="text-sm text-muted-foreground">Код: {item.code}</p>
                                     </div>
                                     <Badge variant="outline">
                                         {item.system_quantity} {item.unit} в системе
@@ -384,9 +379,28 @@ export default function InventoryConduct() {
                         ))}
                     </div>
 
-                    {items.length === 0 && <div className="text-center py-10 text-gray-500">Нет товаров для проверки</div>}
+                    {items.length === 0 && <div className="text-center py-10 text-muted-foreground">Нет товаров для проверки</div>}
                 </CardContent>
             </Card>
+
+            <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Завершить инвентаризацию?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {uncheckedCount > 0 ? (
+                                <>Осталось не проверенных товаров: {uncheckedCount}.<br />Вы уверены, что хотите завершить?</>
+                            ) : (
+                                "Вы уверены, что хотите завершить инвентаризацию и отправить на проверку? После этого нельзя будет редактировать результаты."
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleComplete}>Завершить</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
