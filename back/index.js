@@ -1,97 +1,98 @@
-const express = require('express');
-const cors = require('cors');
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken')
+const express = require("express");
+const cors = require("cors");
+const { Pool } = require("pg");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const app = express();
 const PORT = 3000;
-const JWT_SECRET = 'key'
-const Logger = require('./logger')
-const backupRoutes = require('./backup');
-
+const JWT_SECRET = "key";
+const Logger = require("./logger");
+const backupRoutes = require("./backup");
 
 const pool = new Pool({
     user: "postgres",
     password: "1234",
-    host: 'localhost',
-    port: '5432',
+    host: "localhost",
+    port: "5432",
     database: "materialHousedb"
 });
-app.set('pool', pool);
+app.set("pool", pool);
 
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
     next();
 });
 
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (origin.includes(':5173')) {
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (origin.includes(":5173")) {
+                return callback(null, true);
+            }
             return callback(null, true);
-        }
-        return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"]
+    })
+);
 
 app.use(express.json());
-app.use('/backups', backupRoutes);
+app.use("/backups", backupRoutes);
 
 //Проверка на админа
 const checkAdmin = (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Требуются права администратора' });
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ error: "Требуются права администратора" });
         }
 
         req.user = decoded;
         next();
     } catch (error) {
-        return res.status(403).json({ error: 'Недействительный токен' });
+        return res.status(403).json({ error: "Недействительный токен" });
     }
 };
 
-app.get('/countUsers', async (req, res) => {
+app.get("/countUsers", async (req, res) => {
     try {
-        const result = await pool.query('select count(*) from users');
+        const result = await pool.query("select count(*) from users");
         const count = parseInt(result.rows[0].count);
         res.json({ hasUsers: count > 0 });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Ошибка сервера' })
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.post('/registerFirst', async (req, res) => {
+app.post("/registerFirst", async (req, res) => {
     try {
-        const countResult = await pool.query('SELECT COUNT(*) FROM users');
+        const countResult = await pool.query("SELECT COUNT(*) FROM users");
         const userCount = parseInt(countResult.rows[0].count);
 
         if (userCount > 0) {
-            return res.status(400).json({ error: 'Регистрация первого пользователя уже выполнена' });
+            return res.status(400).json({ error: "Регистрация первого пользователя уже выполнена" });
         }
 
         const { username, password } = req.body;
 
         if (!username || !password) {
-            return res.status(400).json({ error: 'Заполните все поля' });
+            return res.status(400).json({ error: "Заполните все поля" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const result = await pool.query(
-            'INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday',
-            [username, hashedPassword, 'admin', 'admin', 'admin', '', '', null]
+            "INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday",
+            [username, hashedPassword, "admin", "admin", "admin", "", "", null]
         );
 
         const user = result.rows[0];
@@ -105,11 +106,11 @@ app.post('/registerFirst', async (req, res) => {
                 secondname: user.secondname
             },
             JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: "8h" }
         );
 
         res.json({
-            message: 'Первый пользователь создан',
+            message: "Первый пользователь создан",
             user: {
                 id: user.id,
                 username: user.username,
@@ -119,32 +120,31 @@ app.post('/registerFirst', async (req, res) => {
             },
             token: token
         });
-
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
     try {
         const { username, password } = req.body;
 
         if (!username || !password) {
-            return res.status(400).json({ error: 'Заполните все поля' });
+            return res.status(400).json({ error: "Заполните все поля" });
         }
 
-        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
 
         if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Неверные данные' });
+            return res.status(401).json({ error: "Неверные данные" });
         }
 
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).json({ error: 'Неверные данные' });
+            return res.status(401).json({ error: "Неверные данные" });
         }
 
         const token = jwt.sign(
@@ -156,13 +156,13 @@ app.post('/login', async (req, res) => {
                 secondname: user.secondname
             },
             JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: "8h" }
         );
 
         await Logger.login(user.id, user.username);
 
         res.json({
-            message: 'Совершен вход',
+            message: "Совершен вход",
             user: {
                 id: user.id,
                 username: user.username,
@@ -172,47 +172,46 @@ app.post('/login', async (req, res) => {
             },
             token: token
         });
-
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.get('/verifyToken', (req, res) => {
+app.get("/verifyToken", (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) { return res.status(401).json({ valid: false }) }
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ valid: false });
+        }
         const decoded = jwt.verify(token, JWT_SECRET);
         res.json({ valid: true, user: decoded });
     } catch (error) {
-        res.status(401).json({ valid: false })
+        res.status(401).json({ valid: false });
     }
-})
+});
 
-
-
-app.post('/createUser', checkAdmin, async (req, res) => {
+app.post("/createUser", checkAdmin, async (req, res) => {
     try {
         const { username, password, name, secondname, role } = req.body;
 
         if (!username || !password || !name || !secondname || !role) {
-            return res.status(400).json({ error: 'Заполните все поля' });
+            return res.status(400).json({ error: "Заполните все поля" });
         }
 
         if (password.length < 6) {
-            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+            return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
         }
 
-        const token = req.headers.authorization?.split(' ')[1];
-        let adminUsername = 'system';
+        const token = req.headers.authorization?.split(" ")[1];
+        let adminUsername = "system";
 
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
                 adminUsername = decoded.username;
             } catch (error) {
-                console.log('Токен не валиден, создание от имени системы');
+                console.log("Токен не валиден, создание от имени системы");
             }
         }
 
@@ -221,7 +220,7 @@ app.post('/createUser', checkAdmin, async (req, res) => {
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
      RETURNING id, username, role, name, secondname, email, phone, birthday`,
-            [username, hashedPassword, role, name, secondname, '', '', null]
+            [username, hashedPassword, role, name, secondname, "", "", null]
         );
 
         const user = result.rows[0];
@@ -229,114 +228,93 @@ app.post('/createUser', checkAdmin, async (req, res) => {
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
-                await Logger.userCreated(
-                    decoded.id,
-                    decoded.username,
-                    user.username,
-                    user.id
-                );
+                await Logger.userCreated(decoded.id, decoded.username, user.username, user.id);
             } catch (error) {
-                console.log('Не удалось записать лог');
+                console.log("Не удалось записать лог");
             }
         }
 
         res.json({
-            message: 'Пользователь успешно создан',
+            message: "Пользователь успешно создан",
             user: user
         });
-
     } catch (error) {
-        console.error('Ошибка при создании пользователя:', error);
+        console.error("Ошибка при создании пользователя:", error);
 
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+        if (error.code === "23505") {
+            return res.status(400).json({ error: "Пользователь с таким логином уже существует" });
         }
 
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
-app.get('/users', async (req, res) => {
+app.get("/users", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        let query = 'SELECT id, username, role, name, secondname, created_at FROM users';
+
+        let query = "SELECT id, username, role, name, secondname, created_at FROM users";
         const params = [];
-        
+
         // Админ видит всех
-        if (decoded.role === 'admin') {
-            query += ' ORDER BY name, secondname';
-        } 
+        if (decoded.role === "admin") {
+            query += " ORDER BY name, secondname";
+        }
         // Бухгалтер видит бухгалтеров и кладовщиков
-        else if (decoded.role === 'accountant') {
+        else if (decoded.role === "accountant") {
             query += " WHERE role IN ('storekeeper', 'accountant') ORDER BY name, secondname";
         }
         // Кладовщик не видит пользователей
         else {
             return res.json({ users: [] });
         }
-        
+
         const result = await pool.query(query, params);
         res.json({ users: result.rows });
-        
     } catch (error) {
-        console.error('Ошибка при получении пользователей:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при получении пользователей:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Удаление пользователя
-app.delete('/users/:id', checkAdmin, async (req, res) => {
+app.delete("/users/:id", checkAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
 
-        const userToDeleteResult = await pool.query(
-            'SELECT username FROM users WHERE id = $1',
-            [userId]
-        );
+        const userToDeleteResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
 
         if (userToDeleteResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+            return res.status(404).json({ error: "Пользователь не найден" });
         }
 
         const userToDelete = userToDeleteResult.rows[0];
         if (userId === req.user.id) {
-            return res.status(400).json({ error: 'Нельзя удалить самого себя' });
+            return res.status(400).json({ error: "Нельзя удалить самого себя" });
         }
-        const result = await pool.query(
-            'DELETE FROM users WHERE id = $1 RETURNING id, username',
-            [userId]
-        );
+        const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id, username", [userId]);
         //логи
-        await Logger.userDeleted(
-            req.user.id,
-            req.user.username,
-            userToDelete.username,
-            userToDelete.id
-        );
+        await Logger.userDeleted(req.user.id, req.user.username, userToDelete.username, userToDelete.id);
 
         res.json({
-            message: 'Пользователь удален',
+            message: "Пользователь удален",
             deletedUser: result.rows[0]
         });
-
     } catch (error) {
-        console.error('Ошибка при удалении пользователя:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при удалении пользователя:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
 //ЛОГИ
 
-// Получение логов 
-app.get('/logs', checkAdmin, async (req, res) => {
+// Получение логов
+app.get("/logs", checkAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT n.*, u.username as user_name, u.name, u.secondname 
@@ -345,55 +323,48 @@ app.get('/logs', checkAdmin, async (req, res) => {
             ORDER BY n.created_at DESC
         `);
 
-        await pool.query(
-            'UPDATE notifications SET read = true WHERE read = false'
-        );
+        await pool.query("UPDATE notifications SET read = true WHERE read = false");
 
         res.json({ logs: result.rows });
-
     } catch (error) {
-        console.error('Ошибка при получении логов:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при получении логов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-// Удаление лога 
-app.delete('/logs/:id', checkAdmin, async (req, res) => {
+// Удаление лога
+app.delete("/logs/:id", checkAdmin, async (req, res) => {
     try {
         const logId = parseInt(req.params.id);
 
-        const result = await pool.query(
-            'DELETE FROM notifications WHERE id = $1 RETURNING id',
-            [logId]
-        );
+        const result = await pool.query("DELETE FROM notifications WHERE id = $1 RETURNING id", [logId]);
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Лог не найден' });
+            return res.status(404).json({ error: "Лог не найден" });
         }
 
-        res.json({ message: 'Лог удален' });
-
+        res.json({ message: "Лог удален" });
     } catch (error) {
-        console.error('Ошибка при удалении лога:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при удалении лога:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-// Удаление всех логов 
-app.delete('/logs', checkAdmin, async (req, res) => {
+// Удаление всех логов
+app.delete("/logs", checkAdmin, async (req, res) => {
     try {
-        await pool.query('DELETE FROM notifications');
-        res.json({ message: 'Все логи удалены' });
+        await pool.query("DELETE FROM notifications");
+        res.json({ message: "Все логи удалены" });
     } catch (error) {
-        console.error('Ошибка при удалении логов:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при удалении логов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-// profile 
+// profile
 
 // Получение данных пользователя по ID
-app.get('/users/:id', async (req, res) => {
+app.get("/users/:id", async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
 
@@ -405,43 +376,41 @@ app.get('/users/:id', async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+            return res.status(404).json({ error: "Пользователь не найден" });
         }
 
         res.json({ user: result.rows[0] });
     } catch (error) {
-        console.error('Ошибка при получении пользователя:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при получении пользователя:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Обновление данных пользователя
-app.put('/users/:id', async (req, res) => {
+app.put("/users/:id", async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         const { username, name, secondname, email, phone, birthday, role } = req.body;
 
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const isAdmin = decoded.role === 'admin';
+        const isAdmin = decoded.role === "admin";
         const isSelf = decoded.id === userId;
 
-        const oldUserResult = await pool.query(
-            'SELECT *, birthday::text as birthday_text FROM users WHERE id = $1', [userId]
-        );
+        const oldUserResult = await pool.query("SELECT *, birthday::text as birthday_text FROM users WHERE id = $1", [userId]);
 
         if (oldUserResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+            return res.status(404).json({ error: "Пользователь не найден" });
         }
 
         const oldUser = oldUserResult.rows[0];
 
         if (!isSelf && !isAdmin) {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const updateData = {
@@ -463,12 +432,9 @@ app.put('/users/:id', async (req, res) => {
         }
 
         if (updateData.username && updateData.username !== oldUser.username) {
-            const existingUser = await pool.query(
-                'SELECT id FROM users WHERE username = $1 AND id != $2',
-                [updateData.username, userId]
-            );
+            const existingUser = await pool.query("SELECT id FROM users WHERE username = $1 AND id != $2", [updateData.username, userId]);
             if (existingUser.rows.length > 0) {
-                return res.status(400).json({ error: 'Логин уже занят' });
+                return res.status(400).json({ error: "Логин уже занят" });
             }
         }
 
@@ -488,7 +454,7 @@ app.put('/users/:id', async (req, res) => {
 
         const query = `
             UPDATE users 
-            SET ${setClauses.join(', ')} 
+            SET ${setClauses.join(", ")} 
             WHERE id = $${paramIndex} 
             RETURNING id, username, role, name, secondname, email, phone, birthday, created_at, updated_at
         `;
@@ -500,117 +466,111 @@ app.put('/users/:id', async (req, res) => {
         const changedFields = {};
         Object.entries(updateData).forEach(([key, newValue]) => {
             let oldValue;
-            if (key === 'birthday') {
-                oldValue = oldUser.birthday_text || '';
+            if (key === "birthday") {
+                oldValue = oldUser.birthday_text || "";
             } else {
-                oldValue = oldUser[key] || '';
+                oldValue = oldUser[key] || "";
             }
 
             const normalizedOldValue = String(oldValue);
-            const normalizedNewValue = String(newValue || '');
+            const normalizedNewValue = String(newValue || "");
 
-            if (normalizedNewValue !== normalizedOldValue && key !== 'updated_at') {
+            if (normalizedNewValue !== normalizedOldValue && key !== "updated_at") {
                 changedFields[key] = {
-                    old: normalizedOldValue, new: normalizedNewValue
+                    old: normalizedOldValue,
+                    new: normalizedNewValue
                 };
             }
         });
 
         if (Object.keys(changedFields).length > 0) {
             if (isAdmin && !isSelf) {
-                await Logger.userUpdated(
-                    decoded.id, decoded.username, userId, oldUser.username, changedFields
-                );
+                await Logger.userUpdated(decoded.id, decoded.username, userId, oldUser.username, changedFields);
             } else {
                 await Logger.profileUpdated(userId, oldUser.username, changedFields);
             }
         }
 
         res.json({
-            message: 'Данные обновлены', user: updatedUser
+            message: "Данные обновлены",
+            user: updatedUser
         });
-
     } catch (error) {
-        console.error('Ошибка при обновлении пользователя:', error);
-        if (error.name === 'JsonWebTokenError') { return res.status(401).json({ error: 'Недействительный токен' }) }
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при обновлении пользователя:", error);
+        if (error.name === "JsonWebTokenError") {
+            return res.status(401).json({ error: "Недействительный токен" });
+        }
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Смена пароля
-app.put('/users/:id/password', async (req, res) => {
+app.put("/users/:id/password", async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         const { currentPassword, newPassword, isAdminChange } = req.body;
 
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) { return res.status(401).json({ error: 'Требуется авторизация' }) }
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const isAdmin = decoded.role === 'admin';
+        const isAdmin = decoded.role === "admin";
         const isSelf = decoded.id === userId;
 
         if (!isSelf && !isAdmin) {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
-        const userResult = await pool.query(
-            'SELECT * FROM users WHERE id = $1', [userId]
-        );
+        const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
 
         if (userResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+            return res.status(404).json({ error: "Пользователь не найден" });
         }
 
         const user = userResult.rows[0];
 
         if (!isAdminChange) {
             if (!currentPassword) {
-                return res.status(400).json({ error: 'Требуется текущий пароль' });
+                return res.status(400).json({ error: "Требуется текущий пароль" });
             }
 
             const validPassword = await bcrypt.compare(currentPassword, user.password);
             if (!validPassword) {
-                return res.status(401).json({ error: 'Неверный текущий пароль' });
+                return res.status(401).json({ error: "Неверный текущий пароль" });
             }
         }
 
         if (!newPassword || newPassword.length < 6) {
-            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+            return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await pool.query(
-            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-            [hashedPassword, userId]
-        );
+        await pool.query("UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [hashedPassword, userId]);
 
         // логи
         if (isAdmin && !isSelf) {
-            await Logger.passwordChanged(
-                decoded.id, decoded.username, false, userId, user.username
-            );
+            await Logger.passwordChanged(decoded.id, decoded.username, false, userId, user.username);
         } else {
             await Logger.passwordChanged(userId, user.username, true);
         }
 
-        res.json({ message: 'Пароль успешно изменен' });
-
+        res.json({ message: "Пароль успешно изменен" });
     } catch (error) {
-        console.error('Ошибка при смене пароля:', error);
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({ error: 'Недействительный токен' });
+        console.error("Ошибка при смене пароля:", error);
+        if (error.name === "JsonWebTokenError") {
+            return res.status(401).json({ error: "Недействительный токен" });
         }
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
-
 
 ///// MATERIALS МАТЕРИАЛЫ \\\\\
 
 // все категории
-app.get('/categories', async (req, res) => {
+app.get("/categories", async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT DISTINCT c.*, 
@@ -623,116 +583,92 @@ app.get('/categories', async (req, res) => {
         `);
         res.json({ categories: result.rows });
     } catch (error) {
-        console.error('Ошибка при получении категорий:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при получении категорий:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
 // создать
-app.post('/categories', checkAdmin, async (req, res) => {
+app.post("/categories", checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         const decoded = jwt.verify(token, JWT_SECRET);
         const { name, description } = req.body;
 
         if (!name) {
-            return res.status(400).json({ error: 'Название категории обязательно' });
+            return res.status(400).json({ error: "Название категории обязательно" });
         }
 
-        const result = await pool.query(
-            `INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`,
-            [name, description || null, decoded.id]
-        );
+        const result = await pool.query(`INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`, [name, description || null, decoded.id]);
 
         // Логирование
-        await Logger.log(
-            decoded.id,
-            'category_created',
-            'Создание категории',
-            `Администратор ${decoded.username} создал категорию: ${name}`
-        );
+        await Logger.log(decoded.id, "category_created", "Создание категории", `Администратор ${decoded.username} создал категорию: ${name}`);
 
         res.json({
-            message: 'Категория создана',
+            message: "Категория создана",
             category: result.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при создании категории:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Категория с таким названием уже существует' });
+        console.error("Ошибка при создании категории:", error);
+        if (error.code === "23505") {
+            return res.status(400).json({ error: "Категория с таким названием уже существует" });
         }
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
 //update
-app.put('/categories/:id', checkAdmin, async (req, res) => {
+app.put("/categories/:id", checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         const decoded = jwt.verify(token, JWT_SECRET);
         const categoryId = parseInt(req.params.id);
         const { name, description } = req.body;
 
         if (!name) {
-            return res.status(400).json({ error: 'Название категории обязательно' });
+            return res.status(400).json({ error: "Название категории обязательно" });
         }
 
         // Получаем старые данные для логирования
-        const oldCategoryResult = await pool.query(
-            'SELECT * FROM materialCategories WHERE id = $1',
-            [categoryId]
-        );
+        const oldCategoryResult = await pool.query("SELECT * FROM materialCategories WHERE id = $1", [categoryId]);
 
         if (oldCategoryResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Категория не найдена' });
+            return res.status(404).json({ error: "Категория не найдена" });
         }
 
         const oldCategory = oldCategoryResult.rows[0];
 
-        const result = await pool.query(
-            `UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`,
-            [name, description || null, decoded.id, categoryId]
-        );
+        const result = await pool.query(`UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`, [name, description || null, decoded.id, categoryId]);
 
         // Логирование изменений
         const changes = [];
         if (name !== oldCategory.name) changes.push(`название: "${oldCategory.name}" → "${name}"`);
-        if (description !== oldCategory.description) changes.push('описание изменено');
+        if (description !== oldCategory.description) changes.push("описание изменено");
 
         if (changes.length > 0) {
-            await Logger.log(
-                decoded.id,
-                'category_updated',
-                'Изменение категории',
-                `Администратор ${decoded.username} изменил категорию "${oldCategory.name}": ${changes.join(', ')}`
-            );
+            await Logger.log(decoded.id, "category_updated", "Изменение категории", `Администратор ${decoded.username} изменил категорию "${oldCategory.name}": ${changes.join(", ")}`);
         }
 
         res.json({
-            message: 'Категория обновлена',
+            message: "Категория обновлена",
             category: result.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при обновлении категории:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Категория с таким названием уже существует' });
+        console.error("Ошибка при обновлении категории:", error);
+        if (error.code === "23505") {
+            return res.status(400).json({ error: "Категория с таким названием уже существует" });
         }
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 ///delete
-app.delete('/categories/:id', checkAdmin, async (req, res) => {
+app.delete("/categories/:id", checkAdmin, async (req, res) => {
     try {
         const categoryId = parseInt(req.params.id);
 
         // Проверяем, есть ли материалы в этой категории
-        const materialsCheck = await pool.query(
-            'SELECT COUNT(*) FROM materials WHERE category_id = $1',
-            [categoryId]
-        );
+        const materialsCheck = await pool.query("SELECT COUNT(*) FROM materials WHERE category_id = $1", [categoryId]);
 
         const materialCount = parseInt(materialsCheck.rows[0].count);
         if (materialCount > 0) {
@@ -743,43 +679,31 @@ app.delete('/categories/:id', checkAdmin, async (req, res) => {
         }
 
         // Получаем информацию о категории для логирования
-        const categoryResult = await pool.query(
-            'SELECT name FROM materialCategories WHERE id = $1',
-            [categoryId]
-        );
+        const categoryResult = await pool.query("SELECT name FROM materialCategories WHERE id = $1", [categoryId]);
 
         if (categoryResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Категория не найдена' });
+            return res.status(404).json({ error: "Категория не найдена" });
         }
 
         const categoryName = categoryResult.rows[0].name;
 
         // Удаляем категорию
-        const result = await pool.query(
-            'DELETE FROM materialCategories WHERE id = $1 RETURNING id, name',
-            [categoryId]
-        );
+        const result = await pool.query("DELETE FROM materialCategories WHERE id = $1 RETURNING id, name", [categoryId]);
 
         // Логирование
-        await Logger.log(
-            req.user.id,
-            'category_deleted',
-            'Удаление категории',
-            `Администратор ${req.user.username} удалил категорию: ${categoryName}`
-        );
+        await Logger.log(req.user.id, "category_deleted", "Удаление категории", `Администратор ${req.user.username} удалил категорию: ${categoryName}`);
 
         res.json({
-            message: 'Категория удалена',
+            message: "Категория удалена",
             deletedCategory: result.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при удалении категории:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при удалении категории:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
-app.get('/materials', async (req, res) => {
+app.get("/materials", async (req, res) => {
     try {
         const { category_id, search, low_stock } = req.query;
 
@@ -803,7 +727,7 @@ app.get('/materials', async (req, res) => {
             paramIndex++;
         }
 
-        if (low_stock === 'true') {
+        if (low_stock === "true") {
             query += ` AND m.quantity < 10`; // Можно сделать настраиваемым
         }
 
@@ -820,16 +744,17 @@ app.get('/materials', async (req, res) => {
             stats: statsResult.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при получении материалов:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при получении материалов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.get('/materials/:id', async (req, res) => {
+app.get("/materials/:id", async (req, res) => {
     try {
         const materialId = parseInt(req.params.id);
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             SELECT m.*, 
                    c.name as category_name, 
                    uc.username as created_by_username, 
@@ -839,61 +764,56 @@ app.get('/materials/:id', async (req, res) => {
             LEFT JOIN users uc ON m.created_by = uc.id 
             LEFT JOIN users uu ON m.updated_by = uu.id 
             WHERE m.id = $1
-        `, [materialId]);
+        `,
+            [materialId]
+        );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Материал не найден' });
+            return res.status(404).json({ error: "Материал не найден" });
         }
 
         res.json({ material: result.rows[0] });
     } catch (error) {
-        console.error('Ошибка при получении материала:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при получении материала:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
-app.post('/materials', checkAdmin, async (req, res) => {
+app.post("/materials", checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const { name, code, description, unit, category_id, quantity } = req.body;
 
         if (!name || !unit) {
-            return res.status(400).json({ error: 'Название и единица измерения обязательны' });
+            return res.status(400).json({ error: "Название и единица измерения обязательны" });
         }
 
         if (!code) {
-            return res.status(400).json({ error: 'Код материала обязателен' });
+            return res.status(400).json({ error: "Код материала обязателен" });
         }
 
         if (quantity && quantity < 0) {
-            return res.status(400).json({ error: 'Количество не может быть отрицательным' });
+            return res.status(400).json({ error: "Количество не может быть отрицательным" });
         }
 
-        const existingCode = await pool.query(
-            'SELECT id FROM materials WHERE code = $1',
-            [code]
-        );
+        const existingCode = await pool.query("SELECT id FROM materials WHERE code = $1", [code]);
         if (existingCode.rows.length > 0) {
-            return res.status(400).json({ error: 'Материал с таким кодом уже существует' });
+            return res.status(400).json({ error: "Материал с таким кодом уже существует" });
         }
 
         if (category_id) {
-            const categoryExists = await pool.query(
-                'SELECT id FROM materialCategories WHERE id = $1',
-                [category_id]
-            );
+            const categoryExists = await pool.query("SELECT id FROM materialCategories WHERE id = $1", [category_id]);
             if (categoryExists.rows.length === 0) {
-                return res.status(400).json({ error: 'Указанная категория не существует' });
+                return res.status(400).json({ error: "Указанная категория не существует" });
             }
         }
 
@@ -908,66 +828,56 @@ app.post('/materials', checkAdmin, async (req, res) => {
         await Logger.materialCreated(decoded.id, decoded.username, name);
 
         res.json({
-            message: 'Материал создан',
+            message: "Материал создан",
             material: result.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при создании материала:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при создании материала:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
-app.put('/materials/:id', checkAdmin, async (req, res) => {
+app.put("/materials/:id", checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const materialId = parseInt(req.params.id);
         const { name, code, description, unit, category_id } = req.body;
 
         if (!name || !unit) {
-            return res.status(400).json({ error: 'Название и единица измерения обязательны' });
+            return res.status(400).json({ error: "Название и единица измерения обязательны" });
         }
 
         // Получаем старые данные для логирования
-        const oldMaterialResult = await pool.query(
-            'SELECT * FROM materials WHERE id = $1',
-            [materialId]
-        );
+        const oldMaterialResult = await pool.query("SELECT * FROM materials WHERE id = $1", [materialId]);
 
         if (oldMaterialResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Материал не найден' });
+            return res.status(404).json({ error: "Материал не найден" });
         }
 
         const oldMaterial = oldMaterialResult.rows[0];
 
         // Проверяем уникальность кода (если меняется)
         if (code && code !== oldMaterial.code) {
-            const existingCode = await pool.query(
-                'SELECT id FROM materials WHERE code = $1 AND id != $2',
-                [code, materialId]
-            );
+            const existingCode = await pool.query("SELECT id FROM materials WHERE code = $1 AND id != $2", [code, materialId]);
             if (existingCode.rows.length > 0) {
-                return res.status(400).json({ error: 'Материал с таким кодом уже существует' });
+                return res.status(400).json({ error: "Материал с таким кодом уже существует" });
             }
         }
 
         // Если указана категория, проверяем её существование
         if (category_id) {
-            const categoryExists = await pool.query(
-                'SELECT id FROM materialCategories WHERE id = $1',
-                [category_id]
-            );
+            const categoryExists = await pool.query("SELECT id FROM materialCategories WHERE id = $1", [category_id]);
             if (categoryExists.rows.length === 0) {
-                return res.status(400).json({ error: 'Указанная категория не существует' });
+                return res.status(400).json({ error: "Указанная категория не существует" });
             }
         }
 
@@ -984,33 +894,30 @@ app.put('/materials/:id', checkAdmin, async (req, res) => {
         if (name !== oldMaterial.name) changes.push(`название: "${oldMaterial.name}" → "${name}"`);
         if (code !== oldMaterial.code) changes.push(`код: "${oldMaterial.code}" → "${code}"`);
         if (unit !== oldMaterial.unit) changes.push(`единица: "${oldMaterial.unit}" → "${unit}"`);
-        if (category_id !== oldMaterial.category_id) changes.push('категория изменена');
+        if (category_id !== oldMaterial.category_id) changes.push("категория изменена");
 
         if (changes.length > 0) {
-            await Logger.materialUpdated(decoded.id, decoded.username, oldMaterial.name, changes.join(', '));
+            await Logger.materialUpdated(decoded.id, decoded.username, oldMaterial.name, changes.join(", "));
         }
 
         res.json({
-            message: 'Материал обновлен',
+            message: "Материал обновлен",
             material: result.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при обновлении материала:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при обновлении материала:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.delete('/materials/:id', checkAdmin, async (req, res) => {
+app.delete("/materials/:id", checkAdmin, async (req, res) => {
     try {
         const materialId = parseInt(req.params.id);
 
-        const materialResult = await pool.query(
-            'SELECT name, quantity FROM materials WHERE id = $1',
-            [materialId]
-        );
+        const materialResult = await pool.query("SELECT name, quantity FROM materials WHERE id = $1", [materialId]);
 
         if (materialResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Материал не найден' });
+            return res.status(404).json({ error: "Материал не найден" });
         }
 
         const material = materialResult.rows[0];
@@ -1021,35 +928,28 @@ app.delete('/materials/:id', checkAdmin, async (req, res) => {
             });
         }
 
-        const result = await pool.query(
-            'DELETE FROM materials WHERE id = $1 RETURNING id, name, code',
-            [materialId]
-        );
+        const result = await pool.query("DELETE FROM materials WHERE id = $1 RETURNING id, name, code", [materialId]);
 
         await Logger.materialDeleted(req.user.id, req.user.username, material.name);
 
         res.json({
-            message: 'Материал удален',
+            message: "Материал удален",
             deletedMaterial: result.rows[0]
         });
     } catch (error) {
-        console.error('Ошибка при удалении материала:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка при удалении материала:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
-
 //// ===========ЗАЯВКИ============
 
-
-
-// Получение списка заявок 
-app.get('/requests', async (req, res) => {
+// Получение списка заявок
+app.get("/requests", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -1071,13 +971,13 @@ app.get('/requests', async (req, res) => {
         const params = [];
         let paramIndex = 1;
 
-        if (status && status !== 'all') {
+        if (status && status !== "all") {
             query += ` AND r.status = $${paramIndex}`;
             params.push(status);
             paramIndex++;
         }
 
-        const isAdmin = decoded.role === 'admin';
+        const isAdmin = decoded.role === "admin";
         if (!isAdmin) {
             query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
             params.push(decoded.id);
@@ -1088,19 +988,18 @@ app.get('/requests', async (req, res) => {
 
         const result = await pool.query(query, params);
         res.json({ requests: result.rows });
-
     } catch (error) {
-        console.error('Ошибка получения заявок:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения заявок:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Получение конкретной заявки
-app.get('/requests/:id', async (req, res) => {
+app.get("/requests/:id", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -1120,17 +1019,17 @@ app.get('/requests/:id', async (req, res) => {
         );
 
         if (requestResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Заявка не найдена' });
+            return res.status(404).json({ error: "Заявка не найдена" });
         }
 
         const request = requestResult.rows[0];
 
-        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        const isAdminOrAccountant = decoded.role === "admin" || decoded.role === "accountant";
         const isCreator = decoded.id === request.created_by;
         const canView = isAdminOrAccountant || isCreator || request.is_public === true;
 
         if (!canView) {
-            return res.status(403).json({ error: 'Недостаточно прав для просмотра этой заявки' });
+            return res.status(403).json({ error: "Недостаточно прав для просмотра этой заявки" });
         }
 
         const itemsResult = await pool.query(
@@ -1146,20 +1045,18 @@ app.get('/requests/:id', async (req, res) => {
             request: request,
             items: itemsResult.rows
         });
-
     } catch (error) {
-        console.error('Ошибка получения заявки:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения заявки:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-
 // Создание заявки
-app.post('/requests', async (req, res) => {
+app.post("/requests", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -1167,29 +1064,26 @@ app.post('/requests', async (req, res) => {
 
         // Валидация
         if (!title || !request_type || !items || !items.length) {
-            return res.status(400).json({ error: 'Заполните обязательные поля (название, тип, хотя бы один товар)' });
+            return res.status(400).json({ error: "Заполните обязательные поля (название, тип, хотя бы один товар)" });
         }
 
-        if (request_type !== 'incoming' && request_type !== 'outgoing') {
-            return res.status(400).json({ error: 'Неверный тип заявки' });
+        if (request_type !== "incoming" && request_type !== "outgoing") {
+            return res.status(400).json({ error: "Неверный тип заявки" });
         }
 
         // Проверяем все товары
         for (const item of items) {
             if (!item.material_id || !item.quantity || item.quantity <= 0) {
-                return res.status(400).json({ error: 'Неверные данные товаров' });
+                return res.status(400).json({ error: "Неверные данные товаров" });
             }
         }
 
         // Получаем информацию о товарах
-        const materialIds = items.map(item => item.material_id);
-        const materialsResult = await pool.query(
-            'SELECT id, name, quantity FROM materials WHERE id = ANY($1)',
-            [materialIds]
-        );
+        const materialIds = items.map((item) => item.material_id);
+        const materialsResult = await pool.query("SELECT id, name, quantity FROM materials WHERE id = ANY($1)", [materialIds]);
 
         const materialsMap = new Map();
-        materialsResult.rows.forEach(m => materialsMap.set(m.id, m));
+        materialsResult.rows.forEach((m) => materialsMap.set(m.id, m));
 
         // Проверяем, что все товары существуют
         for (const item of items) {
@@ -1199,7 +1093,7 @@ app.post('/requests', async (req, res) => {
         }
 
         // Для расходных заявок проверяем достаточно ли товаров
-        if (request_type === 'outgoing') {
+        if (request_type === "outgoing") {
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
                 if (material.quantity < item.quantity) {
@@ -1210,17 +1104,17 @@ app.post('/requests', async (req, res) => {
             }
         }
 
-        const isAdmin = decoded.role === 'admin';
+        const isAdmin = decoded.role === "admin";
         // Админ может сразу подтвердить заявку
         const isApproved = isAdmin && req.body.is_approved === true;
-        const status = isApproved ? 'approved' : 'pending';
+        const status = isApproved ? "approved" : "pending";
         // Только админ может сделать заявку приватной
-        const publicStatus = isAdmin ? (is_public !== false) : true;
+        const publicStatus = isAdmin ? is_public !== false : true;
 
         const client = await pool.connect();
 
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             // Создаем заявку
             const requestResult = await client.query(
@@ -1249,24 +1143,21 @@ app.post('/requests', async (req, res) => {
             if (isApproved) {
                 for (const item of items) {
                     const material = materialsMap.get(item.material_id);
-                    const newQuantity = request_type === 'incoming'
-                        ? material.quantity + item.quantity
-                        : material.quantity - item.quantity;
+                    const newQuantity = request_type === "incoming" ? material.quantity + item.quantity : material.quantity - item.quantity;
 
-                    await client.query(
-                        'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
-                        [newQuantity, item.material_id]
-                    );
+                    await client.query("UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2", [newQuantity, item.material_id]);
                 }
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
 
             // Формируем список товаров для лога
-            const itemsList = items.map(i => {
-                const material = materialsMap.get(i.material_id);
-                return `${material.name} (${i.quantity})`;
-            }).join(', ');
+            const itemsList = items
+                .map((i) => {
+                    const material = materialsMap.get(i.material_id);
+                    return `${material.name} (${i.quantity})`;
+                })
+                .join(", ");
 
             // Логируем создание заявки
             await Logger.requestCreated(decoded.id, decoded.username, title, request_type, itemsList);
@@ -1275,43 +1166,41 @@ app.post('/requests', async (req, res) => {
                 // Логируем автоматическое подтверждение админом
                 await Logger.requestApproved(decoded.id, decoded.username, title, request_type, itemsList);
                 res.json({
-                    message: 'Заявка создана и подтверждена',
+                    message: "Заявка создана и подтверждена",
                     request: newRequest,
                     autoApproved: true
                 });
             } else {
                 res.json({
-                    message: 'Заявка создана',
+                    message: "Заявка создана",
                     request: newRequest,
                     autoApproved: false
                 });
             }
-
         } catch (err) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw err;
         } finally {
             client.release();
         }
-
     } catch (error) {
-        console.error('Ошибка создания заявки:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка создания заявки:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-// Подтверждение заявки 
-app.put('/requests/:id/approve', async (req, res) => {
+// Подтверждение заявки
+app.put("/requests/:id/approve", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        if (decoded.role !== "admin" && decoded.role !== "accountant") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const requestId = parseInt(req.params.id);
@@ -1327,18 +1216,15 @@ app.put('/requests/:id/approve', async (req, res) => {
         );
 
         if (requestResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Заявка не найдена или уже обработана' });
+            return res.status(404).json({ error: "Заявка не найдена или уже обработана" });
         }
 
         const request = requestResult.rows[0];
         const items = request.items || [];
 
-        if (request.request_type === 'outgoing') {
+        if (request.request_type === "outgoing") {
             for (const item of items) {
-                const currentMaterial = await pool.query(
-                    'SELECT quantity FROM materials WHERE id = $1',
-                    [item.material_id]
-                );
+                const currentMaterial = await pool.query("SELECT quantity FROM materials WHERE id = $1", [item.material_id]);
 
                 if (currentMaterial.rows[0].quantity < item.quantity) {
                     return res.status(400).json({
@@ -1353,7 +1239,7 @@ app.put('/requests/:id/approve', async (req, res) => {
         const client = await pool.connect();
 
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             await client.query(
                 `UPDATE material_requests 
@@ -1363,64 +1249,54 @@ app.put('/requests/:id/approve', async (req, res) => {
             );
 
             for (const item of items) {
-                const newQuantity = request.request_type === 'incoming'
-                    ? item.current_quantity + item.quantity
-                    : item.current_quantity - item.quantity;
+                const newQuantity = request.request_type === "incoming" ? item.current_quantity + item.quantity : item.current_quantity - item.quantity;
 
-                await client.query(
-                    'UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2',
-                    [newQuantity, item.material_id]
-                );
+                await client.query("UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2", [newQuantity, item.material_id]);
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
 
-            const itemsList = items.map(i => `ID:${i.material_id} (${i.quantity})`).join(', ');
+            const itemsList = items.map((i) => `ID:${i.material_id} (${i.quantity})`).join(", ");
             await Logger.requestApproved(decoded.id, decoded.username, request.title, request.request_type, itemsList);
 
-            res.json({ message: 'Заявка подтверждена' });
-
+            res.json({ message: "Заявка подтверждена" });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw err;
         } finally {
             client.release();
         }
-
     } catch (error) {
-        console.error('Ошибка подтверждения заявки:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка подтверждения заявки:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-// Отклонение заявки 
-app.put('/requests/:id/reject', async (req, res) => {
+// Отклонение заявки
+app.put("/requests/:id/reject", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        if (decoded.role !== "admin" && decoded.role !== "accountant") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const requestId = parseInt(req.params.id);
         const { rejection_reason } = req.body;
 
-        if (!rejection_reason || rejection_reason.trim() === '') {
-            return res.status(400).json({ error: 'Укажите причину отклонения' });
+        if (!rejection_reason || rejection_reason.trim() === "") {
+            return res.status(400).json({ error: "Укажите причину отклонения" });
         }
 
-        const requestResult = await pool.query(
-            'SELECT title, request_type FROM material_requests WHERE id = $1 AND status = $2',
-            [requestId, 'pending']
-        );
+        const requestResult = await pool.query("SELECT title, request_type FROM material_requests WHERE id = $1 AND status = $2", [requestId, "pending"]);
 
         if (requestResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Заявка не найдена или уже обработана' });
+            return res.status(404).json({ error: "Заявка не найдена или уже обработана" });
         }
 
         const request = requestResult.rows[0];
@@ -1436,29 +1312,25 @@ app.put('/requests/:id/reject', async (req, res) => {
 
         await Logger.requestRejected(decoded.id, decoded.username, request.title, request.request_type, rejection_reason);
 
-        res.json({ message: 'Заявка отклонена' });
-
+        res.json({ message: "Заявка отклонена" });
     } catch (error) {
-        console.error('Ошибка отклонения заявки:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка отклонения заявки:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
-
-
-
 
 // =========== ИНВЕНТАРИЗАЦИЯ =============
 
 // Получение списка инвентаризаций
-app.get('/inventories', async (req, res) => {
+app.get("/inventories", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        const isAdminOrAccountant = decoded.role === "admin" || decoded.role === "accountant";
 
         let query = `
             SELECT i.*, 
@@ -1488,24 +1360,23 @@ app.get('/inventories', async (req, res) => {
 
         const result = await pool.query(query, params);
         res.json({ inventories: result.rows });
-
     } catch (error) {
-        console.error('Ошибка получения инвентаризаций:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения инвентаризаций:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Получение деталей инвентаризации
-app.get('/inventories/:id', async (req, res) => {
+app.get("/inventories/:id", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const inventoryId = parseInt(req.params.id);
-        const isAdminOrAccountant = decoded.role === 'admin' || decoded.role === 'accountant';
+        const isAdminOrAccountant = decoded.role === "admin" || decoded.role === "accountant";
 
         const inventoryResult = await pool.query(
             `SELECT i.*, 
@@ -1521,14 +1392,14 @@ app.get('/inventories/:id', async (req, res) => {
         );
 
         if (inventoryResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
         const inventory = inventoryResult.rows[0];
 
         const canView = isAdminOrAccountant || decoded.id === inventory.responsible_person;
         if (!canView) {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const categoriesResult = await pool.query(
@@ -1562,71 +1433,64 @@ app.get('/inventories/:id', async (req, res) => {
             selected_materials: materialsResult.rows,
             results: resultsResult.rows
         });
-
     } catch (error) {
-        console.error('Ошибка получения инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Создание инвентаризации (только admin/accountant)
-app.post('/inventories', async (req, res) => {
+app.post("/inventories", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+
+        if (decoded.role !== "admin" && decoded.role !== "accountant") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
-        
+
         const { title, responsible_person, start_date, end_date, description, categories, materials } = req.body;
-        
+
         if (!title || !responsible_person || !start_date || !end_date) {
-            return res.status(400).json({ error: 'Заполните обязательные поля' });
+            return res.status(400).json({ error: "Заполните обязательные поля" });
         }
-        
+
         if (new Date(start_date) > new Date(end_date)) {
-            return res.status(400).json({ error: 'Дата начала не может быть позже даты окончания' });
+            return res.status(400).json({ error: "Дата начала не может быть позже даты окончания" });
         }
-        
+
         const client = await pool.connect();
-        
+
         try {
-            await client.query('BEGIN');
-            
+            await client.query("BEGIN");
+
             const inventoryResult = await client.query(
                 `INSERT INTO inventories (title, created_by, responsible_person, start_date, end_date, description, status)
                  VALUES ($1, $2, $3, $4, $5, $6, 'draft')
                  RETURNING *`,
                 [title, decoded.id, responsible_person, start_date, end_date, description || null]
             );
-            
+
             const inventory = inventoryResult.rows[0];
-            
+
             // Добавляем выбранные категории
             if (categories && categories.length > 0) {
                 for (const categoryId of categories) {
-                    await client.query(
-                        `INSERT INTO inventory_categories (inventory_id, category_id) VALUES ($1, $2)`,
-                        [inventory.id, categoryId]
-                    );
+                    await client.query(`INSERT INTO inventory_categories (inventory_id, category_id) VALUES ($1, $2)`, [inventory.id, categoryId]);
                 }
             }
-            
+
             // Добавляем выбранные товары
             if (materials && materials.length > 0) {
                 for (const materialId of materials) {
-                    await client.query(
-                        `INSERT INTO inventory_materials (inventory_id, material_id) VALUES ($1, $2)`,
-                        [inventory.id, materialId]
-                    );
+                    await client.query(`INSERT INTO inventory_materials (inventory_id, material_id) VALUES ($1, $2)`, [inventory.id, materialId]);
                 }
             }
-            
+
             // Определяем список товаров для инвентаризации
             let materialsQuery = `
                 SELECT m.id, m.name, m.code, m.unit, m.quantity
@@ -1634,19 +1498,19 @@ app.post('/inventories', async (req, res) => {
                 WHERE 1=1
             `;
             const queryParams = [];
-            
+
             if (categories && categories.length > 0) {
                 materialsQuery += ` AND m.category_id = ANY($${queryParams.length + 1})`;
                 queryParams.push(categories);
             }
-            
+
             if (materials && materials.length > 0) {
                 materialsQuery += ` AND m.id = ANY($${queryParams.length + 1})`;
                 queryParams.push(materials);
             }
-            
+
             const materialsList = await client.query(materialsQuery, queryParams);
-            
+
             for (const material of materialsList.rows) {
                 await client.query(
                     `INSERT INTO inventory_results (inventory_id, material_id, system_quantity)
@@ -1654,54 +1518,49 @@ app.post('/inventories', async (req, res) => {
                     [inventory.id, material.id, material.quantity]
                 );
             }
-            
-            await client.query('COMMIT');
-            
+
+            await client.query("COMMIT");
+
             // Логирование с передачей ID
             await Logger.inventoryCreated(decoded.id, decoded.username, title, inventory.id);
-            
+
             res.json({
-                message: 'Инвентаризация создана',
+                message: "Инвентаризация создана",
                 inventory: inventory
             });
-            
         } catch (err) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw err;
         } finally {
             client.release();
         }
-        
     } catch (error) {
-        console.error('Ошибка создания инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка создания инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Обновление инвентаризации (только admin)
-app.put('/inventories/:id', async (req, res) => {
+app.put("/inventories/:id", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
 
         const inventoryId = parseInt(req.params.id);
         const { title, responsible_person, start_date, end_date, description } = req.body;
 
-        const inventoryCheck = await pool.query(
-            'SELECT title FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
+        const inventoryCheck = await pool.query("SELECT title FROM inventories WHERE id = $1", [inventoryId]);
 
         if (inventoryCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
         const oldTitle = inventoryCheck.rows[0].title;
@@ -1720,92 +1579,81 @@ app.put('/inventories/:id', async (req, res) => {
         );
 
         // Логирование
-        await Logger.inventoryUpdated(decoded.id, decoded.username, oldTitle, 'данные изменены');
+        await Logger.inventoryUpdated(decoded.id, decoded.username, oldTitle, "данные изменены");
 
         res.json({
-            message: 'Инвентаризация обновлена',
+            message: "Инвентаризация обновлена",
             inventory: result.rows[0]
         });
-
     } catch (error) {
-        console.error('Ошибка обновления инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка обновления инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Начать инвентаризацию (только ответственный)
-app.put('/inventories/:id/start', async (req, res) => {
+app.put("/inventories/:id/start", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const inventoryId = parseInt(req.params.id);
-        
-        const inventory = await pool.query(
-            'SELECT title, responsible_person, status FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
-        
+
+        const inventory = await pool.query("SELECT title, responsible_person, status FROM inventories WHERE id = $1", [inventoryId]);
+
         if (inventory.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
-        
+
         if (inventory.rows[0].responsible_person !== decoded.id) {
-            return res.status(403).json({ error: 'Только ответственный может начать инвентаризацию' });
+            return res.status(403).json({ error: "Только ответственный может начать инвентаризацию" });
         }
-        
-        if (inventory.rows[0].status !== 'draft') {
-            return res.status(400).json({ error: 'Инвентаризация уже начата или завершена' });
+
+        if (inventory.rows[0].status !== "draft") {
+            return res.status(400).json({ error: "Инвентаризация уже начата или завершена" });
         }
-        
-        await pool.query(
-            `UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-            [inventoryId]
-        );
-        
+
+        await pool.query(`UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
+
         // Логирование с передачей ID
         await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
-        
-        res.json({ message: 'Инвентаризация начата' });
-        
+
+        res.json({ message: "Инвентаризация начата" });
     } catch (error) {
-        console.error('Ошибка начала инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка начала инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Сохранение результатов (черновик)
-app.put('/inventories/:id/results', async (req, res) => {
+app.put("/inventories/:id/results", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const inventoryId = parseInt(req.params.id);
         const { results } = req.body;
-        
-        const inventory = await pool.query(
-            'SELECT title, responsible_person, status FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
-        
+
+        const inventory = await pool.query("SELECT title, responsible_person, status FROM inventories WHERE id = $1", [inventoryId]);
+
         if (inventory.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
-        
+
         if (inventory.rows[0].responsible_person !== decoded.id) {
-            return res.status(403).json({ error: 'Только ответственный может сохранять результаты' });
+            return res.status(403).json({ error: "Только ответственный может сохранять результаты" });
         }
-        
-        if (inventory.rows[0].status !== 'in_progress') {
-            return res.status(400).json({ error: 'Инвентаризация не в процессе' });
+
+        if (inventory.rows[0].status !== "in_progress") {
+            return res.status(400).json({ error: "Инвентаризация не в процессе" });
         }
-        
+
         for (const result of results) {
             await pool.query(
                 `UPDATE inventory_results 
@@ -1814,106 +1662,92 @@ app.put('/inventories/:id/results', async (req, res) => {
                 [result.actual_quantity, result.reason || null, inventoryId, result.material_id]
             );
         }
-        
+
         // Логирование с передачей ID
         await Logger.inventorySaved(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
-        
-        res.json({ message: 'Результаты сохранены' });
-        
+
+        res.json({ message: "Результаты сохранены" });
     } catch (error) {
-        console.error('Ошибка сохранения результатов:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка сохранения результатов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Завершить инвентаризацию и отправить на проверку
-app.put('/inventories/:id/complete', async (req, res) => {
+app.put("/inventories/:id/complete", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const inventoryId = parseInt(req.params.id);
-        
-        const inventory = await pool.query(
-            'SELECT title, responsible_person, status FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
-        
+
+        const inventory = await pool.query("SELECT title, responsible_person, status FROM inventories WHERE id = $1", [inventoryId]);
+
         if (inventory.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
-        
+
         if (inventory.rows[0].responsible_person !== decoded.id) {
-            return res.status(403).json({ error: 'Только ответственный может завершить инвентаризацию' });
+            return res.status(403).json({ error: "Только ответственный может завершить инвентаризацию" });
         }
-        
-        if (inventory.rows[0].status !== 'in_progress') {
-            return res.status(400).json({ error: 'Инвентаризация не в процессе' });
+
+        if (inventory.rows[0].status !== "in_progress") {
+            return res.status(400).json({ error: "Инвентаризация не в процессе" });
         }
-        
+
         // Проверяем, все ли товары проверены
-        const checkResult = await pool.query(
-            'SELECT COUNT(*) as total, COUNT(CASE WHEN actual_quantity IS NOT NULL THEN 1 END) as checked FROM inventory_results WHERE inventory_id = $1',
-            [inventoryId]
-        );
-        
+        const checkResult = await pool.query("SELECT COUNT(*) as total, COUNT(CASE WHEN actual_quantity IS NOT NULL THEN 1 END) as checked FROM inventory_results WHERE inventory_id = $1", [inventoryId]);
+
         if (checkResult.rows[0].total !== checkResult.rows[0].checked) {
-            return res.status(400).json({ error: 'Не все товары проверены' });
+            return res.status(400).json({ error: "Не все товары проверены" });
         }
-        
-        await pool.query(
-            `UPDATE inventories SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-            [inventoryId]
-        );
-        
+
+        await pool.query(`UPDATE inventories SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
+
         // Логирование с передачей ID
         await Logger.inventoryCompleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
-        
-        res.json({ message: 'Инвентаризация завершена и отправлена на проверку' });
-        
+
+        res.json({ message: "Инвентаризация завершена и отправлена на проверку" });
     } catch (error) {
-        console.error('Ошибка завершения инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка завершения инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Подтвердить инвентаризацию (admin/accountant)
-app.put('/inventories/:id/approve', async (req, res) => {
+app.put("/inventories/:id/approve", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        if (decoded.role !== 'admin' && decoded.role !== 'accountant') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+
+        if (decoded.role !== "admin" && decoded.role !== "accountant") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
-        
+
         const inventoryId = parseInt(req.params.id);
-        
-        const inventory = await pool.query(
-            'SELECT title, status FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
-        
+
+        const inventory = await pool.query("SELECT title, status FROM inventories WHERE id = $1", [inventoryId]);
+
         if (inventory.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
-        
-        if (inventory.rows[0].status !== 'completed') {
-            return res.status(400).json({ error: 'Инвентаризация не завершена' });
+
+        if (inventory.rows[0].status !== "completed") {
+            return res.status(400).json({ error: "Инвентаризация не завершена" });
         }
-        
+
         const client = await pool.connect();
-        
+
         try {
-            await client.query('BEGIN');
-            
+            await client.query("BEGIN");
+
             // Получаем результаты с расхождениями
             const results = await client.query(
                 `SELECT ir.*, m.quantity as current_quantity
@@ -1922,126 +1756,748 @@ app.put('/inventories/:id/approve', async (req, res) => {
                  WHERE ir.inventory_id = $1 AND ir.actual_quantity IS NOT NULL AND ir.actual_quantity != ir.system_quantity`,
                 [inventoryId]
             );
-            
+
             // Обновляем количество товаров
             for (const result of results.rows) {
-                await client.query(
-                    'UPDATE materials SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-                    [result.actual_quantity, result.material_id]
-                );
+                await client.query("UPDATE materials SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [result.actual_quantity, result.material_id]);
             }
-            
+
             await client.query(
                 `UPDATE inventories 
                  SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = $1, updated_at = CURRENT_TIMESTAMP
                  WHERE id = $2`,
                 [decoded.id, inventoryId]
             );
-            
-            await client.query('COMMIT');
-            
+
+            await client.query("COMMIT");
+
             // Логирование с передачей ID
             await Logger.inventoryApproved(decoded.id, decoded.username, inventory.rows[0].title, results.rows.length, inventoryId);
-            
-            res.json({ message: 'Инвентаризация подтверждена, остатки обновлены' });
-            
+
+            res.json({ message: "Инвентаризация подтверждена, остатки обновлены" });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw err;
         } finally {
             client.release();
         }
-        
     } catch (error) {
-        console.error('Ошибка подтверждения инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка подтверждения инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Отмена инвентаризации (admin)
-app.put('/inventories/:id/cancel', async (req, res) => {
+app.put("/inventories/:id/cancel", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
-        
+
         const inventoryId = parseInt(req.params.id);
-        
-        const inventory = await pool.query(
-            'SELECT title FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
-        
+
+        const inventory = await pool.query("SELECT title FROM inventories WHERE id = $1", [inventoryId]);
+
         if (inventory.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
-        
-        await pool.query(
-            `UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-            [decoded.id, inventoryId]
-        );
-        
+
+        await pool.query(`UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [decoded.id, inventoryId]);
+
         // Логирование с передачей ID
         await Logger.inventoryCancelled(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
-        
-        res.json({ message: 'Инвентаризация отменена' });
-        
+
+        res.json({ message: "Инвентаризация отменена" });
     } catch (error) {
-        console.error('Ошибка отмены инвентаризации:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка отмены инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
 // Удаление инвентаризации (admin)
-app.delete('/inventories/:id', async (req, res) => {
+app.delete("/inventories/:id", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ error: "Недостаточно прав" });
+        }
+
+        const inventoryId = parseInt(req.params.id);
+
+        const inventory = await pool.query("SELECT title FROM inventories WHERE id = $1", [inventoryId]);
+
+        if (inventory.rows.length === 0) {
+            return res.status(404).json({ error: "Инвентаризация не найдена" });
+        }
+
+        await pool.query("DELETE FROM inventories WHERE id = $1", [inventoryId]);
+
+        // Логирование с передачей ID
+        await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
+
+        res.json({ message: "Инвентаризация удалена" });
+    } catch (error) {
+        console.error("Ошибка удаления инвентаризации:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// =========== DASHBOARD API ===========
+
+// Метрики для дашборда
+app.get("/dashboard/metrics", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { startDate, endDate } = req.query;
+
+        // Если даты не указаны - берем текущий месяц
+        let start = startDate;
+        let end = endDate;
+
+        if (!start || !end) {
+            const now = new Date();
+            start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+        }
+
+        // 1. Всего материалов
+        const materialsResult = await pool.query("SELECT COUNT(*) as total FROM materials");
+        const totalMaterials = parseInt(materialsResult.rows[0].total);
+
+        // 2. Общее количество на складе
+        const quantityResult = await pool.query("SELECT COALESCE(SUM(quantity), 0) as total FROM materials");
+        const totalQuantity = parseInt(quantityResult.rows[0].total);
+
+        // 3. Активные заявки (pending)
+        const pendingRequestsResult = await pool.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN request_type = 'incoming' THEN 1 END) as incoming,
+                COUNT(CASE WHEN request_type = 'outgoing' THEN 1 END) as outgoing
+            FROM material_requests 
+            WHERE status = 'pending'
+        `);
+        const pendingRequests = {
+            total: parseInt(pendingRequestsResult.rows[0].total),
+            incoming: parseInt(pendingRequestsResult.rows[0].incoming),
+            outgoing: parseInt(pendingRequestsResult.rows[0].outgoing)
+        };
+
+        // 4. Завершенные заявки за период (approved)
+        const completedRequestsResult = await pool.query(
+            `
+            SELECT COUNT(*) as total
+            FROM material_requests 
+            WHERE status = 'approved' 
+            AND created_at::date BETWEEN $1 AND $2
+        `,
+            [start, end]
+        );
+        const completedRequests = parseInt(completedRequestsResult.rows[0].total);
+
+        // 5. Динамика за месяц (для сравнения с прошлым месяцем)
+        const previousMonthStart = new Date(start);
+        previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+        const previousMonthEnd = new Date(end);
+        previousMonthEnd.setMonth(previousMonthEnd.getMonth() - 1);
+
+        const previousMonthResult = await pool.query(
+            `
+            SELECT COUNT(*) as total
+            FROM material_requests 
+            WHERE status = 'approved' 
+            AND created_at::date BETWEEN $1 AND $2
+        `,
+            [previousMonthStart.toISOString().split("T")[0], previousMonthEnd.toISOString().split("T")[0]]
+        );
+        const previousMonthCompleted = parseInt(previousMonthResult.rows[0].total);
+
+        const completedChange = previousMonthCompleted > 0 ? Math.round(((completedRequests - previousMonthCompleted) / previousMonthCompleted) * 100) : completedRequests > 0 ? 100 : 0;
+
+        res.json({
+            total_materials: totalMaterials,
+            total_quantity: totalQuantity,
+            pending_requests: pendingRequests,
+            completed_requests: completedRequests,
+            completed_change: completedChange
+        });
+    } catch (error) {
+        console.error("Ошибка получения метрик:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// График движения товаров
+app.get("/dashboard/movement", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "Укажите даты" });
+        }
+
+        // Получаем все подтвержденные заявки за период
+        const result = await pool.query(
+            `
+            SELECT 
+                r.created_at::date as date,
+                r.request_type,
+                SUM(ri.quantity) as total_quantity
+            FROM material_requests r
+            JOIN material_requests_items ri ON r.id = ri.request_id
+            WHERE r.status = 'approved'
+            AND r.created_at::date BETWEEN $1 AND $2
+            GROUP BY r.created_at::date, r.request_type
+            ORDER BY date ASC
+        `,
+            [startDate, endDate]
+        );
+
+        // Формируем данные для графика
+        const dateMap = new Map();
+
+        // Заполняем все даты периода
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split("T")[0];
+            dateMap.set(dateStr, { date: dateStr, incoming: 0, outgoing: 0 });
+        }
+
+        // Заполняем данные из заявок
+        result.rows.forEach((row) => {
+            const dateStr = row.date.toISOString().split("T")[0];
+            const data = dateMap.get(dateStr);
+            if (data) {
+                if (row.request_type === "incoming") {
+                    data.incoming += parseInt(row.total_quantity);
+                } else {
+                    data.outgoing += parseInt(row.total_quantity);
+                }
+            }
+        });
+
+        const chartData = Array.from(dateMap.values());
+
+        res.json({ data: chartData });
+    } catch (error) {
+        console.error("Ошибка получения данных движения:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Статус инвентаризаций для дашборда
+app.get("/dashboard/inventory-status", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        let query = `
+            SELECT 
+                status,
+                COUNT(*) as count
+            FROM inventories
+        `;
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ` WHERE created_at::date BETWEEN $1 AND $2`;
+            params.push(startDate, endDate);
+        }
+
+        query += ` GROUP BY status`;
+
+        const result = await pool.query(query, params);
+
+        const statusMap = {
+            draft: { name: "Черновики", count: 0, color: "#f59e0b" },
+            in_progress: { name: "В процессе", count: 0, color: "#3b82f6" },
+            completed: { name: "Завершены", count: 0, color: "#8b5cf6" },
+            approved: { name: "Утверждены", count: 0, color: "#10b981" },
+            cancelled: { name: "Отменены", count: 0, color: "#ef4444" }
+        };
+
+        result.rows.forEach((row) => {
+            if (statusMap[row.status]) {
+                statusMap[row.status].count = parseInt(row.count);
+            }
+        });
+
+        const data = Object.values(statusMap).filter((item) => item.count > 0);
+        const total = data.reduce((sum, item) => sum + item.count, 0);
+
+        res.json({ data, total });
+    } catch (error) {
+        console.error("Ошибка получения статуса инвентаризаций:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Статус заявок для дашборда
+app.get("/dashboard/requests-status", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        let query = `
+            SELECT 
+                status,
+                COUNT(*) as count
+            FROM material_requests
+        `;
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ` WHERE created_at::date BETWEEN $1 AND $2`;
+            params.push(startDate, endDate);
+        }
+
+        query += ` GROUP BY status`;
+
+        const result = await pool.query(query, params);
+
+        const statusMap = {
+            pending: { name: "На рассмотрении", count: 0, color: "#f59e0b" },
+            approved: { name: "Подтверждены", count: 0, color: "#10b981" },
+            rejected: { name: "Отклонены", count: 0, color: "#ef4444" }
+        };
+
+        result.rows.forEach((row) => {
+            if (statusMap[row.status]) {
+                statusMap[row.status].count = parseInt(row.count);
+            }
+        });
+
+        const data = Object.values(statusMap).filter((item) => item.count > 0);
+        const total = data.reduce((sum, item) => sum + item.count, 0);
+
+        res.json({ data, total });
+    } catch (error) {
+        console.error("Ошибка получения статуса заявок:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// =========== REPORTS API ===========
+
+// Отчет: Движение материалов
+app.get("/reports/material-movement", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const { startDate, endDate, categoryId, materialId, type } = req.query;
+
+        let query = `
+            SELECT 
+                r.created_at::date as date,
+                r.title as request_title,
+                r.request_type,
+                m.id as material_id,
+                m.name as material_name,
+                m.code,
+                c.name as category_name,
+                ri.quantity,
+                u.username as created_by_username,
+                r.status
+            FROM material_requests r
+            JOIN material_requests_items ri ON r.id = ri.request_id
+            JOIN materials m ON ri.material_id = m.id
+            LEFT JOIN materialCategories c ON m.category_id = c.id
+            LEFT JOIN users u ON r.created_by = u.id
+            WHERE r.status = 'approved'
+            AND r.created_at::date BETWEEN $1 AND $2
+        `;
+
+        const params = [startDate, endDate];
+        let paramIndex = 3;
+
+        if (categoryId && categoryId !== "all") {
+            query += ` AND m.category_id = $${paramIndex}`;
+            params.push(categoryId);
+            paramIndex++;
+        }
+
+        if (materialId && materialId !== "all") {
+            query += ` AND m.id = $${paramIndex}`;
+            params.push(materialId);
+            paramIndex++;
+        }
+
+        if (type && type !== "all") {
+            query += ` AND r.request_type = $${paramIndex}`;
+            params.push(type);
+            paramIndex++;
+        }
+
+        query += ` ORDER BY r.created_at DESC`;
+
+        const result = await pool.query(query, params);
+
+        // Подсчет итогов
+        let totalIncoming = 0;
+        let totalOutgoing = 0;
+
+        result.rows.forEach((row) => {
+            if (row.request_type === "incoming") {
+                totalIncoming += parseInt(row.quantity);
+            } else {
+                totalOutgoing += parseInt(row.quantity);
+            }
+        });
+
+        res.json({
+            data: result.rows,
+            summary: {
+                incoming: totalIncoming,
+                outgoing: totalOutgoing,
+                turnover: totalIncoming + totalOutgoing
+            }
+        });
+    } catch (error) {
+        console.error("Ошибка получения отчета движения материалов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Отчет: Заявки
+app.get('/reports/requests', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
             return res.status(401).json({ error: 'Требуется авторизация' });
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const { startDate, endDate, status, type, userId } = req.query;
+
+        let query = `
+            SELECT 
+                r.id,
+                r.title,
+                r.request_type,
+                r.status,
+                r.created_at,
+                r.reviewed_at,
+                r.rejection_reason,
+                u1.username as created_by_username,
+                u2.username as reviewed_by_username,
+                (
+                    SELECT json_agg(json_build_object('name', m.name, 'quantity', ri.quantity))
+                    FROM material_requests_items ri
+                    JOIN materials m ON ri.material_id = m.id
+                    WHERE ri.request_id = r.id
+                    LIMIT 3
+                ) as items_preview
+            FROM material_requests r
+            LEFT JOIN users u1 ON r.created_by = u1.id
+            LEFT JOIN users u2 ON r.reviewed_by = u2.id
+            WHERE r.created_at::date BETWEEN $1 AND $2
+        `;
         
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        const params = [startDate, endDate];
+        let paramIndex = 3;
+
+        if (status && status !== 'all') {
+            query += ` AND r.status = $${paramIndex}`;
+            params.push(status);
+            paramIndex++;
         }
-        
-        const inventoryId = parseInt(req.params.id);
-        
-        const inventory = await pool.query(
-            'SELECT title FROM inventories WHERE id = $1',
-            [inventoryId]
-        );
-        
-        if (inventory.rows.length === 0) {
-            return res.status(404).json({ error: 'Инвентаризация не найдена' });
+
+        if (type && type !== 'all') {
+            query += ` AND r.request_type = $${paramIndex}`;
+            params.push(type);
+            paramIndex++;
         }
+
+        if (userId && userId !== 'all') {
+            query += ` AND r.created_by = $${paramIndex}`;
+            params.push(parseInt(userId));
+            paramIndex++;
+        }
+
+        query += ` ORDER BY r.created_at DESC`;
+
+        const result = await pool.query(query, params);
         
-        await pool.query('DELETE FROM inventories WHERE id = $1', [inventoryId]);
-        
-        // Логирование с передачей ID
-        await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
-        
-        res.json({ message: 'Инвентаризация удалена' });
-        
+        // Подсчет статистики
+        let pending = 0, approved = 0, rejected = 0;
+        result.rows.forEach(row => {
+            if (row.status === 'pending') pending++;
+            else if (row.status === 'approved') approved++;
+            else if (row.status === 'rejected') rejected++;
+        });
+
+        res.json({ 
+            data: result.rows,
+            summary: { pending, approved, rejected, total: result.rows.length }
+        });
+
     } catch (error) {
-        console.error('Ошибка удаления инвентаризации:', error);
+        console.error('Ошибка получения отчета заявок:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
+// Отчет: Оборотно-сальдовая ведомость (ОСВ)
+app.get("/reports/turnover-balance", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
 
+        const { startDate, endDate, categoryId } = req.query;
+
+        // Получаем все материалы
+        let materialsQuery = `
+            SELECT 
+                m.id,
+                m.name,
+                m.code,
+                m.unit,
+                m.quantity as current_quantity,
+                c.name as category_name
+            FROM materials m
+            LEFT JOIN materialCategories c ON m.category_id = c.id
+            WHERE 1=1
+        `;
+
+        const materialsParams = [];
+        if (categoryId && categoryId !== "all") {
+            materialsQuery += ` AND m.category_id = $1`;
+            materialsParams.push(categoryId);
+        }
+        materialsQuery += ` ORDER BY m.name`;
+
+        const materialsResult = await pool.query(materialsQuery, materialsParams);
+
+        // Для каждого материала считаем приход и расход за период
+        const results = [];
+
+        for (const material of materialsResult.rows) {
+            // Начальный остаток (количество на начало периода)
+            const startQuantityResult = await pool.query(
+                `
+                SELECT COALESCE(SUM(
+                    CASE 
+                        WHEN r.request_type = 'incoming' THEN ri.quantity
+                        WHEN r.request_type = 'outgoing' THEN -ri.quantity
+                        ELSE 0
+                    END
+                ), 0) as change_before
+                FROM material_requests r
+                JOIN material_requests_items ri ON r.id = ri.request_id
+                WHERE ri.material_id = $1
+                AND r.status = 'approved'
+                AND r.created_at::date < $2
+            `,
+                [material.id, startDate]
+            );
+
+            const changeBefore = parseInt(startQuantityResult.rows[0].change_before);
+            const openingBalance = material.current_quantity - changeBefore;
+
+            // Приход за период
+            const incomingResult = await pool.query(
+                `
+                SELECT COALESCE(SUM(ri.quantity), 0) as total
+                FROM material_requests r
+                JOIN material_requests_items ri ON r.id = ri.request_id
+                WHERE ri.material_id = $1
+                AND r.status = 'approved'
+                AND r.request_type = 'incoming'
+                AND r.created_at::date BETWEEN $2 AND $3
+            `,
+                [material.id, startDate, endDate]
+            );
+
+            // Расход за период
+            const outgoingResult = await pool.query(
+                `
+                SELECT COALESCE(SUM(ri.quantity), 0) as total
+                FROM material_requests r
+                JOIN material_requests_items ri ON r.id = ri.request_id
+                WHERE ri.material_id = $1
+                AND r.status = 'approved'
+                AND r.request_type = 'outgoing'
+                AND r.created_at::date BETWEEN $2 AND $3
+            `,
+                [material.id, startDate, endDate]
+            );
+
+            const incoming = parseInt(incomingResult.rows[0].total);
+            const outgoing = parseInt(outgoingResult.rows[0].total);
+            const closingBalance = openingBalance + incoming - outgoing;
+
+            results.push({
+                id: material.id,
+                name: material.name,
+                code: material.code,
+                unit: material.unit,
+                category_name: material.category_name || "Без категории",
+                opening_balance: openingBalance,
+                incoming: incoming,
+                outgoing: outgoing,
+                closing_balance: closingBalance
+            });
+        }
+
+        // Фильтруем только материалы с движением или остатками
+        const filteredResults = results.filter((r) => r.opening_balance !== 0 || r.incoming !== 0 || r.outgoing !== 0 || r.closing_balance !== 0);
+
+        // Итоги
+        const summary = {
+            total_opening: filteredResults.reduce((sum, r) => sum + r.opening_balance, 0),
+            total_incoming: filteredResults.reduce((sum, r) => sum + r.incoming, 0),
+            total_outgoing: filteredResults.reduce((sum, r) => sum + r.outgoing, 0),
+            total_closing: filteredResults.reduce((sum, r) => sum + r.closing_balance, 0)
+        };
+
+        res.json({ data: filteredResults, summary });
+    } catch (error) {
+        console.error("Ошибка получения ОСВ:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Отчет: Активность пользователей
+app.get('/reports/user-activity', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        // Используем подзапросы вместо множественных JOIN, чтобы избежать дублирования
+        const result = await pool.query(`
+            SELECT 
+                u.id,
+                u.username,
+                u.name,
+                u.secondname,
+                u.role,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM material_requests r 
+                    WHERE r.created_by = u.id 
+                    AND r.created_at::date BETWEEN $1 AND $2
+                ), 0) as requests_created,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM material_requests r 
+                    WHERE r.reviewed_by = u.id 
+                    AND r.status = 'approved'
+                    AND r.reviewed_at::date BETWEEN $1 AND $2
+                ), 0) as requests_approved,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM material_requests r 
+                    WHERE r.reviewed_by = u.id 
+                    AND r.status = 'rejected'
+                    AND r.reviewed_at::date BETWEEN $1 AND $2
+                ), 0) as requests_rejected,
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM inventories i 
+                    WHERE i.responsible_person = u.id 
+                    AND i.status = 'approved'
+                    AND i.completed_at::date BETWEEN $1 AND $2
+                ), 0) as inventories_completed
+            FROM users u
+            ORDER BY requests_created DESC
+        `, [startDate, endDate]);
+
+        res.json({ data: result.rows });
+
+    } catch (error) {
+        console.error('Ошибка получения активности пользователей:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получение списка материалов для фильтров
+app.get("/reports/materials-list", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const result = await pool.query(`
+            SELECT id, name, code, category_id
+            FROM materials
+            ORDER BY name
+        `);
+
+        res.json({ materials: result.rows });
+    } catch (error) {
+        console.error("Ошибка получения списка материалов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Получение списка пользователей для фильтров
+app.get("/reports/users-list", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+
+        const result = await pool.query(`
+            SELECT id, username, name, secondname, role
+            FROM users
+            ORDER BY name, secondname
+        `);
+
+        res.json({ users: result.rows });
+    } catch (error) {
+        console.error("Ошибка получения списка пользователей:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
 
 // тест
-app.get('/test', (req, res) => { res.json({ message: 'hello world' }) });
+app.get("/test", (req, res) => {
+    res.json({ message: "hello world" });
+});
 
 // Запуск сервера
-app.listen(PORT, () => { console.log(`Сервер запущен на http://localhost:${PORT}`) });
-
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на http://localhost:${PORT}`);
+});
