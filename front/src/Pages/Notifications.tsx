@@ -323,14 +323,14 @@ export default function Notifications({ onVisited }: LogsProps) {
     return (
         <div className="lg:my-0 my-10">
             <ScrollToTop />
-            <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <div className="sm:flex grid items-start sm:justify-between mb-4">
                 <h1 className="text-2xl mb-4">
                     Журнал действий{" "}
                     {logs.length !== filteredLogs.length &&
                         `(${filteredLogs.length}/${logs.length})`}
                 </h1>
 
-                <div className="grid sm:flex text-center items-center gap-4 w-full sm:w-fit">
+                <div className="sm:flex gap-3 grid">
                     <ExportButton
                         data={filteredLogs}
                         columns={logColumnsForExport}
