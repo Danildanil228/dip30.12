@@ -35,6 +35,7 @@ export default function Header() {
                         )}
                         <DropdownMenuItem><Link to='/profile'>Профиль</Link></DropdownMenuItem>
                         <DropdownMenuItem><Link to='/inventories'>Инвентаризация</Link></DropdownMenuItem>
+                        <DropdownMenuItem><Link to='/dashboard'>Дашборд</Link></DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer" onSelect={(e) => {
                             e.preventDefault();
                             setIsLogoutDialogOpen(true);
