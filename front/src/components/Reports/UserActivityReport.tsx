@@ -8,6 +8,7 @@ import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ExportButton from "../ExportButton";
 
 interface UserActivity {
     id: number;
@@ -164,6 +165,52 @@ export function UserActivityReport() {
                 </div>
             ) : (
                 <>
+                    <ExportButton
+                        data={activeData}
+                        columns={[
+                            {
+                                accessorKey: "name",
+                                header: "Пользователь",
+                                format: (v: any) => {
+                                    return v || "-";
+                                }
+                            },
+                            {
+                                accessorKey: "role",
+                                header: "Роль",
+                                format: (v: string) => {
+                                    switch (v) {
+                                        case "admin": return "Администратор";
+                                        case "accountant": return "Бухгалтер";
+                                        case "storekeeper": return "Кладовщик";
+                                        default: return v;
+                                    }
+                                }
+                            },
+                            {
+                                accessorKey: "requests_created",
+                                header: "Создано заявок",
+                                format: (v: number) => (Number(v) || 0).toLocaleString()
+                            },
+                            {
+                                accessorKey: "requests_approved",
+                                header: "Подтверждено",
+                                format: (v: number) => (Number(v) || 0).toLocaleString()
+                            },
+                            {
+                                accessorKey: "requests_rejected",
+                                header: "Отклонено",
+                                format: (v: number) => (Number(v) || 0).toLocaleString()
+                            },
+                            {
+                                accessorKey: "inventories_completed",
+                                header: "Инвентаризаций проведено",
+                                format: (v: number) => (Number(v) || 0).toLocaleString()
+                            }
+                        ]}
+                        filename="user_activity"
+                        title="Активность пользователей"
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
                         <Card>
                             <CardHeader className="pb-2">

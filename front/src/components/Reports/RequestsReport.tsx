@@ -8,6 +8,7 @@ import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ExportButton from "../ExportButton";
 
 interface RequestItem {
     id: number;
@@ -161,6 +162,30 @@ export function RequestsReport() {
                 </div>
             ) : (
                 <>
+                    <ExportButton
+                        data={data}
+                        columns={[
+                            { accessorKey: "id", header: "№" },
+                            { accessorKey: "title", header: "Название" },
+                            { accessorKey: "request_type", header: "Тип", format: (v) => v === "incoming" ? "Приход" : "Расход" },
+                            {
+                                accessorKey: "status", header: "Статус", format: (v) => {
+                                    switch (v) {
+                                        case "pending": return "На рассмотрении";
+                                        case "approved": return "Подтверждена";
+                                        case "rejected": return "Отклонена";
+                                        default: return v;
+                                    }
+                                }
+                            },
+                            { accessorKey: "created_by_username", header: "Создал" },
+                            { accessorKey: "reviewed_by_username", header: "Рассмотрел", format: (v) => v || "-" },
+                            { accessorKey: "created_at", header: "Дата создания", format: (v) => format(new Date(v), "dd.MM.yyyy") },
+                            { accessorKey: "items_preview", header: "Товары", format: (v) => v ? v.map((i: any) => `${i.name} (${i.quantity})`).join(", ") : "-" }
+                        ]}
+                        filename="requests"
+                        title="Отчет по заявкам"
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <Card>
                             <CardHeader className="pb-2">

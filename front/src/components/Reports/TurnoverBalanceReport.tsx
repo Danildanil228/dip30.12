@@ -6,6 +6,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
+import ExportButton from "../ExportButton";
 
 interface TurnoverItem {
     id: number;
@@ -155,6 +156,21 @@ export function TurnoverBalanceReport() {
                 </div>
             ) : (
                 <>
+                    <ExportButton
+                        data={data}
+                        columns={[
+                            { accessorKey: "name", header: "Материал" },
+                            { accessorKey: "code", header: "Код" },
+                            { accessorKey: "unit", header: "Ед." },
+                            { accessorKey: "category_name", header: "Категория" },
+                            { accessorKey: "opening_balance", header: "Нач. остаток", format: (v) => v?.toLocaleString() },
+                            { accessorKey: "incoming", header: "Приход", format: (v) => v?.toLocaleString() },
+                            { accessorKey: "outgoing", header: "Расход", format: (v) => v?.toLocaleString() },
+                            { accessorKey: "closing_balance", header: "Кон. остаток", format: (v) => v?.toLocaleString() }
+                        ]}
+                        filename="turnover_balance"
+                        title="Оборотно-сальдовая ведомость"
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <Card>
                             <CardHeader className="pb-2">

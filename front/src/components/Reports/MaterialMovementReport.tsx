@@ -6,6 +6,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
+import ExportButton from "../ExportButton";
 
 interface MovementItem {
     date: string;
@@ -157,6 +158,21 @@ export function MaterialMovementReport() {
                 </div>
             ) : (
                 <>
+                    <ExportButton
+                        data={data}
+                        columns={[
+                            { accessorKey: "date", header: "Дата", format: (v) => format(new Date(v), "dd.MM.yyyy") },
+                            { accessorKey: "request_title", header: "Заявка" },
+                            { accessorKey: "request_type", header: "Тип", format: (v) => v === "incoming" ? "Приход" : "Расход" },
+                            { accessorKey: "material_name", header: "Материал" },
+                            { accessorKey: "code", header: "Код" },
+                            { accessorKey: "category_name", header: "Категория" },
+                            { accessorKey: "quantity", header: "Кол-во", format: (v) => v?.toLocaleString() },
+                            { accessorKey: "created_by_username", header: "Кто создал" }
+                        ]}
+                        filename="material_movement"
+                        title="Отчет по движению материалов"
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Card>
                             <CardHeader className="pb-2">

@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Download, Printer, RotateCcw, Search } from "lucide-react";
+import ExportButton from "../ExportButton";
 
 interface FilterOption {
     value: string;
@@ -137,6 +138,7 @@ export function ReportFilters({
                         </Select>
                     </div>
                 )}
+                
 
                 {statuses.length > 0 && onStatusChange && (
                     <div>
