@@ -2040,6 +2040,621 @@ app.delete('/inventories/:id', async (req, res) => {
 
 
 
+
+// =========== DASHBOARD API ===========
+
+// Метрики для дашборда
+app.get('/dashboard/metrics', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { startDate, endDate } = req.query;
+
+        // Если даты не указаны - берем текущий месяц
+        let start = startDate;
+        let end = endDate;
+        
+        if (!start || !end) {
+            const now = new Date();
+            start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        }
+
+        // 1. Всего материалов
+        const materialsResult = await pool.query('SELECT COUNT(*) as total FROM materials');
+        const totalMaterials = parseInt(materialsResult.rows[0].total);
+
+        // 2. Общее количество на складе
+        const quantityResult = await pool.query('SELECT COALESCE(SUM(quantity), 0) as total FROM materials');
+        const totalQuantity = parseInt(quantityResult.rows[0].total);
+
+        // 3. Активные заявки (pending)
+        const pendingRequestsResult = await pool.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN request_type = 'incoming' THEN 1 END) as incoming,
+                COUNT(CASE WHEN request_type = 'outgoing' THEN 1 END) as outgoing
+            FROM material_requests 
+            WHERE status = 'pending'
+        `);
+        const pendingRequests = {
+            total: parseInt(pendingRequestsResult.rows[0].total),
+            incoming: parseInt(pendingRequestsResult.rows[0].incoming),
+            outgoing: parseInt(pendingRequestsResult.rows[0].outgoing)
+        };
+
+        // 4. Завершенные заявки за период (approved)
+        const completedRequestsResult = await pool.query(`
+            SELECT COUNT(*) as total
+            FROM material_requests 
+            WHERE status = 'approved' 
+            AND created_at::date BETWEEN $1 AND $2
+        `, [start, end]);
+        const completedRequests = parseInt(completedRequestsResult.rows[0].total);
+
+        // 5. Динамика за месяц (для сравнения с прошлым месяцем)
+        const previousMonthStart = new Date(start);
+        previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+        const previousMonthEnd = new Date(end);
+        previousMonthEnd.setMonth(previousMonthEnd.getMonth() - 1);
+        
+        const previousMonthResult = await pool.query(`
+            SELECT COUNT(*) as total
+            FROM material_requests 
+            WHERE status = 'approved' 
+            AND created_at::date BETWEEN $1 AND $2
+        `, [
+            previousMonthStart.toISOString().split('T')[0],
+            previousMonthEnd.toISOString().split('T')[0]
+        ]);
+        const previousMonthCompleted = parseInt(previousMonthResult.rows[0].total);
+        
+        const completedChange = previousMonthCompleted > 0 
+            ? Math.round(((completedRequests - previousMonthCompleted) / previousMonthCompleted) * 100)
+            : completedRequests > 0 ? 100 : 0;
+
+        res.json({
+            total_materials: totalMaterials,
+            total_quantity: totalQuantity,
+            pending_requests: pendingRequests,
+            completed_requests: completedRequests,
+            completed_change: completedChange
+        });
+
+    } catch (error) {
+        console.error('Ошибка получения метрик:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// График движения товаров
+app.get('/dashboard/movement', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate } = req.query;
+        
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: 'Укажите даты' });
+        }
+
+        // Получаем все подтвержденные заявки за период
+        const result = await pool.query(`
+            SELECT 
+                r.created_at::date as date,
+                r.request_type,
+                SUM(ri.quantity) as total_quantity
+            FROM material_requests r
+            JOIN material_requests_items ri ON r.id = ri.request_id
+            WHERE r.status = 'approved'
+            AND r.created_at::date BETWEEN $1 AND $2
+            GROUP BY r.created_at::date, r.request_type
+            ORDER BY date ASC
+        `, [startDate, endDate]);
+
+        // Формируем данные для графика
+        const dateMap = new Map();
+        
+        // Заполняем все даты периода
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            dateMap.set(dateStr, { date: dateStr, incoming: 0, outgoing: 0 });
+        }
+
+        // Заполняем данные из заявок
+        result.rows.forEach(row => {
+            const dateStr = row.date.toISOString().split('T')[0];
+            const data = dateMap.get(dateStr);
+            if (data) {
+                if (row.request_type === 'incoming') {
+                    data.incoming += parseInt(row.total_quantity);
+                } else {
+                    data.outgoing += parseInt(row.total_quantity);
+                }
+            }
+        });
+
+        const chartData = Array.from(dateMap.values());
+        
+        res.json({ data: chartData });
+
+    } catch (error) {
+        console.error('Ошибка получения данных движения:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Статус инвентаризаций для дашборда
+app.get('/dashboard/inventory-status', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        let query = `
+            SELECT 
+                status,
+                COUNT(*) as count
+            FROM inventories
+        `;
+        const params = [];
+        
+        if (startDate && endDate) {
+            query += ` WHERE created_at::date BETWEEN $1 AND $2`;
+            params.push(startDate, endDate);
+        }
+        
+        query += ` GROUP BY status`;
+
+        const result = await pool.query(query, params);
+        
+        const statusMap = {
+            draft: { name: 'Черновики', count: 0, color: '#f59e0b' },
+            in_progress: { name: 'В процессе', count: 0, color: '#3b82f6' },
+            completed: { name: 'Завершены', count: 0, color: '#8b5cf6' },
+            approved: { name: 'Утверждены', count: 0, color: '#10b981' },
+            cancelled: { name: 'Отменены', count: 0, color: '#ef4444' }
+        };
+        
+        result.rows.forEach(row => {
+            if (statusMap[row.status]) {
+                statusMap[row.status].count = parseInt(row.count);
+            }
+        });
+        
+        const data = Object.values(statusMap).filter(item => item.count > 0);
+        const total = data.reduce((sum, item) => sum + item.count, 0);
+        
+        res.json({ data, total });
+
+    } catch (error) {
+        console.error('Ошибка получения статуса инвентаризаций:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Статус заявок для дашборда
+app.get('/dashboard/requests-status', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        let query = `
+            SELECT 
+                status,
+                COUNT(*) as count
+            FROM material_requests
+        `;
+        const params = [];
+        
+        if (startDate && endDate) {
+            query += ` WHERE created_at::date BETWEEN $1 AND $2`;
+            params.push(startDate, endDate);
+        }
+        
+        query += ` GROUP BY status`;
+
+        const result = await pool.query(query, params);
+        
+        const statusMap = {
+            pending: { name: 'На рассмотрении', count: 0, color: '#f59e0b' },
+            approved: { name: 'Подтверждены', count: 0, color: '#10b981' },
+            rejected: { name: 'Отклонены', count: 0, color: '#ef4444' }
+        };
+        
+        result.rows.forEach(row => {
+            if (statusMap[row.status]) {
+                statusMap[row.status].count = parseInt(row.count);
+            }
+        });
+        
+        const data = Object.values(statusMap).filter(item => item.count > 0);
+        const total = data.reduce((sum, item) => sum + item.count, 0);
+        
+        res.json({ data, total });
+
+    } catch (error) {
+        console.error('Ошибка получения статуса заявок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// =========== REPORTS API ===========
+
+// Отчет: Движение материалов
+app.get('/reports/material-movement', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate, categoryId, materialId, type } = req.query;
+
+        let query = `
+            SELECT 
+                r.created_at::date as date,
+                r.title as request_title,
+                r.request_type,
+                m.id as material_id,
+                m.name as material_name,
+                m.code,
+                c.name as category_name,
+                ri.quantity,
+                u.username as created_by_username,
+                r.status
+            FROM material_requests r
+            JOIN material_requests_items ri ON r.id = ri.request_id
+            JOIN materials m ON ri.material_id = m.id
+            LEFT JOIN materialCategories c ON m.category_id = c.id
+            LEFT JOIN users u ON r.created_by = u.id
+            WHERE r.status = 'approved'
+            AND r.created_at::date BETWEEN $1 AND $2
+        `;
+        
+        const params = [startDate, endDate];
+        let paramIndex = 3;
+
+        if (categoryId && categoryId !== 'all') {
+            query += ` AND m.category_id = $${paramIndex}`;
+            params.push(categoryId);
+            paramIndex++;
+        }
+
+        if (materialId && materialId !== 'all') {
+            query += ` AND m.id = $${paramIndex}`;
+            params.push(materialId);
+            paramIndex++;
+        }
+
+        if (type && type !== 'all') {
+            query += ` AND r.request_type = $${paramIndex}`;
+            params.push(type);
+            paramIndex++;
+        }
+
+        query += ` ORDER BY r.created_at DESC`;
+
+        const result = await pool.query(query, params);
+        
+        // Подсчет итогов
+        let totalIncoming = 0;
+        let totalOutgoing = 0;
+        
+        result.rows.forEach(row => {
+            if (row.request_type === 'incoming') {
+                totalIncoming += parseInt(row.quantity);
+            } else {
+                totalOutgoing += parseInt(row.quantity);
+            }
+        });
+
+        res.json({ 
+            data: result.rows,
+            summary: {
+                incoming: totalIncoming,
+                outgoing: totalOutgoing,
+                turnover: totalIncoming + totalOutgoing
+            }
+        });
+
+    } catch (error) {
+        console.error('Ошибка получения отчета движения материалов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Отчет: Заявки
+app.get('/reports/requests', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate, status, type, userId } = req.query;
+
+        let query = `
+            SELECT 
+                r.id,
+                r.title,
+                r.request_type,
+                r.status,
+                r.created_at,
+                r.reviewed_at,
+                r.rejection_reason,
+                u1.username as created_by_username,
+                u2.username as reviewed_by_username,
+                (
+                    SELECT json_agg(json_build_object('name', m.name, 'quantity', ri.quantity))
+                    FROM material_requests_items ri
+                    JOIN materials m ON ri.material_id = m.id
+                    WHERE ri.request_id = r.id
+                    LIMIT 3
+                ) as items_preview
+            FROM material_requests r
+            LEFT JOIN users u1 ON r.created_by = u1.id
+            LEFT JOIN users u2 ON r.reviewed_by = u2.id
+            WHERE r.created_at::date BETWEEN $1 AND $2
+        `;
+        
+        const params = [startDate, endDate];
+        let paramIndex = 3;
+
+        if (status && status !== 'all') {
+            query += ` AND r.status = $${paramIndex}`;
+            params.push(status);
+            paramIndex++;
+        }
+
+        if (type && type !== 'all') {
+            query += ` AND r.request_type = $${paramIndex}`;
+            params.push(type);
+            paramIndex++;
+        }
+
+        if (userId && userId !== 'all') {
+            query += ` AND r.created_by = $${paramIndex}`;
+            params.push(userId);
+            paramIndex++;
+        }
+
+        query += ` ORDER BY r.created_at DESC`;
+
+        const result = await pool.query(query, params);
+        
+        // Подсчет статистики
+        let pending = 0, approved = 0, rejected = 0;
+        result.rows.forEach(row => {
+            if (row.status === 'pending') pending++;
+            else if (row.status === 'approved') approved++;
+            else if (row.status === 'rejected') rejected++;
+        });
+
+        res.json({ 
+            data: result.rows,
+            summary: { pending, approved, rejected, total: result.rows.length }
+        });
+
+    } catch (error) {
+        console.error('Ошибка получения отчета заявок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Отчет: Оборотно-сальдовая ведомость (ОСВ)
+app.get('/reports/turnover-balance', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate, categoryId } = req.query;
+
+        // Получаем все материалы
+        let materialsQuery = `
+            SELECT 
+                m.id,
+                m.name,
+                m.code,
+                m.unit,
+                m.quantity as current_quantity,
+                c.name as category_name
+            FROM materials m
+            LEFT JOIN materialCategories c ON m.category_id = c.id
+            WHERE 1=1
+        `;
+        
+        const materialsParams = [];
+        if (categoryId && categoryId !== 'all') {
+            materialsQuery += ` AND m.category_id = $1`;
+            materialsParams.push(categoryId);
+        }
+        materialsQuery += ` ORDER BY m.name`;
+        
+        const materialsResult = await pool.query(materialsQuery, materialsParams);
+        
+        // Для каждого материала считаем приход и расход за период
+        const results = [];
+        
+        for (const material of materialsResult.rows) {
+            // Начальный остаток (количество на начало периода)
+            const startQuantityResult = await pool.query(`
+                SELECT COALESCE(SUM(
+                    CASE 
+                        WHEN r.request_type = 'incoming' THEN ri.quantity
+                        WHEN r.request_type = 'outgoing' THEN -ri.quantity
+                        ELSE 0
+                    END
+                ), 0) as change_before
+                FROM material_requests r
+                JOIN material_requests_items ri ON r.id = ri.request_id
+                WHERE ri.material_id = $1
+                AND r.status = 'approved'
+                AND r.created_at::date < $2
+            `, [material.id, startDate]);
+            
+            const changeBefore = parseInt(startQuantityResult.rows[0].change_before);
+            const openingBalance = material.current_quantity - changeBefore;
+            
+            // Приход за период
+            const incomingResult = await pool.query(`
+                SELECT COALESCE(SUM(ri.quantity), 0) as total
+                FROM material_requests r
+                JOIN material_requests_items ri ON r.id = ri.request_id
+                WHERE ri.material_id = $1
+                AND r.status = 'approved'
+                AND r.request_type = 'incoming'
+                AND r.created_at::date BETWEEN $2 AND $3
+            `, [material.id, startDate, endDate]);
+            
+            // Расход за период
+            const outgoingResult = await pool.query(`
+                SELECT COALESCE(SUM(ri.quantity), 0) as total
+                FROM material_requests r
+                JOIN material_requests_items ri ON r.id = ri.request_id
+                WHERE ri.material_id = $1
+                AND r.status = 'approved'
+                AND r.request_type = 'outgoing'
+                AND r.created_at::date BETWEEN $2 AND $3
+            `, [material.id, startDate, endDate]);
+            
+            const incoming = parseInt(incomingResult.rows[0].total);
+            const outgoing = parseInt(outgoingResult.rows[0].total);
+            const closingBalance = openingBalance + incoming - outgoing;
+            
+            results.push({
+                id: material.id,
+                name: material.name,
+                code: material.code,
+                unit: material.unit,
+                category_name: material.category_name || 'Без категории',
+                opening_balance: openingBalance,
+                incoming: incoming,
+                outgoing: outgoing,
+                closing_balance: closingBalance
+            });
+        }
+        
+        // Фильтруем только материалы с движением или остатками
+        const filteredResults = results.filter(r => 
+            r.opening_balance !== 0 || r.incoming !== 0 || r.outgoing !== 0 || r.closing_balance !== 0
+        );
+        
+        // Итоги
+        const summary = {
+            total_opening: filteredResults.reduce((sum, r) => sum + r.opening_balance, 0),
+            total_incoming: filteredResults.reduce((sum, r) => sum + r.incoming, 0),
+            total_outgoing: filteredResults.reduce((sum, r) => sum + r.outgoing, 0),
+            total_closing: filteredResults.reduce((sum, r) => sum + r.closing_balance, 0)
+        };
+        
+        res.json({ data: filteredResults, summary });
+
+    } catch (error) {
+        console.error('Ошибка получения ОСВ:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Отчет: Активность пользователей
+app.get('/reports/user-activity', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { startDate, endDate } = req.query;
+
+        const result = await pool.query(`
+            SELECT 
+                u.id,
+                u.username,
+                u.name,
+                u.secondname,
+                u.role,
+                COUNT(DISTINCT CASE WHEN r.status = 'approved' AND r.created_at::date BETWEEN $1 AND $2 THEN r.id END) as requests_approved,
+                COUNT(DISTINCT CASE WHEN r.status = 'rejected' AND r.created_at::date BETWEEN $1 AND $2 THEN r.id END) as requests_rejected,
+                COUNT(DISTINCT CASE WHEN r.created_at::date BETWEEN $1 AND $2 THEN r.id END) as requests_created,
+                COUNT(DISTINCT CASE WHEN i.status = 'approved' AND i.responsible_person = u.id AND i.created_at::date BETWEEN $1 AND $2 THEN i.id END) as inventories_completed
+            FROM users u
+            LEFT JOIN material_requests r ON r.created_by = u.id
+            LEFT JOIN inventories i ON i.responsible_person = u.id
+            GROUP BY u.id, u.username, u.name, u.secondname, u.role
+            ORDER BY requests_created DESC
+        `, [startDate, endDate]);
+
+        res.json({ data: result.rows });
+
+    } catch (error) {
+        console.error('Ошибка получения активности пользователей:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получение списка материалов для фильтров
+app.get('/reports/materials-list', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const result = await pool.query(`
+            SELECT id, name, code, category_id
+            FROM materials
+            ORDER BY name
+        `);
+        
+        res.json({ materials: result.rows });
+
+    } catch (error) {
+        console.error('Ошибка получения списка материалов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получение списка пользователей для фильтров
+app.get('/reports/users-list', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const result = await pool.query(`
+            SELECT id, username, name, secondname, role
+            FROM users
+            ORDER BY name, secondname
+        `);
+        
+        res.json({ users: result.rows });
+
+    } catch (error) {
+        console.error('Ошибка получения списка пользователей:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+
 // тест
 app.get('/test', (req, res) => { res.json({ message: 'hello world' }) });
 
