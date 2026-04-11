@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {Search,Calendar,User,FileText,Eye,Play,Send,MoreHorizontal,Package} from "lucide-react";
+import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
-import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 
 interface Inventory {
@@ -36,7 +36,9 @@ export default function Inventories() {
     const [inventories, setInventories] = useState<Inventory[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
+
     const isAdminOrAccountant = isAdmin || user?.role === 'accountant';
     const isResponsible = (inventory: Inventory) => inventory.responsible_person === user?.id;
 
@@ -135,22 +137,15 @@ export default function Inventories() {
         navigate(`/inventories/${id}/review`);
     };
 
-    const getStatusBadge = (status: string) => {
+    const getStatusText = (status: string) => {
         switch (status) {
-            case 'draft':
-                return <Badge variant="outline" className="text-gray-500">Черновик</Badge>;
-            case 'in_progress':
-                return <Badge>В процессе</Badge>;
-            case 'completed':
-                return <Badge>Завершена</Badge>;
-            case 'approved':
-                return <Badge>Утверждена</Badge>;
-            case 'cancelled':
-                return <Badge >Отменена</Badge>;
-            case 'expired':
-                return <Badge>Просрочена</Badge>;
-            default:
-                return <Badge>{status}</Badge>;
+            case 'draft': return 'Черновик';
+            case 'in_progress': return 'В процессе';
+            case 'completed': return 'Завершена';
+            case 'approved': return 'Утверждена';
+            case 'cancelled': return 'Отменена';
+            case 'expired': return 'Просрочена';
+            default: return status;
         }
     };
 
@@ -159,10 +154,12 @@ export default function Inventories() {
         return Math.round((inventory.checked_items / inventory.total_items) * 100);
     };
 
-    const filteredInventories = inventories.filter(inv =>
-        inv.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv.responsible_username?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredInventories = inventories.filter(inv => {
+        const matchesSearch = inv.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            inv.responsible_username?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "all" || inv.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     if (loading) {
         return (
@@ -183,19 +180,59 @@ export default function Inventories() {
                 )}
             </div>
 
-            <div className="relative mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
-                <Input
-                    placeholder="Поиск по названию или ответственному..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                />
+            <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+                <div className="flex-1 w-full relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
+                    <Input
+                        placeholder="Поиск по названию или ответственному..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        variant={statusFilter === "all" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("all")}
+                    >
+                        Все
+                    </Button>
+                    <Button
+                        variant={statusFilter === "draft" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("draft")}
+                    >
+                        Черновики
+                    </Button>
+                    <Button
+                        variant={statusFilter === "in_progress" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("in_progress")}
+                    >
+                        В процессе
+                    </Button>
+                    <Button
+                        variant={statusFilter === "completed" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("completed")}
+                    >
+                        Завершены
+                    </Button>
+                    <Button
+                        variant={statusFilter === "approved" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("approved")}
+                    >
+                        Утверждены
+                    </Button>
+                    <Button
+                        variant={statusFilter === "cancelled" ? "default" : "outline"}
+                        onClick={() => setStatusFilter("cancelled")}
+                    >
+                        Отменены
+                    </Button>
+                </div>
             </div>
 
             <div className="space-y-4">
                 {filteredInventories.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">
+                    <div className="text-center py-10 text-muted-foreground">
                         Инвентаризаций не найдено
                     </div>
                 ) : (
@@ -206,7 +243,9 @@ export default function Inventories() {
                                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <h3 className="text-lg font-semibold">{inventory.title}</h3>
-                                            {getStatusBadge(inventory.status)}
+                                            <Badge variant="outline">
+                                                {getStatusText(inventory.status)}
+                                            </Badge>
                                         </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -243,14 +282,12 @@ export default function Inventories() {
 
                                                 {isAdmin && (inventory.status === 'draft' || inventory.status === 'in_progress') && (
                                                     <DropdownMenuItem onClick={() => handleCancel(inventory.id, inventory.title)}>
-
                                                         Отменить
                                                     </DropdownMenuItem>
                                                 )}
 
                                                 {isAdmin && inventory.status === 'cancelled' && (
                                                     <DropdownMenuItem onClick={() => handleDelete(inventory.id, inventory.title)}>
-
                                                         Удалить
                                                     </DropdownMenuItem>
                                                 )}
@@ -258,20 +295,20 @@ export default function Inventories() {
                                         </DropdownMenu>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-3">
-                                        <div className="flex items-center gap-2 text-gray-600">
+                                        <div className="flex items-center gap-2 text-muted-foreground">
                                             <Calendar className="h-4 w-4" />
                                             <span>
                                                 {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <User className={isResponsible(inventory) ? "h-4 w-4" : "h-4 w-4 text-gray-600"} />
-                                            <span className={isResponsible(inventory) ? "underline " : "text-gray-600"}>
+                                            <User className={isResponsible(inventory) ? "h-4 w-4" : "h-4 w-4 text-muted-foreground"} />
+                                            <span className={isResponsible(inventory) ? "underline" : "text-muted-foreground"}>
                                                 Ответственный: {inventory.responsible_username || '-'}
                                                 {isResponsible(inventory) && " (Вы)"}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-gray-600">
+                                        <div className="flex items-center gap-2 text-muted-foreground">
                                             <FileText className="h-4 w-4" />
                                             <span>Создал: {inventory.created_by_username || '-'}</span>
                                         </div>
@@ -283,9 +320,9 @@ export default function Inventories() {
                                                 <span>Прогресс</span>
                                                 <span>{getProgress(inventory)}% ({inventory.checked_items}/{inventory.total_items})</span>
                                             </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div className="w-full bg-muted rounded-full h-2">
                                                 <div
-                                                    className="bg-gray-600 h-2 rounded-full transition-all"
+                                                    className="bg-foreground h-2 rounded-full transition-all"
                                                     style={{ width: `${getProgress(inventory)}%` }}
                                                 />
                                             </div>
@@ -293,12 +330,12 @@ export default function Inventories() {
                                     )}
 
                                     {inventory.completed_at && (
-                                        <div className="text-xs text-gray-500 mt-2">
+                                        <div className="text-xs text-muted-foreground mt-2">
                                             Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}
                                         </div>
                                     )}
                                     {inventory.approved_at && (
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-muted-foreground">
                                             Утверждена: {format(new Date(inventory.approved_at), "dd.MM.yyyy HH:mm")}
                                         </div>
                                     )}
