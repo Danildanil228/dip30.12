@@ -341,6 +341,37 @@ app.get("/users", async (req, res) => {
     }
 });
 
+
+//Для чатов
+app.get('/users/search', checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        console.log('User ID from token:', userId);
+        
+        const { q } = req.query;
+        console.log('Search query:', q);
+        
+        if (!q || q.length < 2) {
+            return res.json({ users: [] });
+        }
+        
+        const result = await pool.query(`
+            SELECT id, username, name, secondname
+            FROM users
+            WHERE id != $1
+            AND (username ILIKE $2 OR name ILIKE $2 OR secondname ILIKE $2)
+            LIMIT 20
+        `, [userId, `%${q}%`]);
+        
+        console.log('Found users:', result.rows.length);
+        res.json({ users: result.rows });
+        
+    } catch (error) {
+        console.error('ERROR in search:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 // Удаление пользователя
 app.delete("/users/:id", checkAdmin, async (req, res) => {
     try {
@@ -2789,67 +2820,7 @@ app.put("/messages/:id", checkAuth, async (req, res) => {
     }
 });
 
-// Поиск пользователей для чата
 
-// Поиск пользователей для чата - ТЕСТОВАЯ ВЕРСИЯ
-app.get('/users/search', async (req, res) => {
-    console.log('================== TEST ENDPOINT ==================');
-    
-    try {
-        // Получаем токен вручную
-        const token = req.headers.authorization?.split(' ')[1];
-        console.log('Token exists:', token ? 'YES' : 'NO');
-        
-        if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
-        }
-        
-        // Декодируем токен
-        const decoded = jwt.verify(token, JWT_SECRET);
-        console.log('Decoded id:', decoded.id);
-        console.log('Decoded id type:', typeof decoded.id);
-        
-        // Получаем ID пользователя
-        let userId = decoded.id;
-        
-        // Если ID пришел как строка - преобразуем
-        if (typeof userId === 'string') {
-            userId = parseInt(userId);
-        }
-        
-        console.log('Final userId:', userId, 'isNaN:', isNaN(userId));
-        
-        if (isNaN(userId)) {
-            return res.status(400).json({ error: 'Invalid user ID' });
-        }
-        
-        const { q } = req.query;
-        console.log('Search query:', q);
-        
-        if (!q || q.length < 2) {
-            return res.json({ users: [] });
-        }
-        
-        // Простой запрос - ищем всех, кроме себя
-        const result = await pool.query(
-            `SELECT id, username, name, secondname 
-             FROM users 
-             WHERE id != $1 
-             AND (username ILIKE $2 OR name ILIKE $2 OR secondname ILIKE $2)
-             LIMIT 20`,
-            [userId, `%${q}%`]
-        );
-        
-        console.log('Found users count:', result.rows.length);
-        console.log('==================================================');
-        
-        res.json({ users: result.rows });
-        
-    } catch (error) {
-        console.error('ERROR in search:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
-    }
-});
 
 // =========== WEBSOCKET СЕРВЕР ===========
 const http = require("http");

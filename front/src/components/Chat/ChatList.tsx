@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatSearch } from "./ChatSearch";
+import type { Chat, User } from "./types";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
@@ -8,16 +10,14 @@ import { Trash2, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import type { Chat, User } from "./types";
-import { ScrollArea } from "../ui/scroll-area";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface ChatListProps {
     onSelectChat: (chat: Chat) => void;
     selectedChatId: number | null;
-    onChatDeleted?: () => void;
 }
 
-export function ChatList({ onSelectChat, selectedChatId, onChatDeleted }: ChatListProps) {
+export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; chat: Chat | null; forBoth: boolean }>({
@@ -51,7 +51,7 @@ export function ChatList({ onSelectChat, selectedChatId, onChatDeleted }: ChatLi
             const response = await axios.post(`${API_BASE_URL}/chats`, { otherUserId: user.id }, { headers: { Authorization: `Bearer ${token}` } });
             await fetchChats();
             const newChat = response.data.chat;
-            const fullChat = chats.find((c) => c.id === newChat.id) || {
+            const fullChat: Chat = {
                 id: newChat.id,
                 other_user_id: user.id,
                 other_username: user.username,
@@ -77,9 +77,9 @@ export function ChatList({ onSelectChat, selectedChatId, onChatDeleted }: ChatLi
                 params: { forBoth }
             });
             await fetchChats();
-            if (onChatDeleted) onChatDeleted();
             if (selectedChatId === chat.id) {
-                onSelectChat(chats.find((c) => c.id !== chat.id) || (null as any));
+                const nextChat = chats.find((c) => c.id !== chat.id);
+                onSelectChat(nextChat || (null as any));
             }
         } catch (error) {
             console.error("Ошибка удаления чата:", error);
@@ -107,18 +107,17 @@ export function ChatList({ onSelectChat, selectedChatId, onChatDeleted }: ChatLi
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2"></div>
-            </div>
+            <LoadingSpinner/>
         );
     }
 
     return (
         <div className="flex flex-col h-full">
-            <div className="p-4 border-b">
+            <div className="flex-shrink-0 p-4 border-b">
                 <ChatSearch onSelectUser={handleSelectUser} />
             </div>
-            <ScrollArea className="flex-1">
+
+            <ScrollArea className="flex-1 h-[calc(100vh-280px)] md:h-auto">
                 <div className="space-y-1 p-2">
                     {chats.length === 0 ? (
                         <div className="text-center py-10 text-muted-foreground">

@@ -20,7 +20,7 @@ import InventoryReview from "./Pages/Inventories/InventoryReview";
 import InventoryDetails from "./Pages/Inventories/InventoryDetails";
 import Dashboard from "./Pages/Dashboard";
 import Reports from "./Pages/Reports";
-import ChatPage from "./Pages/Chat";
+import ChatPage from "./Pages/ChatPage";
 
 function App() {
     return (

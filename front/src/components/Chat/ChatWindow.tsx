@@ -1,22 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, Image, X, Smile } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Paperclip, Image, Smile } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
+import type { Chat, Message } from "./types";
 import { useSocket } from "@/hooks/useSocket";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import EmojiPicker from "emoji-picker-react";
-import type { Chat, Message } from "./types";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface ChatWindowProps {
     chat: Chat | null;
-    onMessageSent?: () => void;
 }
 
-export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
+export function ChatWindow({ chat }: ChatWindowProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputMessage, setInputMessage] = useState("");
     const [loading, setLoading] = useState(false);
@@ -26,8 +25,30 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
 
-    // Загрузка сообщений
+    const scrollToBottom = () => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            setTimeout(scrollToBottom, 100);
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     useEffect(() => {
         if (!chat) return;
 
@@ -39,15 +60,7 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setMessages(response.data.messages);
-
-                // Отмечаем непрочитанные сообщения
-                const unreadMessages = response.data.messages.filter((m: Message) => !m.is_read && m.sender_id !== JSON.parse(localStorage.getItem("user") || "{}").id);
-                if (unreadMessages.length > 0 && socket) {
-                    socket.emit("mark_read", {
-                        chatId: chat.id,
-                        messageIds: unreadMessages.map((m: Message) => m.id)
-                    });
-                }
+                setTimeout(scrollToBottom, 200);
             } catch (error) {
                 console.error("Ошибка загрузки сообщений:", error);
             } finally {
@@ -57,7 +70,6 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
 
         fetchMessages();
 
-        // Присоединяемся к комнате чата
         if (socket) {
             socket.emit("join_chat", chat.id);
         }
@@ -69,29 +81,12 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
         };
     }, [chat, socket]);
 
-    // Прокрутка вниз при новых сообщениях
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages]);
-
-    // WebSocket слушатели
     useEffect(() => {
         if (!socket) return;
 
         const handleNewMessage = (message: Message) => {
             if (message.chat_id === chat?.id) {
                 setMessages((prev) => [...prev, message]);
-
-                // Если сообщение не от текущего пользователя, отмечаем как прочитанное
-                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                if (message.sender_id !== currentUser.id && socket) {
-                    socket.emit("mark_read", {
-                        chatId: chat.id,
-                        messageIds: [message.id]
-                    });
-                }
             }
         };
 
@@ -135,9 +130,6 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
                     message: inputMessage.trim()
                 });
                 setInputMessage("");
-                if (onMessageSent) onMessageSent();
-            } else {
-                console.error("Socket не подключен");
             }
         } catch (error) {
             console.error("Ошибка отправки сообщения:", error);
@@ -170,7 +162,6 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
                     fileName: type === "file" ? response.data.fileName : null,
                     fileSize: type === "file" ? response.data.fileSize : null
                 });
-                if (onMessageSent) onMessageSent();
             }
         } catch (error) {
             console.error("Ошибка загрузки файла:", error);
@@ -182,7 +173,6 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Проверка размера (10MB)
         if (file.size > 10 * 1024 * 1024) {
             alert("Файл слишком большой. Максимальный размер 10MB");
             return;
@@ -211,14 +201,15 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
 
     const onEmojiClick = (emojiObject: any) => {
         setInputMessage((prev) => prev + emojiObject.emoji);
-        setShowEmojiPicker(false);
     };
 
     if (!chat) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <p className="text-lg">Выберите чат</p>
-                <p className="text-sm">или начните новый диалог</p>
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                    <p className="text-lg">Выберите чат</p>
+                    <p className="text-sm">или начните новый диалог</p>
+                </div>
             </div>
         );
     }
@@ -227,40 +218,34 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
 
     return (
         <div className="flex flex-col h-full">
-            {/* Header чата */}
-            <div className="p-4 border-b">
-                <div>
+            <div className="flex-shrink-0 p-4 border-b justify-between hidden md:flex items-center flex-wrap">
+                <div className="flex items-center gap-4 flex-wrap">
                     <div className="font-medium text-lg">
                         {chat.other_name} {chat.other_secondname}
                     </div>
                     <div className="text-sm text-muted-foreground">@{chat.other_username}</div>
                 </div>
+                <div className="text-xs text-muted-foreground mt-2 md:mt-0">{isConnected ? "Подключено" : "Подключение..."}</div>
             </div>
 
-            {/* Сообщения */}
-            <ScrollArea className="flex-1 p-4">
-                {loading ? (
-                    <div className="flex justify-center items-center h-full">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2"></div>
-                    </div>
-                ) : messages.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-10">
-                        Нет сообщений
-                        <br />
-                        <span className="text-sm">Напишите что-нибудь...</span>
-                    </div>
-                ) : (
-                    <>
-                        {messages.map((message) => (
-                            <MessageBubble key={message.id} message={message} isOwn={message.sender_id === currentUser.id} onEdit={handleEditMessage} onDelete={handleDeleteMessage} />
-                        ))}
-                        <div ref={scrollRef} />
-                    </>
-                )}
+            <ScrollArea className="h-125">
+                <div className="p-4 space-y-3">
+                    {loading ? (
+                        <LoadingSpinner />
+                    ) : messages.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-10">
+                            Нет сообщений
+                            <br />
+                            <span className="text-sm">Напишите что-нибудь...</span>
+                        </div>
+                    ) : (
+                        messages.map((message) => <MessageBubble key={message.id} message={message} isOwn={message.sender_id === currentUser.id} onEdit={handleEditMessage} onDelete={handleDeleteMessage} />)
+                    )}
+                    <div ref={scrollRef} />
+                </div>
             </ScrollArea>
 
-            {/* Input область */}
-            <div className="p-4 border-t">
+            <div className="flex-shrink-0 p-4 border-t">
                 <div className="flex gap-2 items-end">
                     <div className="flex gap-1">
                         <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileSelect(e, "image")} />
@@ -273,7 +258,7 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
                             <Paperclip className="h-5 w-5" />
                         </Button>
 
-                        <div className="relative">
+                        <div className="relative" ref={emojiPickerRef}>
                             <Button type="button" variant="ghost" size="icon" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                                 <Smile className="h-5 w-5" />
                             </Button>
@@ -291,7 +276,6 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
-                <div className="text-xs text-muted-foreground mt-2">{isConnected ? "🟢 Подключено" : "🔴 Подключение..."}</div>
             </div>
         </div>
     );

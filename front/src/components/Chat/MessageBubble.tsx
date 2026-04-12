@@ -48,10 +48,9 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                     {!isOwn && <div className="text-xs text-muted-foreground mb-1 ml-2">{message.sender_name}</div>}
                     <div className={`relative group`}>
                         <div className={`rounded-lg px-3 py-2 ${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                            {/* Текст сообщения */}
                             {isEditing ? (
                                 <div className="flex gap-2">
-                                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 px-2 py-1 rounded border bg-background text-foreground" autoFocus />
+                                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 px-2 py-1 rounded  bg-background text-foreground" autoFocus />
                                     <Button size="sm" onClick={handleSaveEdit}>
                                         ✓
                                     </Button>
@@ -63,14 +62,12 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                                 <>
                                     {message.message && <p className="whitespace-pre-wrap break-words text-sm">{message.message}</p>}
 
-                                    {/* Изображение */}
                                     {message.image_url && (
                                         <div className="mt-2 cursor-pointer" onClick={() => setImageDialogOpen(true)}>
                                             <img src={`${API_BASE_URL}${message.image_url}`} alt="Изображение" className="max-w-full rounded-lg max-h-48 object-cover" />
                                         </div>
                                     )}
 
-                                    {/* Файл */}
                                     {message.file_url && !message.image_url && (
                                         <a href={`${API_BASE_URL}${message.file_url}`} download={message.file_name || "file"} className="flex items-center gap-2 mt-2 p-2 rounded bg-background/10 hover:bg-background/20 transition-colors">
                                             <span className="text-xl">{getFileIcon(message.file_name || "")}</span>
@@ -84,7 +81,6 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                                 </>
                             )}
 
-                            {/* Отметка о времени и прочтении */}
                             <div className={`text-xs mt-1 flex items-center gap-1 ${isOwn ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"}`}>
                                 <span>{formatTime(message.created_at)}</span>
                                 {message.edited_at && <span>(ред.)</span>}
@@ -92,7 +88,6 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                             </div>
                         </div>
 
-                        {/* Меню действий при наведении */}
                         {isOwn && !isEditing && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -120,14 +115,12 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                 </div>
             </div>
 
-            {/* Диалог просмотра изображения */}
             <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
                 <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 bg-black/90">
                     <img src={`${API_BASE_URL}${message.image_url}`} alt="Полный размер" className="w-full h-full object-contain" />
                 </DialogContent>
             </Dialog>
 
-            {/* Диалог удаления */}
             <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
