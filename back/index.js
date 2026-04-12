@@ -1452,16 +1452,17 @@ app.post("/inventories", async (req, res) => {
             );
 
             const inventory = inventoryResult.rows[0];
+            const newInventoryId = inventory.id; // СОХРАНЯЕМ ID
 
             if (categories && categories.length > 0) {
                 for (const categoryId of categories) {
-                    await client.query(`INSERT INTO inventory_categories (inventory_id, category_id) VALUES ($1, $2)`, [inventory.id, categoryId]);
+                    await client.query(`INSERT INTO inventory_categories (inventory_id, category_id) VALUES ($1, $2)`, [newInventoryId, categoryId]);
                 }
             }
 
             if (materials && materials.length > 0) {
                 for (const materialId of materials) {
-                    await client.query(`INSERT INTO inventory_materials (inventory_id, material_id) VALUES ($1, $2)`, [inventory.id, materialId]);
+                    await client.query(`INSERT INTO inventory_materials (inventory_id, material_id) VALUES ($1, $2)`, [newInventoryId, materialId]);
                 }
             }
 
@@ -1488,14 +1489,14 @@ app.post("/inventories", async (req, res) => {
                 await client.query(
                     `INSERT INTO inventory_results (inventory_id, material_id, system_quantity)
                      VALUES ($1, $2, $3)`,
-                    [inventory.id, material.id, material.quantity]
+                    [newInventoryId, material.id, material.quantity]
                 );
             }
 
             await client.query("COMMIT");
 
-            Logger.setCurrentInventoryId(inventoryId);
-            await Logger.inventoryCreated(decoded.id, decoded.username, title, inventory.id, inventoryId);
+            // Логирование с правильным ID
+            await Logger.inventoryCreated(decoded.id, decoded.username, title, newInventoryId);
 
             res.json({
                 message: "Инвентаризация создана",
