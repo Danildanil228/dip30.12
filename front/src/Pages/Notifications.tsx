@@ -147,7 +147,7 @@ export default function Notifications({ onVisited }: LogsProps) {
             if (requestMatch) {
                 parts.push({
                     type: "request",
-                    content: `заявку}`,
+                    content: `заявку`,
                     id: parseInt(requestMatch[1])
                 });
             }
