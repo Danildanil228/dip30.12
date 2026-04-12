@@ -20,6 +20,7 @@ import InventoryReview from "./Pages/Inventories/InventoryReview";
 import InventoryDetails from "./Pages/Inventories/InventoryDetails";
 import Dashboard from "./Pages/Dashboard";
 import Reports from "./Pages/Reports";
+import ChatPage from "./Pages/Chat";
 
 function App() {
     return (
@@ -42,6 +43,14 @@ function App() {
                             element={
                                 <ProtectedRoute>
                                     <Main />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/chat"
+                            element={
+                                <ProtectedRoute>
+                                    <ChatPage />
                                 </ProtectedRoute>
                             }
                         />

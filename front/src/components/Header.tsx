@@ -34,6 +34,7 @@ export default function Header() {
                             <DropdownMenuItem><Link to='/backups'>Бэкапы</Link></DropdownMenuItem>
                         )}
                         <DropdownMenuItem><Link to='/profile'>Профиль</Link></DropdownMenuItem>
+                        <DropdownMenuItem><Link to='/chat'>Чаты</Link></DropdownMenuItem>
                         <DropdownMenuItem className="lg:hidden"><Link to='/allusers'>Все пользователи</Link></DropdownMenuItem>
                         <DropdownMenuItem><Link to='/inventories'>Инвентаризация</Link></DropdownMenuItem>
                         <DropdownMenuItem><Link to='/dashboard'>Дашборд</Link></DropdownMenuItem>
