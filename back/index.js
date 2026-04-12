@@ -261,16 +261,11 @@ app.get("/users", async (req, res) => {
         let query = "SELECT id, username, role, name, secondname, created_at FROM users";
         const params = [];
 
-        // Админ видит всех
         if (decoded.role === "admin") {
             query += " ORDER BY name, secondname";
-        }
-        // Бухгалтер видит бухгалтеров и кладовщиков
-        else if (decoded.role === "accountant") {
+        } else if (decoded.role === "accountant") {
             query += " WHERE role IN ('storekeeper', 'accountant') ORDER BY name, secondname";
-        }
-        // Кладовщик не видит пользователей
-        else {
+        } else {
             return res.json({ users: [] });
         }
 
@@ -298,7 +293,6 @@ app.delete("/users/:id", checkAdmin, async (req, res) => {
             return res.status(400).json({ error: "Нельзя удалить самого себя" });
         }
         const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id, username", [userId]);
-        //логи
         await Logger.userDeleted(req.user.id, req.user.username, userToDelete.username, userToDelete.id);
 
         res.json({
@@ -462,12 +456,20 @@ app.put("/users/:id", async (req, res) => {
         const result = await pool.query(query, values);
         const updatedUser = result.rows[0];
 
-        // логи
         const changedFields = {};
         Object.entries(updateData).forEach(([key, newValue]) => {
             let oldValue;
             if (key === "birthday") {
-                oldValue = oldUser.birthday_text || "";
+                if (oldUser.birthday) {
+                    const oldDate = new Date(oldUser.birthday);
+                    oldValue = oldDate.toISOString().split("T")[0];
+                } else {
+                    oldValue = "";
+                }
+                if (newValue) {
+                    const newDate = new Date(newValue);
+                    newValue = newDate.toISOString().split("T")[0];
+                }
             } else {
                 oldValue = oldUser[key] || "";
             }
@@ -550,7 +552,6 @@ app.put("/users/:id/password", async (req, res) => {
 
         await pool.query("UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [hashedPassword, userId]);
 
-        // логи
         if (isAdmin && !isSelf) {
             await Logger.passwordChanged(decoded.id, decoded.username, false, userId, user.username);
         } else {
@@ -601,7 +602,6 @@ app.post("/categories", checkAdmin, async (req, res) => {
 
         const result = await pool.query(`INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`, [name, description || null, decoded.id]);
 
-        // Логирование
         await Logger.log(decoded.id, "category_created", "Создание категории", `Администратор ${decoded.username} создал категорию: ${name}`);
 
         res.json({
@@ -629,7 +629,6 @@ app.put("/categories/:id", checkAdmin, async (req, res) => {
             return res.status(400).json({ error: "Название категории обязательно" });
         }
 
-        // Получаем старые данные для логирования
         const oldCategoryResult = await pool.query("SELECT * FROM materialCategories WHERE id = $1", [categoryId]);
 
         if (oldCategoryResult.rows.length === 0) {
@@ -640,7 +639,6 @@ app.put("/categories/:id", checkAdmin, async (req, res) => {
 
         const result = await pool.query(`UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`, [name, description || null, decoded.id, categoryId]);
 
-        // Логирование изменений
         const changes = [];
         if (name !== oldCategory.name) changes.push(`название: "${oldCategory.name}" → "${name}"`);
         if (description !== oldCategory.description) changes.push("описание изменено");
@@ -667,7 +665,6 @@ app.delete("/categories/:id", checkAdmin, async (req, res) => {
     try {
         const categoryId = parseInt(req.params.id);
 
-        // Проверяем, есть ли материалы в этой категории
         const materialsCheck = await pool.query("SELECT COUNT(*) FROM materials WHERE category_id = $1", [categoryId]);
 
         const materialCount = parseInt(materialsCheck.rows[0].count);
@@ -678,7 +675,6 @@ app.delete("/categories/:id", checkAdmin, async (req, res) => {
             });
         }
 
-        // Получаем информацию о категории для логирования
         const categoryResult = await pool.query("SELECT name FROM materialCategories WHERE id = $1", [categoryId]);
 
         if (categoryResult.rows.length === 0) {
@@ -687,10 +683,8 @@ app.delete("/categories/:id", checkAdmin, async (req, res) => {
 
         const categoryName = categoryResult.rows[0].name;
 
-        // Удаляем категорию
         const result = await pool.query("DELETE FROM materialCategories WHERE id = $1 RETURNING id, name", [categoryId]);
 
-        // Логирование
         await Logger.log(req.user.id, "category_deleted", "Удаление категории", `Администратор ${req.user.username} удалил категорию: ${categoryName}`);
 
         res.json({
@@ -728,7 +722,7 @@ app.get("/materials", async (req, res) => {
         }
 
         if (low_stock === "true") {
-            query += ` AND m.quantity < 10`; // Можно сделать настраиваемым
+            query += ` AND m.quantity < 10`;
         }
 
         query += ` ORDER BY m.name`;
@@ -824,7 +818,6 @@ app.post("/materials", checkAdmin, async (req, res) => {
             [name, code, description || null, unit, category_id || null, quantity || 0, decoded.id]
         );
 
-        // Логирование
         await Logger.materialCreated(decoded.id, decoded.username, name);
 
         res.json({
@@ -856,7 +849,6 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
             return res.status(400).json({ error: "Название и единица измерения обязательны" });
         }
 
-        // Получаем старые данные для логирования
         const oldMaterialResult = await pool.query("SELECT * FROM materials WHERE id = $1", [materialId]);
 
         if (oldMaterialResult.rows.length === 0) {
@@ -865,7 +857,6 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
 
         const oldMaterial = oldMaterialResult.rows[0];
 
-        // Проверяем уникальность кода (если меняется)
         if (code && code !== oldMaterial.code) {
             const existingCode = await pool.query("SELECT id FROM materials WHERE code = $1 AND id != $2", [code, materialId]);
             if (existingCode.rows.length > 0) {
@@ -873,7 +864,6 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
             }
         }
 
-        // Если указана категория, проверяем её существование
         if (category_id) {
             const categoryExists = await pool.query("SELECT id FROM materialCategories WHERE id = $1", [category_id]);
             if (categoryExists.rows.length === 0) {
@@ -1062,7 +1052,6 @@ app.post("/requests", async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const { title, request_type, notes, items, is_public } = req.body;
 
-        // Валидация
         if (!title || !request_type || !items || !items.length) {
             return res.status(400).json({ error: "Заполните обязательные поля (название, тип, хотя бы один товар)" });
         }
@@ -1071,28 +1060,24 @@ app.post("/requests", async (req, res) => {
             return res.status(400).json({ error: "Неверный тип заявки" });
         }
 
-        // Проверяем все товары
         for (const item of items) {
             if (!item.material_id || !item.quantity || item.quantity <= 0) {
                 return res.status(400).json({ error: "Неверные данные товаров" });
             }
         }
 
-        // Получаем информацию о товарах
         const materialIds = items.map((item) => item.material_id);
         const materialsResult = await pool.query("SELECT id, name, quantity FROM materials WHERE id = ANY($1)", [materialIds]);
 
         const materialsMap = new Map();
         materialsResult.rows.forEach((m) => materialsMap.set(m.id, m));
 
-        // Проверяем, что все товары существуют
         for (const item of items) {
             if (!materialsMap.has(item.material_id)) {
                 return res.status(404).json({ error: `Товар с ID ${item.material_id} не найден` });
             }
         }
 
-        // Для расходных заявок проверяем достаточно ли товаров
         if (request_type === "outgoing") {
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
@@ -1105,10 +1090,8 @@ app.post("/requests", async (req, res) => {
         }
 
         const isAdmin = decoded.role === "admin";
-        // Админ может сразу подтвердить заявку
         const isApproved = isAdmin && req.body.is_approved === true;
         const status = isApproved ? "approved" : "pending";
-        // Только админ может сделать заявку приватной
         const publicStatus = isAdmin ? is_public !== false : true;
 
         const client = await pool.connect();
@@ -1116,7 +1099,6 @@ app.post("/requests", async (req, res) => {
         try {
             await client.query("BEGIN");
 
-            // Создаем заявку
             const requestResult = await client.query(
                 `INSERT INTO material_requests (title, request_type, status, created_by, notes, is_public, reviewed_by, reviewed_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -1126,10 +1108,8 @@ app.post("/requests", async (req, res) => {
 
             const newRequest = requestResult.rows[0];
 
-            // Устанавливаем ID заявки для логирования
             Logger.setCurrentRequestId(newRequest.id);
 
-            // Добавляем товары в заявку
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
                 await client.query(
@@ -1139,7 +1119,6 @@ app.post("/requests", async (req, res) => {
                 );
             }
 
-            // Если заявка сразу подтверждена админом, обновляем количество товаров
             if (isApproved) {
                 for (const item of items) {
                     const material = materialsMap.get(item.material_id);
@@ -1151,7 +1130,6 @@ app.post("/requests", async (req, res) => {
 
             await client.query("COMMIT");
 
-            // Формируем список товаров для лога
             const itemsList = items
                 .map((i) => {
                     const material = materialsMap.get(i.material_id);
@@ -1159,11 +1137,9 @@ app.post("/requests", async (req, res) => {
                 })
                 .join(", ");
 
-            // Логируем создание заявки
             await Logger.requestCreated(decoded.id, decoded.username, title, request_type, itemsList);
 
             if (isApproved) {
-                // Логируем автоматическое подтверждение админом
                 await Logger.requestApproved(decoded.id, decoded.username, title, request_type, itemsList);
                 res.json({
                     message: "Заявка создана и подтверждена",
@@ -1477,21 +1453,18 @@ app.post("/inventories", async (req, res) => {
 
             const inventory = inventoryResult.rows[0];
 
-            // Добавляем выбранные категории
             if (categories && categories.length > 0) {
                 for (const categoryId of categories) {
                     await client.query(`INSERT INTO inventory_categories (inventory_id, category_id) VALUES ($1, $2)`, [inventory.id, categoryId]);
                 }
             }
 
-            // Добавляем выбранные товары
             if (materials && materials.length > 0) {
                 for (const materialId of materials) {
                     await client.query(`INSERT INTO inventory_materials (inventory_id, material_id) VALUES ($1, $2)`, [inventory.id, materialId]);
                 }
             }
 
-            // Определяем список товаров для инвентаризации
             let materialsQuery = `
                 SELECT m.id, m.name, m.code, m.unit, m.quantity
                 FROM materials m
@@ -1521,7 +1494,6 @@ app.post("/inventories", async (req, res) => {
 
             await client.query("COMMIT");
 
-            // Логирование с передачей ID
             Logger.setCurrentInventoryId(inventoryId);
             await Logger.inventoryCreated(decoded.id, decoded.username, title, inventory.id, inventoryId);
 
@@ -1557,7 +1529,6 @@ app.put("/inventories/:id", async (req, res) => {
         const inventoryId = parseInt(req.params.id);
         const { title, responsible_person, start_date, end_date, description } = req.body;
 
-        // Получаем старые данные для логирования
         const oldInventory = await pool.query("SELECT title, responsible_person, start_date, end_date, description FROM inventories WHERE id = $1", [inventoryId]);
 
         if (oldInventory.rows.length === 0) {
@@ -1566,14 +1537,11 @@ app.put("/inventories/:id", async (req, res) => {
 
         const oldData = oldInventory.rows[0];
 
-        // Форматируем даты для сравнения
         const formatDateForCompare = (date) => {
             if (!date) return null;
-            // Если date уже строка в формате YYYY-MM-DD, возвращаем как есть
             if (typeof date === "string" && date.match(/^\d{4}-\d{2}-\d{2}/)) {
                 return date;
             }
-            // Если это объект Date
             const d = new Date(date);
             return d.toISOString().split("T")[0];
         };
@@ -1583,7 +1551,6 @@ app.put("/inventories/:id", async (req, res) => {
         const oldEndDate = formatDateForCompare(oldData.end_date);
         const newEndDate = end_date ? formatDateForCompare(end_date) : null;
 
-        // Формируем список изменений с человекочитаемыми датами
         const changes = [];
         if (title && title !== oldData.title) {
             changes.push(`название: "${oldData.title}" → "${title}"`);
@@ -1614,7 +1581,6 @@ app.put("/inventories/:id", async (req, res) => {
             [title, responsible_person, start_date, end_date, description, inventoryId]
         );
 
-        // Логирование с передачей ID инвентаризации
         if (changes.length > 0) {
             Logger.setCurrentInventoryId(inventoryId);
             await Logger.inventoryUpdated(decoded.id, decoded.username, oldData.title, changes.join(", "), inventoryId);
@@ -1657,7 +1623,6 @@ app.put("/inventories/:id/start", async (req, res) => {
 
         await pool.query(`UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
-        // Логирование с передачей ID
         Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
 
@@ -1703,7 +1668,6 @@ app.put("/inventories/:id/results", async (req, res) => {
             );
         }
 
-        // Логирование с передачей ID
         await Logger.inventorySaved(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Результаты сохранены" });
@@ -1787,7 +1751,6 @@ app.put("/inventories/:id/approve", async (req, res) => {
         try {
             await client.query("BEGIN");
 
-            // Получаем результаты с расхождениями
             const results = await client.query(
                 `SELECT ir.*, m.quantity as current_quantity
                  FROM inventory_results ir
@@ -1796,7 +1759,6 @@ app.put("/inventories/:id/approve", async (req, res) => {
                 [inventoryId]
             );
 
-            // Обновляем количество товаров
             for (const result of results.rows) {
                 await client.query("UPDATE materials SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [result.actual_quantity, result.material_id]);
             }
@@ -1810,7 +1772,6 @@ app.put("/inventories/:id/approve", async (req, res) => {
 
             await client.query("COMMIT");
 
-            // Логирование с передачей ID
             await Logger.inventoryApproved(decoded.id, decoded.username, inventory.rows[0].title, results.rows.length, inventoryId);
 
             res.json({ message: "Инвентаризация подтверждена, остатки обновлены" });
@@ -1907,7 +1868,6 @@ app.get("/dashboard/metrics", async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const { startDate, endDate } = req.query;
 
-        // Если даты не указаны - берем текущий месяц
         let start = startDate;
         let end = endDate;
 
@@ -1917,15 +1877,12 @@ app.get("/dashboard/metrics", async (req, res) => {
             end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
         }
 
-        // 1. Всего материалов
         const materialsResult = await pool.query("SELECT COUNT(*) as total FROM materials");
         const totalMaterials = parseInt(materialsResult.rows[0].total);
 
-        // 2. Общее количество на складе
         const quantityResult = await pool.query("SELECT COALESCE(SUM(quantity), 0) as total FROM materials");
         const totalQuantity = parseInt(quantityResult.rows[0].total);
 
-        // 3. Активные заявки (pending)
         const pendingRequestsResult = await pool.query(`
             SELECT 
                 COUNT(*) as total,
@@ -1940,7 +1897,6 @@ app.get("/dashboard/metrics", async (req, res) => {
             outgoing: parseInt(pendingRequestsResult.rows[0].outgoing)
         };
 
-        // 4. Завершенные заявки за период (approved)
         const completedRequestsResult = await pool.query(
             `
             SELECT COUNT(*) as total
@@ -1952,7 +1908,6 @@ app.get("/dashboard/metrics", async (req, res) => {
         );
         const completedRequests = parseInt(completedRequestsResult.rows[0].total);
 
-        // 5. Динамика за месяц (для сравнения с прошлым месяцем)
         const previousMonthStart = new Date(start);
         previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
         const previousMonthEnd = new Date(end);
@@ -1998,7 +1953,6 @@ app.get("/dashboard/movement", async (req, res) => {
             return res.status(400).json({ error: "Укажите даты" });
         }
 
-        // Получаем все подтвержденные заявки за период
         const result = await pool.query(
             `
             SELECT 
@@ -2015,10 +1969,8 @@ app.get("/dashboard/movement", async (req, res) => {
             [startDate, endDate]
         );
 
-        // Формируем данные для графика
         const dateMap = new Map();
 
-        // Заполняем все даты периода
         const start = new Date(startDate);
         const end = new Date(endDate);
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -2026,7 +1978,6 @@ app.get("/dashboard/movement", async (req, res) => {
             dateMap.set(dateStr, { date: dateStr, incoming: 0, outgoing: 0 });
         }
 
-        // Заполняем данные из заявок
         result.rows.forEach((row) => {
             const dateStr = row.date.toISOString().split("T")[0];
             const data = dateMap.get(dateStr);
@@ -2206,7 +2157,6 @@ app.get("/reports/material-movement", async (req, res) => {
 
         const result = await pool.query(query, params);
 
-        // Подсчет итогов
         let totalIncoming = 0;
         let totalOutgoing = 0;
 
@@ -2291,7 +2241,6 @@ app.get("/reports/requests", async (req, res) => {
 
         const result = await pool.query(query, params);
 
-        // Подсчет статистики
         let pending = 0,
             approved = 0,
             rejected = 0;
@@ -2321,7 +2270,6 @@ app.get("/reports/turnover-balance", async (req, res) => {
 
         const { startDate, endDate, categoryId } = req.query;
 
-        // Получаем все материалы
         let materialsQuery = `
             SELECT 
                 m.id,
@@ -2344,11 +2292,9 @@ app.get("/reports/turnover-balance", async (req, res) => {
 
         const materialsResult = await pool.query(materialsQuery, materialsParams);
 
-        // Для каждого материала считаем приход и расход за период
         const results = [];
 
         for (const material of materialsResult.rows) {
-            // Начальный остаток (количество на начало периода)
             const startQuantityResult = await pool.query(
                 `
                 SELECT COALESCE(SUM(
@@ -2370,7 +2316,6 @@ app.get("/reports/turnover-balance", async (req, res) => {
             const changeBefore = parseInt(startQuantityResult.rows[0].change_before);
             const openingBalance = material.current_quantity - changeBefore;
 
-            // Приход за период
             const incomingResult = await pool.query(
                 `
                 SELECT COALESCE(SUM(ri.quantity), 0) as total
@@ -2384,7 +2329,6 @@ app.get("/reports/turnover-balance", async (req, res) => {
                 [material.id, startDate, endDate]
             );
 
-            // Расход за период
             const outgoingResult = await pool.query(
                 `
                 SELECT COALESCE(SUM(ri.quantity), 0) as total
@@ -2415,10 +2359,7 @@ app.get("/reports/turnover-balance", async (req, res) => {
             });
         }
 
-        // Фильтруем только материалы с движением или остатками
         const filteredResults = results.filter((r) => r.opening_balance !== 0 || r.incoming !== 0 || r.outgoing !== 0 || r.closing_balance !== 0);
-
-        // Итоги
         const summary = {
             total_opening: filteredResults.reduce((sum, r) => sum + r.opening_balance, 0),
             total_incoming: filteredResults.reduce((sum, r) => sum + r.incoming, 0),
@@ -2443,7 +2384,6 @@ app.get("/reports/user-activity", async (req, res) => {
 
         const { startDate, endDate } = req.query;
 
-        // Используем подзапросы вместо множественных JOIN, чтобы избежать дублирования
         const result = await pool.query(
             `
             SELECT 
