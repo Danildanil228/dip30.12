@@ -8,6 +8,10 @@ const PORT = 3000;
 const JWT_SECRET = "key";
 const Logger = require("./logger");
 const backupRoutes = require("./backup");
+//чаты
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const pool = new Pool({
     user: "postgres",
@@ -39,6 +43,20 @@ app.use(
 );
 
 app.use(express.json());
+// Middleware для проверки авторизации
+const checkAuth = (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Требуется авторизация" });
+        }
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: "Недействительный токен" });
+    }
+};
 app.use("/backups", backupRoutes);
 
 //Проверка на админа
@@ -61,6 +79,40 @@ const checkAdmin = (req, res, next) => {
         return res.status(403).json({ error: "Недействительный токен" });
     }
 };
+
+//чаты
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, "uploads");
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|txt/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+        cb(null, true);
+    } else {
+        cb(new Error("Неподдерживаемый тип файла"));
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: fileFilter
+});
+//=================
 
 app.get("/countUsers", async (req, res) => {
     try {
@@ -2479,7 +2531,423 @@ app.get("/test", (req, res) => {
     res.json({ message: "hello world" });
 });
 
-// Запуск сервера
-app.listen(PORT, () => {
+// =========== ЧАТЫ API ===========
+
+// Загрузка файла
+app.post("/upload", checkAuth, upload.single("file"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "Файл не загружен" });
+        }
+
+        const fileUrl = `/uploads/${req.file.filename}`;
+        res.json({
+            fileUrl: fileUrl,
+            fileName: req.file.originalname,
+            fileSize: req.file.size
+        });
+    } catch (error) {
+        console.error("Ошибка загрузки файла:", error);
+        res.status(500).json({ error: "Ошибка загрузки файла" });
+    }
+});
+
+// Скачивание файла
+app.get("/uploads/:filename", (req, res) => {
+    const filepath = path.join(__dirname, "uploads", req.params.filename);
+    if (fs.existsSync(filepath)) {
+        res.sendFile(filepath);
+    } else {
+        res.status(404).json({ error: "Файл не найден" });
+    }
+});
+
+// Получить все чаты пользователя
+app.get("/chats", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const result = await pool.query(
+            `
+            SELECT 
+                c.*,
+                CASE 
+                    WHEN c.user1_id = $1 THEN c.user2_id
+                    ELSE c.user1_id
+                END as other_user_id,
+                u.username as other_username,
+                u.name as other_name,
+                u.secondname as other_secondname,
+                (
+                    SELECT message 
+                    FROM messages 
+                    WHERE chat_id = c.id 
+                    AND is_deleted_for_sender = false 
+                    AND is_deleted_for_receiver = false
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ) as last_message,
+                (
+                    SELECT created_at 
+                    FROM messages 
+                    WHERE chat_id = c.id 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ) as last_message_time,
+                (
+                    SELECT COUNT(*) 
+                    FROM messages 
+                    WHERE chat_id = c.id 
+                    AND is_read = false 
+                    AND sender_id != $1
+                    AND is_deleted_for_receiver = false
+                ) as unread_count
+            FROM chats c
+            JOIN users u ON u.id = (
+                CASE 
+                    WHEN c.user1_id = $1 THEN c.user2_id
+                    ELSE c.user1_id
+                END
+            )
+            WHERE (c.user1_id = $1 OR c.user2_id = $1)
+            AND (
+                ($1 = c.user1_id AND c.deleted_by_user1 = false) OR
+                ($1 = c.user2_id AND c.deleted_by_user2 = false)
+            )
+            ORDER BY last_message_time DESC NULLS LAST
+        `,
+            [userId]
+        );
+
+        res.json({ chats: result.rows });
+    } catch (error) {
+        console.error("Ошибка получения чатов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Получить или создать чат с пользователем
+app.post("/chats", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { otherUserId } = req.body;
+
+        if (userId === otherUserId) {
+            return res.status(400).json({ error: "Нельзя создать чат с самим собой" });
+        }
+
+        const userCheck = await pool.query("SELECT id FROM users WHERE id = $1", [otherUserId]);
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Пользователь не найден" });
+        }
+
+        let result = await pool.query(
+            `
+            SELECT * FROM chats 
+            WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
+        `,
+            [userId, otherUserId]
+        );
+
+        if (result.rows.length === 0) {
+            result = await pool.query("INSERT INTO chats (user1_id, user2_id) VALUES ($1, $2) RETURNING *", [userId, otherUserId]);
+        } else {
+            const chat = result.rows[0];
+            if (chat.user1_id === userId && chat.deleted_by_user1) {
+                await pool.query("UPDATE chats SET deleted_by_user1 = false WHERE id = $1", [chat.id]);
+            } else if (chat.user2_id === userId && chat.deleted_by_user2) {
+                await pool.query("UPDATE chats SET deleted_by_user2 = false WHERE id = $1", [chat.id]);
+            }
+        }
+
+        res.json({ chat: result.rows[0] });
+    } catch (error) {
+        console.error("Ошибка создания чата:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Удалить чат
+app.delete("/chats/:id", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const chatId = parseInt(req.params.id);
+        const { forBoth } = req.query;
+
+        if (forBoth === "true") {
+            await pool.query("DELETE FROM chats WHERE id = $1", [chatId]);
+        } else {
+            const chat = await pool.query("SELECT * FROM chats WHERE id = $1", [chatId]);
+            if (chat.rows.length === 0) {
+                return res.status(404).json({ error: "Чат не найден" });
+            }
+
+            if (chat.rows[0].user1_id === userId) {
+                await pool.query("UPDATE chats SET deleted_by_user1 = true WHERE id = $1", [chatId]);
+            } else {
+                await pool.query("UPDATE chats SET deleted_by_user2 = true WHERE id = $1", [chatId]);
+            }
+        }
+
+        res.json({ message: "Чат удален" });
+    } catch (error) {
+        console.error("Ошибка удаления чата:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Получить сообщения чата
+app.get("/chats/:id/messages", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const chatId = parseInt(req.params.id);
+
+        const result = await pool.query(
+            `
+            SELECT 
+                m.*,
+                u.username as sender_name
+            FROM messages m
+            LEFT JOIN users u ON m.sender_id = u.id
+            WHERE m.chat_id = $1
+            AND (
+                (m.sender_id = $2 AND m.is_deleted_for_sender = false) OR
+                (m.sender_id != $2 AND m.is_deleted_for_receiver = false)
+            )
+            ORDER BY m.created_at ASC
+        `,
+            [chatId, userId]
+        );
+
+        res.json({ messages: result.rows });
+    } catch (error) {
+        console.error("Ошибка получения сообщений:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Удалить сообщение
+app.delete("/messages/:id", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const messageId = parseInt(req.params.id);
+        const { forBoth } = req.query;
+
+        const message = await pool.query("SELECT * FROM messages WHERE id = $1", [messageId]);
+        if (message.rows.length === 0) {
+            return res.status(404).json({ error: "Сообщение не найдено" });
+        }
+
+        const msg = message.rows[0];
+
+        if (msg.sender_id !== userId) {
+            return res.status(403).json({ error: "Нельзя удалить чужое сообщение" });
+        }
+
+        if (forBoth === "true") {
+            await pool.query("DELETE FROM messages WHERE id = $1", [messageId]);
+        } else {
+            await pool.query("UPDATE messages SET is_deleted_for_sender = true WHERE id = $1", [messageId]);
+        }
+
+        res.json({ message: "Сообщение удалено" });
+    } catch (error) {
+        console.error("Ошибка удаления сообщения:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Редактировать сообщение
+app.put("/messages/:id", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const messageId = parseInt(req.params.id);
+        const { message } = req.body;
+
+        const msgCheck = await pool.query("SELECT * FROM messages WHERE id = $1 AND sender_id = $2", [messageId, userId]);
+
+        if (msgCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Сообщение не найдено" });
+        }
+
+        const result = await pool.query("UPDATE messages SET message = $1, edited_at = NOW() WHERE id = $2 RETURNING *", [message, messageId]);
+
+        res.json({ message: result.rows[0] });
+    } catch (error) {
+        console.error("Ошибка редактирования сообщения:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Поиск пользователей для чата
+app.get("/users/search", checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { q } = req.query;
+
+        if (!q || q.length < 2) {
+            return res.json({ users: [] });
+        }
+
+        const result = await pool.query(
+            `
+            SELECT id, username, name, secondname
+            FROM users
+            WHERE id != $1
+            AND (
+                username ILIKE $2 OR 
+                name ILIKE $2 OR 
+                secondname ILIKE $2
+            )
+            LIMIT 20
+        `,
+            [userId, `%${q}%`]
+        );
+
+        res.json({ users: result.rows });
+    } catch (error) {
+        console.error("Ошибка поиска пользователей:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// =========== WEBSOCKET СЕРВЕР ===========
+const http = require("http");
+const socketIo = require("socket.io");
+
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: "http://localhost:5173",
+        credentials: true
+    }
+});
+
+// Хранилище активных пользователей
+const activeUsers = new Map();
+const userSockets = new Map();
+
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+        return next(new Error("Authentication error"));
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        socket.userId = decoded.id;
+        socket.userName = decoded.username;
+        next();
+    } catch (err) {
+        next(new Error("Authentication error"));
+    }
+});
+
+io.on("connection", (socket) => {
+    console.log(`User ${socket.userId} (${socket.userName}) connected`);
+    activeUsers.set(socket.userId, socket.id);
+    userSockets.set(socket.userId, socket);
+
+    io.emit("active_users", Array.from(activeUsers.keys()));
+
+    socket.on("join_chat", (chatId) => {
+        socket.join(`chat_${chatId}`);
+        console.log(`User ${socket.userId} joined chat ${chatId}`);
+    });
+
+    socket.on("leave_chat", (chatId) => {
+        socket.leave(`chat_${chatId}`);
+    });
+
+    socket.on("send_message", async (data) => {
+        try {
+            const { chatId, message, imageUrl, fileUrl, fileName, fileSize } = data;
+
+            const result = await pool.query(
+                `INSERT INTO messages (chat_id, sender_id, message, image_url, file_url, file_name, file_size) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7) 
+                 RETURNING *`,
+                [chatId, socket.userId, message, imageUrl, fileUrl, fileName, fileSize]
+            );
+
+            const newMessage = result.rows[0];
+
+            await pool.query("UPDATE chats SET updated_at = NOW() WHERE id = $1", [chatId]);
+
+            io.to(`chat_${chatId}`).emit("new_message", {
+                ...newMessage,
+                sender_id: socket.userId,
+                sender_name: socket.userName
+            });
+        } catch (error) {
+            console.error("Ошибка отправки сообщения:", error);
+            socket.emit("error", { message: "Ошибка отправки сообщения" });
+        }
+    });
+
+    // Отметка о прочтении
+    socket.on("mark_read", async (data) => {
+        try {
+            const { chatId, messageIds } = data;
+
+            await pool.query(
+                `UPDATE messages 
+                 SET is_read = TRUE, read_at = NOW() 
+                 WHERE id = ANY($1::int[]) AND chat_id = $2 AND sender_id != $3`,
+                [messageIds, chatId, socket.userId]
+            );
+
+            socket.to(`chat_${chatId}`).emit("messages_read", { messageIds, readerId: socket.userId });
+        } catch (error) {
+            console.error("Ошибка отметки о прочтении:", error);
+        }
+    });
+
+    // Редактирование сообщения
+    socket.on("edit_message", async (data) => {
+        try {
+            const { messageId, message } = data;
+
+            const result = await pool.query("UPDATE messages SET message = $1, edited_at = NOW() WHERE id = $2 AND sender_id = $3 RETURNING *", [message, messageId, socket.userId]);
+
+            if (result.rows.length > 0) {
+                const updatedMessage = result.rows[0];
+                io.to(`chat_${updatedMessage.chat_id}`).emit("message_edited", {
+                    id: messageId,
+                    message: message,
+                    edited_at: updatedMessage.edited_at
+                });
+            }
+        } catch (error) {
+            console.error("Ошибка редактирования сообщения:", error);
+        }
+    });
+
+    // Удаление сообщения
+    socket.on("delete_message", async (data) => {
+        try {
+            const { messageId, forBoth, chatId } = data;
+
+            if (forBoth) {
+                await pool.query("DELETE FROM messages WHERE id = $1 AND sender_id = $2", [messageId, socket.userId]);
+                io.to(`chat_${chatId}`).emit("message_deleted", { messageId, forBoth: true });
+            } else {
+                await pool.query("UPDATE messages SET is_deleted_for_sender = true WHERE id = $1 AND sender_id = $2", [messageId, socket.userId]);
+                socket.emit("message_deleted", { messageId, forBoth: false });
+            }
+        } catch (error) {
+            console.error("Ошибка удаления сообщения:", error);
+        }
+    });
+
+    socket.on("disconnect", () => {
+        console.log(`User ${socket.userId} disconnected`);
+        activeUsers.delete(socket.userId);
+        userSockets.delete(socket.userId);
+        io.emit("active_users", Array.from(activeUsers.keys()));
+    });
+});
+
+server.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
