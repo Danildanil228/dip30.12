@@ -1522,7 +1522,8 @@ app.post("/inventories", async (req, res) => {
             await client.query("COMMIT");
 
             // Логирование с передачей ID
-            await Logger.inventoryCreated(decoded.id, decoded.username, title, inventory.id);
+            Logger.setCurrentInventoryId(inventoryId);
+            await Logger.inventoryCreated(decoded.id, decoded.username, title, inventory.id, inventoryId);
 
             res.json({
                 message: "Инвентаризация создана",
@@ -1540,7 +1541,6 @@ app.post("/inventories", async (req, res) => {
     }
 });
 
-// Обновление инвентаризации (только admin)
 app.put("/inventories/:id", async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -1557,13 +1557,49 @@ app.put("/inventories/:id", async (req, res) => {
         const inventoryId = parseInt(req.params.id);
         const { title, responsible_person, start_date, end_date, description } = req.body;
 
-        const inventoryCheck = await pool.query("SELECT title FROM inventories WHERE id = $1", [inventoryId]);
+        // Получаем старые данные для логирования
+        const oldInventory = await pool.query("SELECT title, responsible_person, start_date, end_date, description FROM inventories WHERE id = $1", [inventoryId]);
 
-        if (inventoryCheck.rows.length === 0) {
+        if (oldInventory.rows.length === 0) {
             return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
-        const oldTitle = inventoryCheck.rows[0].title;
+        const oldData = oldInventory.rows[0];
+
+        // Форматируем даты для сравнения
+        const formatDateForCompare = (date) => {
+            if (!date) return null;
+            // Если date уже строка в формате YYYY-MM-DD, возвращаем как есть
+            if (typeof date === "string" && date.match(/^\d{4}-\d{2}-\d{2}/)) {
+                return date;
+            }
+            // Если это объект Date
+            const d = new Date(date);
+            return d.toISOString().split("T")[0];
+        };
+
+        const oldStartDate = formatDateForCompare(oldData.start_date);
+        const newStartDate = start_date ? formatDateForCompare(start_date) : null;
+        const oldEndDate = formatDateForCompare(oldData.end_date);
+        const newEndDate = end_date ? formatDateForCompare(end_date) : null;
+
+        // Формируем список изменений с человекочитаемыми датами
+        const changes = [];
+        if (title && title !== oldData.title) {
+            changes.push(`название: "${oldData.title}" → "${title}"`);
+        }
+        if (responsible_person && responsible_person !== oldData.responsible_person) {
+            changes.push("ответственный изменен");
+        }
+        if (start_date && oldStartDate !== newStartDate) {
+            changes.push(`дата начала: ${oldStartDate} → ${newStartDate}`);
+        }
+        if (end_date && oldEndDate !== newEndDate) {
+            changes.push(`дата окончания: ${oldEndDate} → ${newEndDate}`);
+        }
+        if (description !== undefined && description !== oldData.description) {
+            changes.push("описание изменено");
+        }
 
         const result = await pool.query(
             `UPDATE inventories 
@@ -1578,8 +1614,11 @@ app.put("/inventories/:id", async (req, res) => {
             [title, responsible_person, start_date, end_date, description, inventoryId]
         );
 
-        // Логирование
-        await Logger.inventoryUpdated(decoded.id, decoded.username, oldTitle, "данные изменены");
+        // Логирование с передачей ID инвентаризации
+        if (changes.length > 0) {
+            Logger.setCurrentInventoryId(inventoryId);
+            await Logger.inventoryUpdated(decoded.id, decoded.username, oldData.title, changes.join(", "), inventoryId);
+        }
 
         res.json({
             message: "Инвентаризация обновлена",
@@ -1619,6 +1658,7 @@ app.put("/inventories/:id/start", async (req, res) => {
         await pool.query(`UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
         // Логирование с передачей ID
+        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация начата" });
@@ -1698,7 +1738,6 @@ app.put("/inventories/:id/complete", async (req, res) => {
             return res.status(400).json({ error: "Инвентаризация не в процессе" });
         }
 
-        // Проверяем, все ли товары проверены
         const checkResult = await pool.query("SELECT COUNT(*) as total, COUNT(CASE WHEN actual_quantity IS NOT NULL THEN 1 END) as checked FROM inventory_results WHERE inventory_id = $1", [inventoryId]);
 
         if (checkResult.rows[0].total !== checkResult.rows[0].checked) {
@@ -1707,7 +1746,7 @@ app.put("/inventories/:id/complete", async (req, res) => {
 
         await pool.query(`UPDATE inventories SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
-        // Логирование с передачей ID
+        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryCompleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация завершена и отправлена на проверку" });
@@ -1811,7 +1850,7 @@ app.put("/inventories/:id/cancel", async (req, res) => {
 
         await pool.query(`UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [decoded.id, inventoryId]);
 
-        // Логирование с передачей ID
+        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryCancelled(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация отменена" });
@@ -1845,7 +1884,7 @@ app.delete("/inventories/:id", async (req, res) => {
 
         await pool.query("DELETE FROM inventories WHERE id = $1", [inventoryId]);
 
-        // Логирование с передачей ID
+        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация удалена" });
@@ -2194,11 +2233,11 @@ app.get("/reports/material-movement", async (req, res) => {
 });
 
 // Отчет: Заявки
-app.get('/reports/requests', async (req, res) => {
+app.get("/reports/requests", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const { startDate, endDate, status, type, userId } = req.query;
@@ -2226,23 +2265,23 @@ app.get('/reports/requests', async (req, res) => {
             LEFT JOIN users u2 ON r.reviewed_by = u2.id
             WHERE r.created_at::date BETWEEN $1 AND $2
         `;
-        
+
         const params = [startDate, endDate];
         let paramIndex = 3;
 
-        if (status && status !== 'all') {
+        if (status && status !== "all") {
             query += ` AND r.status = $${paramIndex}`;
             params.push(status);
             paramIndex++;
         }
 
-        if (type && type !== 'all') {
+        if (type && type !== "all") {
             query += ` AND r.request_type = $${paramIndex}`;
             params.push(type);
             paramIndex++;
         }
 
-        if (userId && userId !== 'all') {
+        if (userId && userId !== "all") {
             query += ` AND r.created_by = $${paramIndex}`;
             params.push(parseInt(userId));
             paramIndex++;
@@ -2251,23 +2290,24 @@ app.get('/reports/requests', async (req, res) => {
         query += ` ORDER BY r.created_at DESC`;
 
         const result = await pool.query(query, params);
-        
+
         // Подсчет статистики
-        let pending = 0, approved = 0, rejected = 0;
-        result.rows.forEach(row => {
-            if (row.status === 'pending') pending++;
-            else if (row.status === 'approved') approved++;
-            else if (row.status === 'rejected') rejected++;
+        let pending = 0,
+            approved = 0,
+            rejected = 0;
+        result.rows.forEach((row) => {
+            if (row.status === "pending") pending++;
+            else if (row.status === "approved") approved++;
+            else if (row.status === "rejected") rejected++;
         });
 
-        res.json({ 
+        res.json({
             data: result.rows,
             summary: { pending, approved, rejected, total: result.rows.length }
         });
-
     } catch (error) {
-        console.error('Ошибка получения отчета заявок:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения отчета заявок:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
@@ -2394,17 +2434,18 @@ app.get("/reports/turnover-balance", async (req, res) => {
 });
 
 // Отчет: Активность пользователей
-app.get('/reports/user-activity', async (req, res) => {
+app.get("/reports/user-activity", async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const { startDate, endDate } = req.query;
 
         // Используем подзапросы вместо множественных JOIN, чтобы избежать дублирования
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             SELECT 
                 u.id,
                 u.username,
@@ -2440,13 +2481,14 @@ app.get('/reports/user-activity', async (req, res) => {
                 ), 0) as inventories_completed
             FROM users u
             ORDER BY requests_created DESC
-        `, [startDate, endDate]);
+        `,
+            [startDate, endDate]
+        );
 
         res.json({ data: result.rows });
-
     } catch (error) {
-        console.error('Ошибка получения активности пользователей:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения активности пользователей:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
