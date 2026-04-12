@@ -14,6 +14,7 @@ import ExportButton from "@/components/ExportButton";
 import EditMaterialDialog from "@/components/Dialog/EditMaterialDialog";
 import CreateMaterialDialog from "@/components/Dialog/CreateMaterialDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Material {
     id: number;
@@ -359,14 +360,8 @@ export default function Materials() {
 
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
-    if (loading) {
-        return (
-            <section className="mx-auto">
-                <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-                </div>
-            </section>
-        )
+        if (loading) {
+        return <LoadingSpinner />;
     }
 
     const materialColumnsForExport = [

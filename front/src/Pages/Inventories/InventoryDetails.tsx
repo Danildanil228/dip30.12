@@ -8,6 +8,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 
 interface InventoryItem {
@@ -120,12 +121,8 @@ export default function InventoryDetails() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        );
+        if (loading) {
+        return <LoadingSpinner />;
     }
 
     if (!inventory || error) {

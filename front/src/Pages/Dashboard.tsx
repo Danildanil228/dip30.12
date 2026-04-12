@@ -9,6 +9,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface MetricsData {
     total_materials: number;
@@ -59,11 +60,7 @@ export default function Dashboard() {
     };
 
     if (loading && !metrics) {
-        return (
-            <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        );
+        return <LoadingSpinner/>
     }
 
     return (

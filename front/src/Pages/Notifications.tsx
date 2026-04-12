@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Log {
     id: number;
@@ -220,14 +221,8 @@ export default function Notifications({ onVisited }: LogsProps) {
         });
     };
 
-    if (loading) {
-        return (
-            <section className="mx-auto">
-                <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-                </div>
-            </section>
-        );
+        if (loading) {
+        return <LoadingSpinner />;
     }
 
     const logColumnsForExport = [

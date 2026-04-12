@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUser } from '@/hooks/useUser';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface AdminRouteProps {
     children: React.ReactNode;
@@ -8,12 +9,8 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     const { isAdmin, loading } = useUser();
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        );
+        if (loading) {
+        return <LoadingSpinner />;
     }
     if (!isAdmin) {
         return <Navigate to="/main" replace />;

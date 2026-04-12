@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import { Badge } from "@/components/ui/badge";
 import CreateRequestDialog from "@/components/Dialog/CreateRequestDialog";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface RequestItem {
     id: number;
@@ -76,12 +77,8 @@ export default function Requests() {
         return type === 'incoming' ? 'Приход' : 'Расход';
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-10">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        );
+        if (loading) {
+        return <LoadingSpinner />;
     }
 
     return (
