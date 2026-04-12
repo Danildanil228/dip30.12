@@ -7,6 +7,7 @@ import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
 import ExportButton from "../ExportButton";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface TurnoverItem {
     id: number;
@@ -151,9 +152,7 @@ export function TurnoverBalanceReport() {
             />
 
             {loading ? (
-                <div className="flex justify-center items-center py-20">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
+                <LoadingSpinner/>
             ) : (
                 <>
                     <ExportButton
