@@ -128,3 +128,40 @@ CREATE TABLE inventory_results (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- чаты
+
+CREATE TABLE IF NOT EXISTS chats (
+    id SERIAL PRIMARY KEY,
+    user1_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user2_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_by_user1 BOOLEAN DEFAULT FALSE,
+    deleted_by_user2 BOOLEAN DEFAULT FALSE,
+    UNIQUE(user1_id, user2_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
+    sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    message TEXT,
+    image_url TEXT,
+    file_url TEXT,
+    file_name TEXT,
+    file_size BIGINT,
+    is_read BOOLEAN DEFAULT FALSE,
+    read_at TIMESTAMP,
+    is_deleted_for_sender BOOLEAN DEFAULT FALSE,
+    is_deleted_for_receiver BOOLEAN DEFAULT FALSE,
+    edited_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_chats_users ON chats(user1_id, user2_id);
+CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at);
