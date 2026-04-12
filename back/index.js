@@ -46,15 +46,22 @@ app.use(express.json());
 // Middleware для проверки авторизации
 const checkAuth = (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
+        const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
+            return res.status(401).json({ error: 'Требуется авторизация' });
         }
+
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+        
+        req.user = {
+            id: parseInt(decoded.id) || decoded.id,
+            username: decoded.username,
+            role: decoded.role
+        };
         next();
     } catch (error) {
-        return res.status(403).json({ error: "Недействительный токен" });
+        console.error('Auth error:', error);
+        return res.status(403).json({ error: 'Недействительный токен' });
     }
 };
 app.use("/backups", backupRoutes);
@@ -178,26 +185,28 @@ app.post("/registerFirst", async (req, res) => {
     }
 });
 
-app.post("/login", async (req, res) => {
+app.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
         if (!username || !password) {
-            return res.status(400).json({ error: "Заполните все поля" });
+            return res.status(400).json({ error: 'Заполните все поля' });
         }
 
-        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
 
         if (result.rows.length === 0) {
-            return res.status(401).json({ error: "Неверные данные" });
+            return res.status(401).json({ error: 'Неверные данные' });
         }
 
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).json({ error: "Неверные данные" });
+            return res.status(401).json({ error: 'Неверные данные' });
         }
+
+        console.log('User from DB:', { id: user.id, username: user.username, role: user.role }); // Лог
 
         const token = jwt.sign(
             {
@@ -208,13 +217,15 @@ app.post("/login", async (req, res) => {
                 secondname: user.secondname
             },
             JWT_SECRET,
-            { expiresIn: "8h" }
+            { expiresIn: '8h' }
         );
+
+        console.log('Generated token payload:', { id: user.id, username: user.username }); // Лог
 
         await Logger.login(user.id, user.username);
 
         res.json({
-            message: "Совершен вход",
+            message: 'Совершен вход',
             user: {
                 id: user.id,
                 username: user.username,
@@ -224,9 +235,10 @@ app.post("/login", async (req, res) => {
             },
             token: token
         });
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -2563,14 +2575,13 @@ app.get("/uploads/:filename", (req, res) => {
 });
 
 // Получить все чаты пользователя
-app.get("/chats", checkAuth, async (req, res) => {
+app.get('/chats', checkAuth, async (req, res) => {
     try {
-        const userId = req.user.id;
-
-        const result = await pool.query(
-            `
+        const userId = req.user.id; // уже число
+        
+        const result = await pool.query(`
             SELECT 
-                c.*,
+                c.id,
                 CASE 
                     WHEN c.user1_id = $1 THEN c.user2_id
                     ELSE c.user1_id
@@ -2615,14 +2626,12 @@ app.get("/chats", checkAuth, async (req, res) => {
                 ($1 = c.user2_id AND c.deleted_by_user2 = false)
             )
             ORDER BY last_message_time DESC NULLS LAST
-        `,
-            [userId]
-        );
-
+        `, [userId]);
+        
         res.json({ chats: result.rows });
     } catch (error) {
-        console.error("Ошибка получения чатов:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        console.error('Ошибка получения чатов:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -2780,34 +2789,64 @@ app.put("/messages/:id", checkAuth, async (req, res) => {
 });
 
 // Поиск пользователей для чата
-app.get("/users/search", checkAuth, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { q } = req.query;
 
+// Поиск пользователей для чата - ТЕСТОВАЯ ВЕРСИЯ
+app.get('/users/search', async (req, res) => {
+    console.log('================== TEST ENDPOINT ==================');
+    
+    try {
+        // Получаем токен вручную
+        const token = req.headers.authorization?.split(' ')[1];
+        console.log('Token exists:', token ? 'YES' : 'NO');
+        
+        if (!token) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+        
+        // Декодируем токен
+        const decoded = jwt.verify(token, JWT_SECRET);
+        console.log('Decoded id:', decoded.id);
+        console.log('Decoded id type:', typeof decoded.id);
+        
+        // Получаем ID пользователя
+        let userId = decoded.id;
+        
+        // Если ID пришел как строка - преобразуем
+        if (typeof userId === 'string') {
+            userId = parseInt(userId);
+        }
+        
+        console.log('Final userId:', userId, 'isNaN:', isNaN(userId));
+        
+        if (isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid user ID' });
+        }
+        
+        const { q } = req.query;
+        console.log('Search query:', q);
+        
         if (!q || q.length < 2) {
             return res.json({ users: [] });
         }
-
+        
+        // Простой запрос - ищем всех, кроме себя
         const result = await pool.query(
-            `
-            SELECT id, username, name, secondname
-            FROM users
-            WHERE id != $1
-            AND (
-                username ILIKE $2 OR 
-                name ILIKE $2 OR 
-                secondname ILIKE $2
-            )
-            LIMIT 20
-        `,
+            `SELECT id, username, name, secondname 
+             FROM users 
+             WHERE id != $1 
+             AND (username ILIKE $2 OR name ILIKE $2 OR secondname ILIKE $2)
+             LIMIT 20`,
             [userId, `%${q}%`]
         );
-
+        
+        console.log('Found users count:', result.rows.length);
+        console.log('==================================================');
+        
         res.json({ users: result.rows });
+        
     } catch (error) {
-        console.error("Ошибка поиска пользователей:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        console.error('ERROR in search:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 

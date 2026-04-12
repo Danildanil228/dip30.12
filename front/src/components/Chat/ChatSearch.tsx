@@ -36,6 +36,7 @@ export function ChatSearch({ onSelectUser }: ChatSearchProps) {
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
+                console.log('Token being sent:', token);
                 const response = await axios.get(`${API_BASE_URL}/users/search`, {
                     headers: { Authorization: `Bearer ${token}` },
                     params: { q: searchTerm }
