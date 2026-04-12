@@ -139,7 +139,6 @@ class Logger {
         await this.log(userId, "inventory_updated", "Изменение инвентаризации", `[user:${userId}:${username}] изменил ${inventoryLink} "${title}": ${changes}`);
     }
 
-    // Также обновите остальные методы инвентаризации, чтобы они передавали ID
     static async inventoryCreated(userId, username, title, inventoryId) {
         await this.log(userId, "inventory_created", "Создание инвентаризации", `[user:${userId}:${username}] создал [inventory:${inventoryId}] "${title}"`);
     }
