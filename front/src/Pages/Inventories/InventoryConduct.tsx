@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Send, Package, User, Calendar, AlertCircle, FileText }
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface InventoryItem {
     id: number;
@@ -201,12 +202,8 @@ export default function InventoryConduct() {
         return { checked, total, percent: total === 0 ? 0 : Math.round((checked / total) * 100) };
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        );
+        if (loading) {
+        return <LoadingSpinner />;
     }
 
     if (error && !inventory) {

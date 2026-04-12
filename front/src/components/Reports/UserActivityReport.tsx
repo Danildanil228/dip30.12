@@ -9,6 +9,7 @@ import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ExportButton from "../ExportButton";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface UserActivity {
     id: number;
@@ -160,9 +161,7 @@ export function UserActivityReport() {
             <ReportFilters startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} onApply={handleApply} onReset={handleReset} loading={loading} />
 
             {loading ? (
-                <div className="flex justify-center items-center py-20">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
+                <LoadingSpinner/>
             ) : (
                 <>
                     <ExportButton

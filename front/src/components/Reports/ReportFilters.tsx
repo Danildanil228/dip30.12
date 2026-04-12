@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Download, Printer, RotateCcw, Search } from "lucide-react";
 import ExportButton from "../ExportButton";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface FilterOption {
     value: string;
@@ -81,6 +82,8 @@ export function ReportFilters({
                     <Label className="text-sm mb-2 block">Период</Label>
                     <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={onStartDateChange} onEndDateChange={onEndDateChange} />
                 </div>
+
+                
 
                 {categories.length > 0 && onCategoryChange && (
                     <div>
@@ -188,6 +191,7 @@ export function ReportFilters({
                     </div>
                 )}
             </div>
+            
 
             <div className="flex flex-wrap justify-between gap-2">
                 <div className="flex gap-2">
