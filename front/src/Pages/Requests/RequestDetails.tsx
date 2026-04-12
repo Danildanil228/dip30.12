@@ -114,7 +114,6 @@ export default function RequestDetails() {
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            alert("Заявка отклонена");
             setShowRejectDialog(false);
             setRejectionReason("");
             fetchRequestDetails();

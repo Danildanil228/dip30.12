@@ -258,7 +258,6 @@ export default function Notifications({ onVisited }: LogsProps) {
         }
     ];
 
-    // Группировка фильтров для удобства
     const filterGroups = [
         {
             title: "Пользователи",
@@ -346,21 +345,23 @@ export default function Notifications({ onVisited }: LogsProps) {
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 text-base!">
                 {filteredLogs.map((log) => (
                     <div key={log.id} className={`p-4 border rounded-lg`}>
                         <div className="flex justify-between items-center">
-                            <div className="flex">
-                                <h3 className="text-xs">{log.title}</h3>
-                            </div>
-                            <div className="flex items-center gap-10">
-                                <span className="text-sm">{new Date(log.created_at).toLocaleString()}</span>
-                                <button onClick={() => handleDeleteLog(log.id)}>
-                                    <img src="/trash.png" className="icon w-5 items-center" alt="" />
-                                </button>
+                            <div className="flex justify-between w-full gap-10 items-center">
+                                <div className="sm:flex grid items-center sm:justify-between sm:w-full">
+                                    <h3 className="text-xs">{log.title}</h3>
+                                    <span className="text-sm">{new Date(log.created_at).toLocaleString()}</span>
+                                </div>
+                                <div>
+                                    <button onClick={() => handleDeleteLog(log.id)}>
+                                        <img src="/trash.png" className="icon w-5! items-center" alt="" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div className="mt-2 text-xl flex flex-wrap items-center">{parseMessageWithLinks(log.message)}</div>
+                        <div className="mt-2 flex flex-wrap items-center text-base sm:text-lg">{parseMessageWithLinks(log.message)}</div>
                         {log.user_name && (
                             <p className="text-sm mt-1">
                                 Пользователь: {log.name} {log.secondname} ({log.user_name})
