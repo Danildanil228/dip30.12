@@ -260,7 +260,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 )}
             </div>
 
-            <div className="p-4 border-t">
+            <div className="p-4 border-t mb-18 sm:mb-0">
                 <div className="flex gap-2 items-end">
                     <div className="flex gap-1">
                         <input type="file" ref={imageInputRef} hidden accept="image/*" onChange={(e) => handleFileSelect(e, "image")} />

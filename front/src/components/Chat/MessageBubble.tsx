@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Download, Edit2, Trash2, CheckCheck, Check } from "lucide-react";
+import { Download, Edit2, Trash2, CheckCheck, Check, MoreHorizontal } from "lucide-react";
 import { API_BASE_URL } from "@/components/api";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -46,11 +46,11 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
             <div className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-3`}>
                 <div className={`max-w-[70%] ${isOwn ? "order-2" : "order-1"}`}>
                     {!isOwn && <div className="text-xs text-muted-foreground mb-1 ml-2">{message.sender_name}</div>}
-                    <div className={`relative group`}>
+                    <div className="flex items-end gap-1">
                         <div className={`rounded-lg px-3 py-2 ${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                             {isEditing ? (
                                 <div className="flex gap-2">
-                                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 px-2 py-1 rounded  bg-background text-foreground" autoFocus />
+                                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 px-2 py-1 rounded bg-background text-foreground" autoFocus />
                                     <Button size="sm" onClick={handleSaveEdit}>
                                         ✓
                                     </Button>
@@ -88,11 +88,12 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                             </div>
                         </div>
 
+                        {/* Кнопка меню - всегда видна для своих сообщений */}
                         {isOwn && !isEditing && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="absolute -top-2 -right-8 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0">
-                                        ⋮
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                        <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -125,9 +126,7 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete }: MessageBubbl
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{deleteDialog.forBoth ? "Удалить сообщение для всех?" : "Удалить сообщение?"}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {deleteDialog.forBoth ? "Сообщение будет удалено у всех участников чата. Восстановить будет невозможно." : "Сообщение будет удалено только у вас. Собеседник сможет его видеть."}
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>{deleteDialog.forBoth ? "Сообщение будет удалено у всех участников чата. Восстановить будет невозможно." : "Сообщение будет удалено только у вас. Собеседник сможет его видеть."}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>

@@ -18,7 +18,7 @@ const pool = new Pool({
     password: "1234",
     host: "localhost",
     port: "5432",
-    database: "materialHousedb"
+    database: "materialHousedb",
 });
 app.set("pool", pool);
 
@@ -38,17 +38,17 @@ app.use(
         },
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"]
-    })
+        allowedHeaders: ["Content-Type", "Authorization"],
+    }),
 );
 
 app.use(express.json());
 // Middleware для проверки авторизации
 const checkAuth = (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(" ")[1];
         if (!token) {
-            return res.status(401).json({ error: 'Требуется авторизация' });
+            return res.status(401).json({ error: "Требуется авторизация" });
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -56,12 +56,12 @@ const checkAuth = (req, res, next) => {
         req.user = {
             id: parseInt(decoded.id) || decoded.id,
             username: decoded.username,
-            role: decoded.role
+            role: decoded.role,
         };
         next();
     } catch (error) {
-        console.error('Auth error:', error);
-        return res.status(403).json({ error: 'Недействительный токен' });
+        console.error("Auth error:", error);
+        return res.status(403).json({ error: "Недействительный токен" });
     }
 };
 app.use("/backups", backupRoutes);
@@ -99,7 +99,7 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
+    },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -117,7 +117,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-    fileFilter: fileFilter
+    fileFilter: fileFilter,
 });
 //=================
 
@@ -149,10 +149,16 @@ app.post("/registerFirst", async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const result = await pool.query(
-            "INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday",
-            [username, hashedPassword, "admin", "admin", "admin", "", "", null]
-        );
+        const result = await pool.query("INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday", [
+            username,
+            hashedPassword,
+            "admin",
+            "admin",
+            "admin",
+            "",
+            "",
+            null,
+        ]);
 
         const user = result.rows[0];
 
@@ -162,10 +168,10 @@ app.post("/registerFirst", async (req, res) => {
                 username: user.username,
                 role: user.role,
                 name: user.name,
-                secondname: user.secondname
+                secondname: user.secondname,
             },
             JWT_SECRET,
-            { expiresIn: "8h" }
+            { expiresIn: "8h" },
         );
 
         res.json({
@@ -175,9 +181,9 @@ app.post("/registerFirst", async (req, res) => {
                 username: user.username,
                 role: user.role,
                 name: user.name,
-                secondname: user.secondname
+                secondname: user.secondname,
             },
-            token: token
+            token: token,
         });
     } catch (error) {
         console.error(error);
@@ -185,28 +191,28 @@ app.post("/registerFirst", async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
     try {
         const { username, password } = req.body;
 
         if (!username || !password) {
-            return res.status(400).json({ error: 'Заполните все поля' });
+            return res.status(400).json({ error: "Заполните все поля" });
         }
 
-        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
 
         if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Неверные данные' });
+            return res.status(401).json({ error: "Неверные данные" });
         }
 
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).json({ error: 'Неверные данные' });
+            return res.status(401).json({ error: "Неверные данные" });
         }
 
-        console.log('User from DB:', { id: user.id, username: user.username, role: user.role }); // Лог
+        console.log("User from DB:", { id: user.id, username: user.username, role: user.role }); // Лог
 
         const token = jwt.sign(
             {
@@ -214,31 +220,30 @@ app.post('/login', async (req, res) => {
                 username: user.username,
                 role: user.role,
                 name: user.name,
-                secondname: user.secondname
+                secondname: user.secondname,
             },
             JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: "8h" },
         );
 
-        console.log('Generated token payload:', { id: user.id, username: user.username }); // Лог
+        console.log("Generated token payload:", { id: user.id, username: user.username }); // Лог
 
         await Logger.login(user.id, user.username);
 
         res.json({
-            message: 'Совершен вход',
+            message: "Совершен вход",
             user: {
                 id: user.id,
                 username: user.username,
                 role: user.role,
                 name: user.name,
-                secondname: user.secondname
+                secondname: user.secondname,
             },
-            token: token
+            token: token,
         });
-
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
@@ -284,7 +289,7 @@ app.post("/createUser", checkAdmin, async (req, res) => {
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
      RETURNING id, username, role, name, secondname, email, phone, birthday`,
-            [username, hashedPassword, role, name, secondname, "", "", null]
+            [username, hashedPassword, role, name, secondname, "", "", null],
         );
 
         const user = result.rows[0];
@@ -300,7 +305,7 @@ app.post("/createUser", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Пользователь успешно создан",
-            user: user
+            user: user,
         });
     } catch (error) {
         console.error("Ошибка при создании пользователя:", error);
@@ -341,34 +346,35 @@ app.get("/users", async (req, res) => {
     }
 });
 
-
 //Для чатов
-app.get('/users/search', checkAuth, async (req, res) => {
+app.get("/users/search", checkAuth, async (req, res) => {
     try {
         const userId = req.user.id;
-        console.log('User ID from token:', userId);
+        console.log("User ID from token:", userId);
 
         const { q } = req.query;
-        console.log('Search query:', q);
+        console.log("Search query:", q);
 
         if (!q || q.length < 2) {
             return res.json({ users: [] });
         }
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             SELECT id, username, name, secondname
             FROM users
             WHERE id != $1
             AND (username ILIKE $2 OR name ILIKE $2 OR secondname ILIKE $2)
             LIMIT 20
-        `, [userId, `%${q}%`]);
+        `,
+            [userId, `%${q}%`],
+        );
 
-        console.log('Found users:', result.rows.length);
+        console.log("Found users:", result.rows.length);
         res.json({ users: result.rows });
-
     } catch (error) {
-        console.error('ERROR in search:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("ERROR in search:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
@@ -392,7 +398,7 @@ app.delete("/users/:id", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Пользователь удален",
-            deletedUser: result.rows[0]
+            deletedUser: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при удалении пользователя:", error);
@@ -461,7 +467,7 @@ app.get("/users/:id", async (req, res) => {
             `SELECT id, username, role, name, secondname, email, phone, 
                     birthday, created_at, updated_at 
              FROM users WHERE id = $1`,
-            [userId]
+            [userId],
         );
 
         if (result.rows.length === 0) {
@@ -508,7 +514,7 @@ app.put("/users/:id", async (req, res) => {
             email: email || oldUser.email,
             phone: phone || oldUser.phone,
             birthday: birthday || oldUser.birthday,
-            updated_at: new Date()
+            updated_at: new Date(),
         };
 
         if (isAdmin) {
@@ -575,7 +581,7 @@ app.put("/users/:id", async (req, res) => {
             if (normalizedNewValue !== normalizedOldValue && key !== "updated_at") {
                 changedFields[key] = {
                     old: normalizedOldValue,
-                    new: normalizedNewValue
+                    new: normalizedNewValue,
                 };
             }
         });
@@ -590,7 +596,7 @@ app.put("/users/:id", async (req, res) => {
 
         res.json({
             message: "Данные обновлены",
-            user: updatedUser
+            user: updatedUser,
         });
     } catch (error) {
         console.error("Ошибка при обновлении пользователя:", error);
@@ -701,7 +707,7 @@ app.post("/categories", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Категория создана",
-            category: result.rows[0]
+            category: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при создании категории:", error);
@@ -744,7 +750,7 @@ app.put("/categories/:id", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Категория обновлена",
-            category: result.rows[0]
+            category: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при обновлении категории:", error);
@@ -766,7 +772,7 @@ app.delete("/categories/:id", checkAdmin, async (req, res) => {
         if (materialCount > 0) {
             return res.status(400).json({
                 error: `Невозможно удалить категорию: в ней находится ${materialCount} материал(ов)`,
-                materialCount: materialCount
+                materialCount: materialCount,
             });
         }
 
@@ -784,7 +790,7 @@ app.delete("/categories/:id", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Категория удалена",
-            deletedCategory: result.rows[0]
+            deletedCategory: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при удалении категории:", error);
@@ -830,7 +836,7 @@ app.get("/materials", async (req, res) => {
 
         res.json({
             materials: result.rows,
-            stats: statsResult.rows[0]
+            stats: statsResult.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при получении материалов:", error);
@@ -854,7 +860,7 @@ app.get("/materials/:id", async (req, res) => {
             LEFT JOIN users uu ON m.updated_by = uu.id 
             WHERE m.id = $1
         `,
-            [materialId]
+            [materialId],
         );
 
         if (result.rows.length === 0) {
@@ -910,14 +916,14 @@ app.post("/materials", checkAdmin, async (req, res) => {
             `INSERT INTO materials (name, code, description, unit, category_id, quantity, created_by) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [name, code, description || null, unit, category_id || null, quantity || 0, decoded.id]
+            [name, code, description || null, unit, category_id || null, quantity || 0, decoded.id],
         );
 
         await Logger.materialCreated(decoded.id, decoded.username, name);
 
         res.json({
             message: "Материал создан",
-            material: result.rows[0]
+            material: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при создании материала:", error);
@@ -972,7 +978,7 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
                  category_id = $5, updated_by = $6, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $7 
              RETURNING *`,
-            [name, code || null, description || null, unit, category_id || null, decoded.id, materialId]
+            [name, code || null, description || null, unit, category_id || null, decoded.id, materialId],
         );
 
         const changes = [];
@@ -987,7 +993,7 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Материал обновлен",
-            material: result.rows[0]
+            material: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при обновлении материала:", error);
@@ -1009,7 +1015,7 @@ app.delete("/materials/:id", checkAdmin, async (req, res) => {
 
         if (material.quantity > 0) {
             return res.status(400).json({
-                error: `Невозможно удалить материал: на складе осталось ${material.quantity} ед.`
+                error: `Невозможно удалить материал: на складе осталось ${material.quantity} ед.`,
             });
         }
 
@@ -1019,7 +1025,7 @@ app.delete("/materials/:id", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Материал удален",
-            deletedMaterial: result.rows[0]
+            deletedMaterial: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при удалении материала:", error);
@@ -1100,7 +1106,7 @@ app.get("/requests/:id", async (req, res) => {
              LEFT JOIN users u1 ON r.created_by = u1.id
              LEFT JOIN users u2 ON r.reviewed_by = u2.id
              WHERE r.id = $1`,
-            [requestId]
+            [requestId],
         );
 
         if (requestResult.rows.length === 0) {
@@ -1123,12 +1129,12 @@ app.get("/requests/:id", async (req, res) => {
              LEFT JOIN materials m ON ri.material_id = m.id
              WHERE ri.request_id = $1
              ORDER BY ri.id`,
-            [requestId]
+            [requestId],
         );
 
         res.json({
             request: request,
-            items: itemsResult.rows
+            items: itemsResult.rows,
         });
     } catch (error) {
         console.error("Ошибка получения заявки:", error);
@@ -1178,7 +1184,7 @@ app.post("/requests", async (req, res) => {
                 const material = materialsMap.get(item.material_id);
                 if (material.quantity < item.quantity) {
                     return res.status(400).json({
-                        error: `Недостаточно товара "${material.name}". Остаток: ${material.quantity}, запрошено: ${item.quantity}`
+                        error: `Недостаточно товара "${material.name}". Остаток: ${material.quantity}, запрошено: ${item.quantity}`,
                     });
                 }
             }
@@ -1198,7 +1204,7 @@ app.post("/requests", async (req, res) => {
                 `INSERT INTO material_requests (title, request_type, status, created_by, notes, is_public, reviewed_by, reviewed_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                  RETURNING *`,
-                [title, request_type, status, decoded.id, notes || null, publicStatus, isApproved ? decoded.id : null, isApproved ? new Date() : null]
+                [title, request_type, status, decoded.id, notes || null, publicStatus, isApproved ? decoded.id : null, isApproved ? new Date() : null],
             );
 
             const newRequest = requestResult.rows[0];
@@ -1210,7 +1216,7 @@ app.post("/requests", async (req, res) => {
                 await client.query(
                     `INSERT INTO material_requests_items (request_id, material_id, quantity, current_quantity_at_request)
                      VALUES ($1, $2, $3, $4)`,
-                    [newRequest.id, item.material_id, item.quantity, material.quantity]
+                    [newRequest.id, item.material_id, item.quantity, material.quantity],
                 );
             }
 
@@ -1239,13 +1245,13 @@ app.post("/requests", async (req, res) => {
                 res.json({
                     message: "Заявка создана и подтверждена",
                     request: newRequest,
-                    autoApproved: true
+                    autoApproved: true,
                 });
             } else {
                 res.json({
                     message: "Заявка создана",
                     request: newRequest,
-                    autoApproved: false
+                    autoApproved: false,
                 });
             }
         } catch (err) {
@@ -1283,7 +1289,7 @@ app.put("/requests/:id/approve", async (req, res) => {
              LEFT JOIN material_requests_items ri ON r.id = ri.request_id
              WHERE r.id = $1 AND r.status = 'pending'
              GROUP BY r.id`,
-            [requestId]
+            [requestId],
         );
 
         if (requestResult.rows.length === 0) {
@@ -1299,7 +1305,7 @@ app.put("/requests/:id/approve", async (req, res) => {
 
                 if (currentMaterial.rows[0].quantity < item.quantity) {
                     return res.status(400).json({
-                        error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`
+                        error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`,
                     });
                 }
             }
@@ -1316,7 +1322,7 @@ app.put("/requests/:id/approve", async (req, res) => {
                 `UPDATE material_requests 
                  SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
                  WHERE id = $2`,
-                [decoded.id, requestId]
+                [decoded.id, requestId],
             );
 
             for (const item of items) {
@@ -1378,7 +1384,7 @@ app.put("/requests/:id/reject", async (req, res) => {
             `UPDATE material_requests 
              SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
              WHERE id = $3`,
-            [decoded.id, rejection_reason, requestId]
+            [decoded.id, rejection_reason, requestId],
         );
 
         await Logger.requestRejected(decoded.id, decoded.username, request.title, request.request_type, rejection_reason);
@@ -1459,7 +1465,7 @@ app.get("/inventories/:id", async (req, res) => {
              LEFT JOIN users u2 ON i.responsible_person = u2.id
              LEFT JOIN users u3 ON i.approved_by = u3.id
              WHERE i.id = $1`,
-            [inventoryId]
+            [inventoryId],
         );
 
         if (inventoryResult.rows.length === 0) {
@@ -1478,7 +1484,7 @@ app.get("/inventories/:id", async (req, res) => {
              FROM inventory_categories ic
              LEFT JOIN materialcategories c ON ic.category_id = c.id
              WHERE ic.inventory_id = $1`,
-            [inventoryId]
+            [inventoryId],
         );
 
         const materialsResult = await pool.query(
@@ -1486,7 +1492,7 @@ app.get("/inventories/:id", async (req, res) => {
              FROM inventory_materials im
              LEFT JOIN materials m ON im.material_id = m.id
              WHERE im.inventory_id = $1`,
-            [inventoryId]
+            [inventoryId],
         );
 
         const resultsResult = await pool.query(
@@ -1495,14 +1501,14 @@ app.get("/inventories/:id", async (req, res) => {
              LEFT JOIN materials m ON ir.material_id = m.id
              WHERE ir.inventory_id = $1
              ORDER BY m.name`,
-            [inventoryId]
+            [inventoryId],
         );
 
         res.json({
             inventory: inventory,
             categories: categoriesResult.rows,
             selected_materials: materialsResult.rows,
-            results: resultsResult.rows
+            results: resultsResult.rows,
         });
     } catch (error) {
         console.error("Ошибка получения инвентаризации:", error);
@@ -1543,7 +1549,7 @@ app.post("/inventories", async (req, res) => {
                 `INSERT INTO inventories (title, created_by, responsible_person, start_date, end_date, description, status)
                  VALUES ($1, $2, $3, $4, $5, $6, 'draft')
                  RETURNING *`,
-                [title, decoded.id, responsible_person, start_date, end_date, description || null]
+                [title, decoded.id, responsible_person, start_date, end_date, description || null],
             );
 
             const inventory = inventoryResult.rows[0];
@@ -1584,7 +1590,7 @@ app.post("/inventories", async (req, res) => {
                 await client.query(
                     `INSERT INTO inventory_results (inventory_id, material_id, system_quantity)
                      VALUES ($1, $2, $3)`,
-                    [newInventoryId, material.id, material.quantity]
+                    [newInventoryId, material.id, material.quantity],
                 );
             }
 
@@ -1595,7 +1601,7 @@ app.post("/inventories", async (req, res) => {
 
             res.json({
                 message: "Инвентаризация создана",
-                inventory: inventory
+                inventory: inventory,
             });
         } catch (err) {
             await client.query("ROLLBACK");
@@ -1674,7 +1680,7 @@ app.put("/inventories/:id", async (req, res) => {
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $6
              RETURNING *`,
-            [title, responsible_person, start_date, end_date, description, inventoryId]
+            [title, responsible_person, start_date, end_date, description, inventoryId],
         );
 
         if (changes.length > 0) {
@@ -1684,7 +1690,7 @@ app.put("/inventories/:id", async (req, res) => {
 
         res.json({
             message: "Инвентаризация обновлена",
-            inventory: result.rows[0]
+            inventory: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка обновления инвентаризации:", error);
@@ -1760,7 +1766,7 @@ app.put("/inventories/:id/results", async (req, res) => {
                 `UPDATE inventory_results 
                  SET actual_quantity = $1, reason = $2, updated_at = CURRENT_TIMESTAMP
                  WHERE inventory_id = $3 AND material_id = $4`,
-                [result.actual_quantity, result.reason || null, inventoryId, result.material_id]
+                [result.actual_quantity, result.reason || null, inventoryId, result.material_id],
             );
         }
 
@@ -1852,7 +1858,7 @@ app.put("/inventories/:id/approve", async (req, res) => {
                  FROM inventory_results ir
                  LEFT JOIN materials m ON ir.material_id = m.id
                  WHERE ir.inventory_id = $1 AND ir.actual_quantity IS NOT NULL AND ir.actual_quantity != ir.system_quantity`,
-                [inventoryId]
+                [inventoryId],
             );
 
             for (const result of results.rows) {
@@ -1863,7 +1869,7 @@ app.put("/inventories/:id/approve", async (req, res) => {
                 `UPDATE inventories 
                  SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = $1, updated_at = CURRENT_TIMESTAMP
                  WHERE id = $2`,
-                [decoded.id, inventoryId]
+                [decoded.id, inventoryId],
             );
 
             await client.query("COMMIT");
@@ -1990,7 +1996,7 @@ app.get("/dashboard/metrics", async (req, res) => {
         const pendingRequests = {
             total: parseInt(pendingRequestsResult.rows[0].total),
             incoming: parseInt(pendingRequestsResult.rows[0].incoming),
-            outgoing: parseInt(pendingRequestsResult.rows[0].outgoing)
+            outgoing: parseInt(pendingRequestsResult.rows[0].outgoing),
         };
 
         const completedRequestsResult = await pool.query(
@@ -2000,7 +2006,7 @@ app.get("/dashboard/metrics", async (req, res) => {
             WHERE status = 'approved' 
             AND created_at::date BETWEEN $1 AND $2
         `,
-            [start, end]
+            [start, end],
         );
         const completedRequests = parseInt(completedRequestsResult.rows[0].total);
 
@@ -2016,7 +2022,7 @@ app.get("/dashboard/metrics", async (req, res) => {
             WHERE status = 'approved' 
             AND created_at::date BETWEEN $1 AND $2
         `,
-            [previousMonthStart.toISOString().split("T")[0], previousMonthEnd.toISOString().split("T")[0]]
+            [previousMonthStart.toISOString().split("T")[0], previousMonthEnd.toISOString().split("T")[0]],
         );
         const previousMonthCompleted = parseInt(previousMonthResult.rows[0].total);
 
@@ -2027,7 +2033,7 @@ app.get("/dashboard/metrics", async (req, res) => {
             total_quantity: totalQuantity,
             pending_requests: pendingRequests,
             completed_requests: completedRequests,
-            completed_change: completedChange
+            completed_change: completedChange,
         });
     } catch (error) {
         console.error("Ошибка получения метрик:", error);
@@ -2062,7 +2068,7 @@ app.get("/dashboard/movement", async (req, res) => {
             GROUP BY r.created_at::date, r.request_type
             ORDER BY date ASC
         `,
-            [startDate, endDate]
+            [startDate, endDate],
         );
 
         const dateMap = new Map();
@@ -2127,7 +2133,7 @@ app.get("/dashboard/inventory-status", async (req, res) => {
             in_progress: { name: "В процессе", count: 0, color: "#3b82f6" },
             completed: { name: "Завершены", count: 0, color: "#8b5cf6" },
             approved: { name: "Утверждены", count: 0, color: "#10b981" },
-            cancelled: { name: "Отменены", count: 0, color: "#ef4444" }
+            cancelled: { name: "Отменены", count: 0, color: "#ef4444" },
         };
 
         result.rows.forEach((row) => {
@@ -2176,7 +2182,7 @@ app.get("/dashboard/requests-status", async (req, res) => {
         const statusMap = {
             pending: { name: "На рассмотрении", count: 0, color: "#f59e0b" },
             approved: { name: "Подтверждены", count: 0, color: "#10b981" },
-            rejected: { name: "Отклонены", count: 0, color: "#ef4444" }
+            rejected: { name: "Отклонены", count: 0, color: "#ef4444" },
         };
 
         result.rows.forEach((row) => {
@@ -2269,8 +2275,8 @@ app.get("/reports/material-movement", async (req, res) => {
             summary: {
                 incoming: totalIncoming,
                 outgoing: totalOutgoing,
-                turnover: totalIncoming + totalOutgoing
-            }
+                turnover: totalIncoming + totalOutgoing,
+            },
         });
     } catch (error) {
         console.error("Ошибка получения отчета движения материалов:", error);
@@ -2348,7 +2354,7 @@ app.get("/reports/requests", async (req, res) => {
 
         res.json({
             data: result.rows,
-            summary: { pending, approved, rejected, total: result.rows.length }
+            summary: { pending, approved, rejected, total: result.rows.length },
         });
     } catch (error) {
         console.error("Ошибка получения отчета заявок:", error);
@@ -2406,7 +2412,7 @@ app.get("/reports/turnover-balance", async (req, res) => {
                 AND r.status = 'approved'
                 AND r.created_at::date < $2
             `,
-                [material.id, startDate]
+                [material.id, startDate],
             );
 
             const changeBefore = parseInt(startQuantityResult.rows[0].change_before);
@@ -2422,7 +2428,7 @@ app.get("/reports/turnover-balance", async (req, res) => {
                 AND r.request_type = 'incoming'
                 AND r.created_at::date BETWEEN $2 AND $3
             `,
-                [material.id, startDate, endDate]
+                [material.id, startDate, endDate],
             );
 
             const outgoingResult = await pool.query(
@@ -2435,7 +2441,7 @@ app.get("/reports/turnover-balance", async (req, res) => {
                 AND r.request_type = 'outgoing'
                 AND r.created_at::date BETWEEN $2 AND $3
             `,
-                [material.id, startDate, endDate]
+                [material.id, startDate, endDate],
             );
 
             const incoming = parseInt(incomingResult.rows[0].total);
@@ -2451,7 +2457,7 @@ app.get("/reports/turnover-balance", async (req, res) => {
                 opening_balance: openingBalance,
                 incoming: incoming,
                 outgoing: outgoing,
-                closing_balance: closingBalance
+                closing_balance: closingBalance,
             });
         }
 
@@ -2460,7 +2466,7 @@ app.get("/reports/turnover-balance", async (req, res) => {
             total_opening: filteredResults.reduce((sum, r) => sum + r.opening_balance, 0),
             total_incoming: filteredResults.reduce((sum, r) => sum + r.incoming, 0),
             total_outgoing: filteredResults.reduce((sum, r) => sum + r.outgoing, 0),
-            total_closing: filteredResults.reduce((sum, r) => sum + r.closing_balance, 0)
+            total_closing: filteredResults.reduce((sum, r) => sum + r.closing_balance, 0),
         };
 
         res.json({ data: filteredResults, summary });
@@ -2518,7 +2524,7 @@ app.get("/reports/user-activity", async (req, res) => {
             FROM users u
             ORDER BY requests_created DESC
         `,
-            [startDate, endDate]
+            [startDate, endDate],
         );
 
         res.json({ data: result.rows });
@@ -2588,7 +2594,7 @@ app.post("/upload", checkAuth, upload.single("file"), async (req, res) => {
         res.json({
             fileUrl: fileUrl,
             fileName: req.file.originalname,
-            fileSize: req.file.size
+            fileSize: req.file.size,
         });
     } catch (error) {
         console.error("Ошибка загрузки файла:", error);
@@ -2607,11 +2613,12 @@ app.get("/uploads/:filename", (req, res) => {
 });
 
 // Получить все чаты пользователя
-app.get('/chats', checkAuth, async (req, res) => {
+app.get("/chats", checkAuth, async (req, res) => {
     try {
         const userId = req.user.id; // уже число
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             SELECT 
                 c.id,
                 CASE 
@@ -2658,12 +2665,14 @@ app.get('/chats', checkAuth, async (req, res) => {
                 ($1 = c.user2_id AND c.deleted_by_user2 = false)
             )
             ORDER BY last_message_time DESC NULLS LAST
-        `, [userId]);
+        `,
+            [userId],
+        );
 
         res.json({ chats: result.rows });
     } catch (error) {
-        console.error('Ошибка получения чатов:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error("Ошибка получения чатов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
@@ -2687,7 +2696,7 @@ app.post("/chats", checkAuth, async (req, res) => {
             SELECT * FROM chats 
             WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
         `,
-            [userId, otherUserId]
+            [userId, otherUserId],
         );
 
         if (result.rows.length === 0) {
@@ -2757,7 +2766,7 @@ app.get("/chats/:id/messages", checkAuth, async (req, res) => {
             )
             ORDER BY m.created_at ASC
         `,
-            [chatId, userId]
+            [chatId, userId],
         );
 
         res.json({ messages: result.rows });
@@ -2820,8 +2829,6 @@ app.put("/messages/:id", checkAuth, async (req, res) => {
     }
 });
 
-
-
 // =========== WEBSOCKET СЕРВЕР ===========
 const http = require("http");
 const socketIo = require("socket.io");
@@ -2830,11 +2837,10 @@ const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
         origin: "http://localhost:5173",
-        credentials: true
-    }
+        credentials: true,
+    },
 });
 
-// Хранилище активных пользователей
 const activeUsers = new Map();
 const userSockets = new Map();
 
@@ -2871,153 +2877,157 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send_message", async (data) => {
-    try {
-        const { chatId, message, imageUrl, fileUrl, fileName, fileSize } = data;
+        try {
+            const { chatId, message, imageUrl, fileUrl, fileName, fileSize } = data;
 
-        const result = await pool.query(
-            `INSERT INTO messages (chat_id, sender_id, message, image_url, file_url, file_name, file_size) 
+            const result = await pool.query(
+                `INSERT INTO messages (chat_id, sender_id, message, image_url, file_url, file_name, file_size) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [chatId, socket.userId, message, imageUrl, fileUrl, fileName, fileSize]
-        );
+                [chatId, socket.userId, message, imageUrl, fileUrl, fileName, fileSize],
+            );
 
-        const newMessage = result.rows[0];
+            const newMessage = result.rows[0];
 
-        await pool.query("UPDATE chats SET updated_at = NOW() WHERE id = $1", [chatId]);
+            await pool.query("UPDATE chats SET updated_at = NOW() WHERE id = $1", [chatId]);
 
-        // Получаем информацию о чате
-        const chatInfo = await pool.query(`
+            const chatInfo = await pool.query(
+                `
             SELECT c.id, c.user1_id, c.user2_id
             FROM chats c
             WHERE c.id = $1
-        `, [chatId]);
+        `,
+                [chatId],
+            );
 
-        const chat = chatInfo.rows[0];
-        
-        // Получаем последнее сообщение
-        const lastMessageResult = await pool.query(`
+            const chat = chatInfo.rows[0];
+
+            const lastMessageResult = await pool.query(
+                `
             SELECT message, created_at 
             FROM messages 
             WHERE chat_id = $1 
             ORDER BY created_at DESC 
             LIMIT 1
-        `, [chatId]);
-        
-        const lastMessage = lastMessageResult.rows[0];
+        `,
+                [chatId],
+            );
 
-        // Считаем непрочитанные для user1
-        const unreadCountUser1 = await pool.query(`
+            const lastMessage = lastMessageResult.rows[0];
+            const unreadCountUser1 = await pool.query(
+                `
             SELECT COUNT(*) as count 
             FROM messages 
             WHERE chat_id = $1 
             AND is_read = false 
             AND sender_id != $2
-        `, [chatId, chat.user1_id]);
-        
-        // Считаем непрочитанные для user2
-        const unreadCountUser2 = await pool.query(`
+        `,
+                [chatId, chat.user1_id],
+            );
+
+            const unreadCountUser2 = await pool.query(
+                `
             SELECT COUNT(*) as count 
             FROM messages 
             WHERE chat_id = $1 
             AND is_read = false 
             AND sender_id != $2
-        `, [chatId, chat.user2_id]);
+        `,
+                [chatId, chat.user2_id],
+            );
 
-        // Отправляем обновление для user1
-        io.to(`user_${chat.user1_id}`).emit("chat_updated", {
-            chatId: chatId,
-            last_message: lastMessage?.message || null,
-            last_message_time: lastMessage?.created_at || null,
-            unread_count: parseInt(unreadCountUser1.rows[0].count)
-        });
-        
-        // Отправляем обновление для user2
-        io.to(`user_${chat.user2_id}`).emit("chat_updated", {
-            chatId: chatId,
-            last_message: lastMessage?.message || null,
-            last_message_time: lastMessage?.created_at || null,
-            unread_count: parseInt(unreadCountUser2.rows[0].count)
-        });
+            io.to(`user_${chat.user1_id}`).emit("chat_updated", {
+                chatId: chatId,
+                last_message: lastMessage?.message || null,
+                last_message_time: lastMessage?.created_at || null,
+                unread_count: parseInt(unreadCountUser1.rows[0].count),
+            });
 
-        // Отправляем сообщение всем в комнате чата
-        io.to(`chat_${chatId}`).emit("new_message", {
-            ...newMessage,
-            sender_id: socket.userId,
-            sender_name: socket.userName
-        });
+            io.to(`user_${chat.user2_id}`).emit("chat_updated", {
+                chatId: chatId,
+                last_message: lastMessage?.message || null,
+                last_message_time: lastMessage?.created_at || null,
+                unread_count: parseInt(unreadCountUser2.rows[0].count),
+            });
 
-    } catch (error) {
-        console.error("Ошибка отправки сообщения:", error);
-        socket.emit("error", { message: "Ошибка отправки сообщения" });
-    }
-});
+            io.to(`chat_${chatId}`).emit("new_message", {
+                ...newMessage,
+                sender_id: socket.userId,
+                sender_name: socket.userName,
+            });
+        } catch (error) {
+            console.error("Ошибка отправки сообщения:", error);
+            socket.emit("error", { message: "Ошибка отправки сообщения" });
+        }
+    });
 
     // Отметка о прочтении
-    // Отметка о прочтении
-socket.on("mark_read", async (data) => {
-    try {
-        const { chatId, messageIds } = data;
-        
-        console.log(`mark_read: user ${socket.userId} reading messages ${messageIds} in chat ${chatId}`);
-        
-        // Обновляем сообщения, которые не принадлежат текущему пользователю
-        await pool.query(
-            `UPDATE messages 
+    socket.on("mark_read", async (data) => {
+        try {
+            const { chatId, messageIds } = data;
+
+            console.log(`mark_read: user ${socket.userId} reading messages ${messageIds} in chat ${chatId}`);
+
+            await pool.query(
+                `UPDATE messages 
              SET is_read = TRUE, read_at = NOW() 
              WHERE id = ANY($1::int[]) 
              AND chat_id = $2 
              AND sender_id != $3`,
-            [messageIds, chatId, socket.userId]
-        );
-        
-        // Получаем информацию о чате
-        const chatInfo = await pool.query(`
+                [messageIds, chatId, socket.userId],
+            );
+
+            const chatInfo = await pool.query(
+                `
             SELECT c.id, c.user1_id, c.user2_id
             FROM chats c
             WHERE c.id = $1
-        `, [chatId]);
-        
-        const chat = chatInfo.rows[0];
-        
-        // Получаем обновленный счетчик непрочитанных для читающего пользователя
-        const unreadCount = await pool.query(`
+        `,
+                [chatId],
+            );
+
+            const chat = chatInfo.rows[0];
+
+            const unreadCount = await pool.query(
+                `
             SELECT COUNT(*) as count 
             FROM messages 
             WHERE chat_id = $1 
             AND is_read = false 
             AND sender_id != $2
-        `, [chatId, socket.userId]);
-        
-        // Получаем последнее сообщение
-        const lastMessageResult = await pool.query(`
+        `,
+                [chatId, socket.userId],
+            );
+
+            const lastMessageResult = await pool.query(
+                `
             SELECT message, created_at 
             FROM messages 
             WHERE chat_id = $1 
             ORDER BY created_at DESC 
             LIMIT 1
-        `, [chatId]);
-        
-        const lastMessage = lastMessageResult.rows[0];
-        
-        // Отправляем обновление чата для читающего пользователя
-        io.to(`user_${socket.userId}`).emit("chat_updated", {
-            chatId: chatId,
-            last_message: lastMessage?.message || null,
-            last_message_time: lastMessage?.created_at || null,
-            unread_count: parseInt(unreadCount.rows[0].count)
-        });
-        
-        // Отправляем подтверждение всем в комнате чата
-        io.to(`chat_${chatId}`).emit("messages_read", { 
-            messageIds: messageIds, 
-            readerId: socket.userId,
-            chatId: chatId
-        });
-        
-    } catch (error) {
-        console.error("Ошибка отметки о прочтении:", error);
-    }
-});
+        `,
+                [chatId],
+            );
+
+            const lastMessage = lastMessageResult.rows[0];
+
+            io.to(`user_${socket.userId}`).emit("chat_updated", {
+                chatId: chatId,
+                last_message: lastMessage?.message || null,
+                last_message_time: lastMessage?.created_at || null,
+                unread_count: parseInt(unreadCount.rows[0].count),
+            });
+
+            io.to(`chat_${chatId}`).emit("messages_read", {
+                messageIds: messageIds,
+                readerId: socket.userId,
+                chatId: chatId,
+            });
+        } catch (error) {
+            console.error("Ошибка отметки о прочтении:", error);
+        }
+    });
 
     // Редактирование сообщения
     socket.on("edit_message", async (data) => {
@@ -3028,10 +3038,72 @@ socket.on("mark_read", async (data) => {
 
             if (result.rows.length > 0) {
                 const updatedMessage = result.rows[0];
+
+                const chatInfo = await pool.query(
+                    `
+                SELECT c.id, c.user1_id, c.user2_id
+                FROM chats c
+                JOIN messages m ON m.chat_id = c.id
+                WHERE m.id = $1
+            `,
+                    [messageId],
+                );
+
+                const chat = chatInfo.rows[0];
+
+                const lastMessageResult = await pool.query(
+                    `
+                SELECT message, created_at 
+                FROM messages 
+                WHERE chat_id = $1 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            `,
+                    [chat.id],
+                );
+
+                const lastMessage = lastMessageResult.rows[0];
+
+                const unreadCountUser1 = await pool.query(
+                    `
+                SELECT COUNT(*) as count 
+                FROM messages 
+                WHERE chat_id = $1 
+                AND is_read = false 
+                AND sender_id != $2
+            `,
+                    [chat.id, chat.user1_id],
+                );
+
+                const unreadCountUser2 = await pool.query(
+                    `
+                SELECT COUNT(*) as count 
+                FROM messages 
+                WHERE chat_id = $1 
+                AND is_read = false 
+                AND sender_id != $2
+            `,
+                    [chat.id, chat.user2_id],
+                );
+
+                io.to(`user_${chat.user1_id}`).emit("chat_updated", {
+                    chatId: chat.id,
+                    last_message: lastMessage?.message || null,
+                    last_message_time: lastMessage?.created_at || null,
+                    unread_count: parseInt(unreadCountUser1.rows[0].count),
+                });
+
+                io.to(`user_${chat.user2_id}`).emit("chat_updated", {
+                    chatId: chat.id,
+                    last_message: lastMessage?.message || null,
+                    last_message_time: lastMessage?.created_at || null,
+                    unread_count: parseInt(unreadCountUser2.rows[0].count),
+                });
+
                 io.to(`chat_${updatedMessage.chat_id}`).emit("message_edited", {
                     id: messageId,
                     message: message,
-                    edited_at: updatedMessage.edited_at
+                    edited_at: updatedMessage.edited_at,
                 });
             }
         } catch (error) {
@@ -3044,6 +3116,17 @@ socket.on("mark_read", async (data) => {
         try {
             const { messageId, forBoth, chatId } = data;
 
+            const chatInfo = await pool.query(
+                `
+            SELECT c.id, c.user1_id, c.user2_id
+            FROM chats c
+            WHERE c.id = $1
+        `,
+                [chatId],
+            );
+
+            const chat = chatInfo.rows[0];
+
             if (forBoth) {
                 await pool.query("DELETE FROM messages WHERE id = $1 AND sender_id = $2", [messageId, socket.userId]);
                 io.to(`chat_${chatId}`).emit("message_deleted", { messageId, forBoth: true });
@@ -3051,6 +3134,59 @@ socket.on("mark_read", async (data) => {
                 await pool.query("UPDATE messages SET is_deleted_for_sender = true WHERE id = $1 AND sender_id = $2", [messageId, socket.userId]);
                 socket.emit("message_deleted", { messageId, forBoth: false });
             }
+
+            const lastMessageResult = await pool.query(
+                `
+            SELECT message, created_at 
+            FROM messages 
+            WHERE chat_id = $1 
+            AND is_deleted_for_sender = false 
+            AND is_deleted_for_receiver = false
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `,
+                [chatId],
+            );
+
+            const lastMessage = lastMessageResult.rows[0];
+
+            const unreadCountUser1 = await pool.query(
+                `
+            SELECT COUNT(*) as count 
+            FROM messages 
+            WHERE chat_id = $1 
+            AND is_read = false 
+            AND sender_id != $2
+            AND is_deleted_for_receiver = false
+        `,
+                [chatId, chat.user1_id],
+            );
+
+            const unreadCountUser2 = await pool.query(
+                `
+            SELECT COUNT(*) as count 
+            FROM messages 
+            WHERE chat_id = $1 
+            AND is_read = false 
+            AND sender_id != $2
+            AND is_deleted_for_receiver = false
+        `,
+                [chatId, chat.user2_id],
+            );
+
+            io.to(`user_${chat.user1_id}`).emit("chat_updated", {
+                chatId: chatId,
+                last_message: lastMessage?.message || null,
+                last_message_time: lastMessage?.created_at || null,
+                unread_count: parseInt(unreadCountUser1.rows[0].count),
+            });
+
+            io.to(`user_${chat.user2_id}`).emit("chat_updated", {
+                chatId: chatId,
+                last_message: lastMessage?.message || null,
+                last_message_time: lastMessage?.created_at || null,
+                unread_count: parseInt(unreadCountUser2.rows[0].count),
+            });
         } catch (error) {
             console.error("Ошибка удаления сообщения:", error);
         }

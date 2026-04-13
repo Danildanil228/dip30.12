@@ -54,6 +54,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
         if (!socket) return;
 
         const handleChatUpdated = (data: { chatId: number; last_message: string; last_message_time: string; unread_count: number }) => {
+            console.log("Chat updated:", data);
             setChats((prev) =>
                 prev.map((chat) =>
                     chat.id === data.chatId
