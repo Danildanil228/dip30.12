@@ -229,7 +229,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-160 sm:h-full">
             <div className="p-4 border-b flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <div className="font-medium">

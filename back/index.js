@@ -2615,7 +2615,7 @@ app.get("/uploads/:filename", (req, res) => {
 // Получить все чаты пользователя
 app.get("/chats", checkAuth, async (req, res) => {
     try {
-        const userId = req.user.id; // уже число
+        const userId = req.user.id;
 
         const result = await pool.query(
             `
@@ -2629,12 +2629,18 @@ app.get("/chats", checkAuth, async (req, res) => {
                 u.name as other_name,
                 u.secondname as other_secondname,
                 (
-                    SELECT message 
-                    FROM messages 
-                    WHERE chat_id = c.id 
-                    AND is_deleted_for_sender = false 
-                    AND is_deleted_for_receiver = false
-                    ORDER BY created_at DESC 
+                    SELECT 
+                        CASE 
+                            WHEN m.message IS NOT NULL THEN m.message
+                            WHEN m.image_url IS NOT NULL THEN '🖼️ Изображение'
+                            WHEN m.file_url IS NOT NULL THEN CONCAT('📎 ', COALESCE(m.file_name, 'Файл'))
+                            ELSE NULL
+                        END
+                    FROM messages m
+                    WHERE m.chat_id = c.id 
+                    AND m.is_deleted_for_sender = false 
+                    AND m.is_deleted_for_receiver = false
+                    ORDER BY m.created_at DESC 
                     LIMIT 1
                 ) as last_message,
                 (
@@ -2904,7 +2910,12 @@ io.on("connection", (socket) => {
 
             const lastMessageResult = await pool.query(
                 `
-            SELECT message, created_at 
+            SELECT 
+                message,
+                image_url,
+                file_url,
+                file_name,
+                created_at 
             FROM messages 
             WHERE chat_id = $1 
             ORDER BY created_at DESC 
@@ -2913,7 +2924,19 @@ io.on("connection", (socket) => {
                 [chatId],
             );
 
-            const lastMessage = lastMessageResult.rows[0];
+            const lastMsg = lastMessageResult.rows[0];
+
+            let lastMessageText = null;
+            if (lastMsg) {
+                if (lastMsg.message) {
+                    lastMessageText = lastMsg.message;
+                } else if (lastMsg.image_url) {
+                    lastMessageText = "🖼️ Изображение";
+                } else if (lastMsg.file_url) {
+                    lastMessageText = `📎 ${lastMsg.file_name || "Файл"}`;
+                }
+            }
+
             const unreadCountUser1 = await pool.query(
                 `
             SELECT COUNT(*) as count 
@@ -2938,15 +2961,15 @@ io.on("connection", (socket) => {
 
             io.to(`user_${chat.user1_id}`).emit("chat_updated", {
                 chatId: chatId,
-                last_message: lastMessage?.message || null,
-                last_message_time: lastMessage?.created_at || null,
+                last_message: lastMessageText,
+                last_message_time: lastMsg?.created_at || null,
                 unread_count: parseInt(unreadCountUser1.rows[0].count),
             });
 
             io.to(`user_${chat.user2_id}`).emit("chat_updated", {
                 chatId: chatId,
-                last_message: lastMessage?.message || null,
-                last_message_time: lastMessage?.created_at || null,
+                last_message: lastMessageText,
+                last_message_time: lastMsg?.created_at || null,
                 unread_count: parseInt(unreadCountUser2.rows[0].count),
             });
 
@@ -3053,7 +3076,12 @@ io.on("connection", (socket) => {
 
                 const lastMessageResult = await pool.query(
                     `
-                SELECT message, created_at 
+                SELECT 
+                    message,
+                    image_url,
+                    file_url,
+                    file_name,
+                    created_at 
                 FROM messages 
                 WHERE chat_id = $1 
                 ORDER BY created_at DESC 
@@ -3062,7 +3090,18 @@ io.on("connection", (socket) => {
                     [chat.id],
                 );
 
-                const lastMessage = lastMessageResult.rows[0];
+                const lastMsg = lastMessageResult.rows[0];
+
+                let lastMessageText = null;
+                if (lastMsg) {
+                    if (lastMsg.message) {
+                        lastMessageText = lastMsg.message;
+                    } else if (lastMsg.image_url) {
+                        lastMessageText = "🖼️ Изображение";
+                    } else if (lastMsg.file_url) {
+                        lastMessageText = `📎 ${lastMsg.file_name || "Файл"}`;
+                    }
+                }
 
                 const unreadCountUser1 = await pool.query(
                     `
@@ -3088,15 +3127,15 @@ io.on("connection", (socket) => {
 
                 io.to(`user_${chat.user1_id}`).emit("chat_updated", {
                     chatId: chat.id,
-                    last_message: lastMessage?.message || null,
-                    last_message_time: lastMessage?.created_at || null,
+                    last_message: lastMessageText,
+                    last_message_time: lastMsg?.created_at || null,
                     unread_count: parseInt(unreadCountUser1.rows[0].count),
                 });
 
                 io.to(`user_${chat.user2_id}`).emit("chat_updated", {
                     chatId: chat.id,
-                    last_message: lastMessage?.message || null,
-                    last_message_time: lastMessage?.created_at || null,
+                    last_message: lastMessageText,
+                    last_message_time: lastMsg?.created_at || null,
                     unread_count: parseInt(unreadCountUser2.rows[0].count),
                 });
 

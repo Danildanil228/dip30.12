@@ -7,7 +7,7 @@ export default function ChatPage() {
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
     return (
-        <div className="sm:flex grid h-screen">
+        <div className="sm:flex grid sm:h-140 rounded-lg sm:border">
             <div className="w-96 border-r flex flex-col">
                 <ChatList onSelectChat={setSelectedChat} selectedChatId={selectedChat?.id || null} />
             </div>
