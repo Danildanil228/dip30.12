@@ -105,7 +105,7 @@ export function StatusChart() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="">
                 {loading ? (
                     <div className="flex justify-center items-center h-80">
                         <Loader2 className="h-8 w-8 animate-spin" />
@@ -116,8 +116,8 @@ export function StatusChart() {
                     <div className="flex justify-center items-center h-80 text-muted-foreground">Нет данных за выбранный период</div>
                 ) : (
                     <>
-                        <ResponsiveContainer width="100%" height={310}>
-                            <PieChart>
+                        <ResponsiveContainer width="100%" height={350}>
+                            <PieChart> 
                                 <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="count" labelLine={false}>
                                     {data.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
