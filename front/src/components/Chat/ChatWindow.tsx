@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Paperclip, Image, Smile } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import type { Chat, Message } from "./types";
@@ -22,20 +21,15 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     const [sending, setSending] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const { socket, isConnected } = useSocket();
-    const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
-
-    const scrollToBottom = () => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    };
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (messages.length > 0) {
-            setTimeout(scrollToBottom, 100);
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [messages]);
 
@@ -57,22 +51,17 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             try {
                 const token = localStorage.getItem("token");
                 const response = await axios.get(`${API_BASE_URL}/chats/${chat.id}/messages`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
                 });
                 setMessages(response.data.messages);
-                setTimeout(scrollToBottom, 200);
 
-                // Отмечаем прочитанными сообщения, которые не от текущего пользователя
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                const unreadMessages = response.data.messages.filter(
-                    (m: Message) => !m.is_read && m.sender_id !== currentUser.id
-                );
+                const unreadMessages = response.data.messages.filter((m: Message) => !m.is_read && m.sender_id !== currentUser.id);
 
                 if (unreadMessages.length > 0 && socket && isConnected) {
-                    console.log("Marking as read:", unreadMessages.map((m: Message) => m.id));
                     socket.emit("mark_read", {
                         chatId: chat.id,
-                        messageIds: unreadMessages.map((m: Message) => m.id)
+                        messageIds: unreadMessages.map((m: Message) => m.id),
                     });
                 }
             } catch (error) {
@@ -103,10 +92,9 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 setMessages((prev) => [...prev, message]);
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
                 if (message.sender_id !== currentUser.id && socket && isConnected) {
-                    console.log("Marking new message as read:", message.id);
                     socket.emit("mark_read", {
                         chatId: chat.id,
-                        messageIds: [message.id]
+                        messageIds: [message.id],
                     });
                 }
             }
@@ -114,20 +102,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
 
         const handleMessagesRead = ({ messageIds, readerId, chatId }: { messageIds: number[]; readerId: number; chatId: number }) => {
             if (chatId === chat?.id) {
-                setMessages((prev) =>
-                    prev.map((msg) =>
-                        messageIds.includes(msg.id) && msg.sender_id !== readerId
-                            ? { ...msg, is_read: true, read_at: new Date().toISOString() }
-                            : msg
-                    )
-                );
-
-                // Если текущий пользователь прочитал сообщения, обновляем счетчик в списке чатов
-                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                if (readerId === currentUser.id) {
-                    // Отправляем событие для обновления списка чатов
-                    window.dispatchEvent(new CustomEvent("refreshChats"));
-                }
+                setMessages((prev) => prev.map((msg) => (messageIds.includes(msg.id) && msg.sender_id !== readerId ? { ...msg, is_read: true, read_at: new Date().toISOString() } : msg)));
             }
         };
 
@@ -164,7 +139,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             if (socket && isConnected) {
                 socket.emit("send_message", {
                     chatId: chat.id,
-                    message: inputMessage.trim()
+                    message: inputMessage.trim(),
                 });
                 setInputMessage("");
             }
@@ -186,8 +161,8 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${token}`
-                }
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             if (socket && isConnected) {
@@ -197,7 +172,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                     imageUrl: type === "image" ? response.data.fileUrl : null,
                     fileUrl: type === "file" ? response.data.fileUrl : null,
                     fileName: type === "file" ? response.data.fileName : null,
-                    fileSize: type === "file" ? response.data.fileSize : null
+                    fileSize: type === "file" ? response.data.fileSize : null,
                 });
             }
         } catch (error) {
@@ -254,63 +229,66 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
     return (
-        <div className="">
-            <div className="flex p-4 border-b justify-between items-center flex-wrap">
-                <div className="flex items-center gap-4 flex-wrap">
-                    <div className="font-medium text-lg">
+        <div className="flex flex-col h-full">
+            <div className="p-4 border-b flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="font-medium">
                         {chat.other_name} {chat.other_secondname}
                     </div>
                     <div className="text-sm text-muted-foreground">@{chat.other_username}</div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-2 md:mt-0">{isConnected ? "Подключено" : "Подключение..."}</div>
+                <div className="text-xs text-muted-foreground mt-1">{isConnected ? "Подключено" : "Подключение..."}</div>
             </div>
 
-            <ScrollArea className="h-">
-                <div className="p-4 space-y-3">
-                    {loading ? (
-                        <LoadingSpinner />
-                    ) : messages.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-10">
-                            Нет сообщений
-                            <br />
-                            <span className="text-sm">Напишите что-нибудь...</span>
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4">
+                {loading ? (
+                    <LoadingSpinner />
+                ) : messages.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-center">
+                        <div>
+                            <p>Нет сообщений</p>
+                            <p className="text-sm">Напишите что-нибудь...</p>
                         </div>
-                    ) : (
-                        messages.map((message) => <MessageBubble key={message.id} message={message} isOwn={message.sender_id === currentUser.id} onEdit={handleEditMessage} onDelete={handleDeleteMessage} />)
-                    )}
-                    <div ref={scrollRef} />
-                </div>
-            </ScrollArea>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-2">
+                        {messages.map((message) => (
+                            <MessageBubble key={message.id} message={message} isOwn={message.sender_id === currentUser.id} onEdit={handleEditMessage} onDelete={handleDeleteMessage} />
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
+            </div>
 
-            <div className="flex-shrink-0 p-4 border-t">
+            <div className="p-4 border-t">
                 <div className="flex gap-2 items-end">
                     <div className="flex gap-1">
-                        <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileSelect(e, "image")} />
+                        <input type="file" ref={imageInputRef} hidden accept="image/*" onChange={(e) => handleFileSelect(e, "image")} />
                         <Button type="button" variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()}>
                             <Image className="h-5 w-5" />
                         </Button>
 
-                        <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e, "file")} />
+                        <input type="file" ref={fileInputRef} hidden onChange={(e) => handleFileSelect(e, "file")} />
                         <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
                             <Paperclip className="h-5 w-5" />
                         </Button>
 
-                        <div className="relative" ref={emojiPickerRef}>
+                        <div className="relative">
                             <Button type="button" variant="ghost" size="icon" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                                 <Smile className="h-5 w-5" />
                             </Button>
                             {showEmojiPicker && (
-                                <div className="absolute bottom-full mb-2 right-0 z-50">
+                                <div ref={emojiPickerRef} className="absolute bottom-full mb-2 right-0 z-50">
                                     <EmojiPicker onEmojiClick={onEmojiClick} />
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <Input placeholder="Введите сообщение..." value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} className="flex-1" disabled={sending} />
+                    <Input placeholder="Введите сообщение..." value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} disabled={sending} className="flex-1" />
 
-                    <Button onClick={sendMessage} disabled={!inputMessage.trim() || sending}>
-                        <Send className="h-4 w-4" />
+                    <Button onClick={sendMessage} disabled={!inputMessage.trim() || sending} size="icon">
+                        <Send className="h-5 w-5" />
                     </Button>
                 </div>
             </div>

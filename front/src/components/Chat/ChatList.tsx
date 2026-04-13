@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatSearch } from "./ChatSearch";
 import type { Chat, User } from "./types";
 import axios from "axios";
@@ -21,10 +20,14 @@ interface ChatListProps {
 export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
-    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; chat: Chat | null; forBoth: boolean }>({
+    const [deleteDialog, setDeleteDialog] = useState<{
+        open: boolean;
+        chat: Chat | null;
+        forBoth: boolean;
+    }>({
         open: false,
         chat: null,
-        forBoth: false
+        forBoth: false,
     });
     const { socket } = useSocket();
 
@@ -33,7 +36,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/chats`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
             });
             setChats(response.data.chats);
         } catch (error) {
@@ -51,17 +54,18 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
         if (!socket) return;
 
         const handleChatUpdated = (data: { chatId: number; last_message: string; last_message_time: string; unread_count: number }) => {
-            console.log("Chat updated:", data);
-            setChats(prev => prev.map(chat =>
-                chat.id === data.chatId
-                    ? {
-                        ...chat,
-                        last_message: data.last_message,
-                        last_message_time: data.last_message_time,
-                        unread_count: data.unread_count
-                    }
-                    : chat
-            ));
+            setChats((prev) =>
+                prev.map((chat) =>
+                    chat.id === data.chatId
+                        ? {
+                              ...chat,
+                              last_message: data.last_message,
+                              last_message_time: data.last_message_time,
+                              unread_count: data.unread_count,
+                          }
+                        : chat,
+                ),
+            );
         };
 
         socket.on("chat_updated", handleChatUpdated);
@@ -87,7 +91,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                 last_message_time: null,
                 unread_count: 0,
                 deleted_by_user1: false,
-                deleted_by_user2: false
+                deleted_by_user2: false,
             };
             onSelectChat(fullChat);
         } catch (error) {
@@ -100,7 +104,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
             const token = localStorage.getItem("token");
             await axios.delete(`${API_BASE_URL}/chats/${chat.id}`, {
                 headers: { Authorization: `Bearer ${token}` },
-                params: { forBoth }
+                params: { forBoth },
             });
             await fetchChats();
             if (selectedChatId === chat.id) {
@@ -136,47 +140,34 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
     }
 
     return (
-        <div className="p-4">
-            <div className="mb-2">
+        <div className="flex flex-col h-full">
+            <div className="p-4 border-b">
                 <ChatSearch onSelectUser={handleSelectUser} />
             </div>
-            <div>
-                <ScrollArea className="h-110">
-                    <div>
-                        {chats.length === 0 ? (
-                            <div className="text-center py-10 text-muted-foreground">
-                                Нет чатов
-                                <br />
-                                <span className="text-sm">Начните диалог с поиска пользователя</span>
-                            </div>
-                        ) : (
-                            chats.map((chat) => (
-                                <div
-                                    key={chat.id}
-                                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${selectedChatId === chat.id ? "bg-muted" : "hover:bg-muted/50"}`}
-                                    onClick={() => onSelectChat(chat)}
-                                >
-                                    <div className="">
-                                        <div className="flex items-center">
-                                            <span className="font-medium truncate">
+
+            <div className="flex-1 overflow-y-auto">
+                {chats.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                        Нет чатов
+                        <br />
+                        Начните диалог с поиска пользователя
+                    </div>
+                ) : (
+                    <div className="divide-y">
+                        {chats.map((chat) => (
+                            <div key={chat.id} onClick={() => onSelectChat(chat)} className={`p-4 cursor-pointer hover:bg-muted transition-colors ${selectedChatId === chat.id ? "bg-muted" : ""}`}>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium">
                                                 {chat.other_name} {chat.other_secondname}
                                             </span>
-                                            {chat.last_message_time && (
-                                                <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                                                    {formatTime(chat.last_message_time)}
-                                                </span>
-                                            )}
+                                            {chat.last_message_time && <span className="text-xs text-muted-foreground">{formatTime(chat.last_message_time)}</span>}
                                         </div>
-                                        <div className="text-sm text-muted-foreground line-clamp-1">
-                                            {chat.last_message || "Нет сообщений"}
-                                        </div>
+                                        <div className="text-sm text-muted-foreground truncate mt-1">{chat.last_message || "Нет сообщений"}</div>
                                     </div>
                                     <div className="flex items-center gap-2 ml-2">
-                                        {chat.unread_count > 0 && (
-                                            <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                                {chat.unread_count}
-                                            </span>
-                                        )}
+                                        {chat.unread_count > 0 && <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">{chat.unread_count}</span>}
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -185,7 +176,6 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuItem
-                                                    className="text-red-600"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setDeleteDialog({ open: true, chat, forBoth: false });
@@ -195,7 +185,6 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                                                     Удалить чат
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
-                                                    className="text-red-600"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setDeleteDialog({ open: true, chat, forBoth: true });
@@ -208,13 +197,11 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                                         </DropdownMenu>
                                     </div>
                                 </div>
-                            ))
-                        )}
+                            </div>
+                        ))}
                     </div>
-                </ScrollArea>
+                )}
             </div>
-
-
 
             <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}>
                 <AlertDialogContent>
@@ -228,9 +215,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteDialog.chat && handleDeleteChat(deleteDialog.chat, deleteDialog.forBoth)}>
-                            Удалить
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={() => deleteDialog.chat && handleDeleteChat(deleteDialog.chat, deleteDialog.forBoth)}>Удалить</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

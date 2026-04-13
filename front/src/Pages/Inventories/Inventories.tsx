@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 import EditInventoryDialog from "@/components/Dialog/EditInventoryDialog";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Inventory {
     id: number;
@@ -192,9 +193,7 @@ export default function Inventories() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
+            <LoadingSpinner/>
         );
     }
 
