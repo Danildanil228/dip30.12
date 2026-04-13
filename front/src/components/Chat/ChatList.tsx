@@ -47,12 +47,11 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
         fetchChats();
     }, []);
 
-    // WebSocket обновление чатов
     useEffect(() => {
         if (!socket) return;
 
         const handleChatUpdated = (data: { chatId: number; last_message: string; last_message_time: string; unread_count: number }) => {
-            console.log("Chat updated:", data); 
+            console.log("Chat updated:", data);
             setChats(prev => prev.map(chat =>
                 chat.id === data.chatId
                     ? {
@@ -137,82 +136,85 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
     }
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-shrink-0 p-4 border-b">
+        <div className="p-4">
+            <div className="mb-2">
                 <ChatSearch onSelectUser={handleSelectUser} />
             </div>
-
-            <ScrollArea className="flex-1">
-                <div className="space-y-1 p-2">
-                    {chats.length === 0 ? (
-                        <div className="text-center py-10 text-muted-foreground">
-                            Нет чатов
-                            <br />
-                            <span className="text-sm">Начните диалог с поиска пользователя</span>
-                        </div>
-                    ) : (
-                        chats.map((chat) => (
-                            <div
-                                key={chat.id}
-                                className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${selectedChatId === chat.id ? "bg-muted" : "hover:bg-muted/50"}`}
-                                onClick={() => onSelectChat(chat)}
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-medium truncate">
-                                            {chat.other_name} {chat.other_secondname}
-                                        </span>
-                                        {chat.last_message_time && (
-                                            <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                                                {formatTime(chat.last_message_time)}
+            <div>
+                <ScrollArea className="h-110">
+                    <div>
+                        {chats.length === 0 ? (
+                            <div className="text-center py-10 text-muted-foreground">
+                                Нет чатов
+                                <br />
+                                <span className="text-sm">Начните диалог с поиска пользователя</span>
+                            </div>
+                        ) : (
+                            chats.map((chat) => (
+                                <div
+                                    key={chat.id}
+                                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${selectedChatId === chat.id ? "bg-muted" : "hover:bg-muted/50"}`}
+                                    onClick={() => onSelectChat(chat)}
+                                >
+                                    <div className="">
+                                        <div className="flex items-center">
+                                            <span className="font-medium truncate">
+                                                {chat.other_name} {chat.other_secondname}
+                                            </span>
+                                            {chat.last_message_time && (
+                                                <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                                                    {formatTime(chat.last_message_time)}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="text-sm text-muted-foreground line-clamp-1">
+                                            {chat.last_message || "Нет сообщений"}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-2">
+                                        {chat.unread_count > 0 && (
+                                            <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                                {chat.unread_count}
                                             </span>
                                         )}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground truncate">
-                                        {chat.last_message || "Нет сообщений"}
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem
+                                                    className="text-red-600"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteDialog({ open: true, chat, forBoth: false });
+                                                    }}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Удалить чат
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="text-red-600"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteDialog({ open: true, chat, forBoth: true });
+                                                    }}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Удалить для обоих
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 ml-2">
-                                    {chat.unread_count > 0 && (
-                                        <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                            {chat.unread_count}
-                                        </span>
-                                    )}
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                className="text-red-600"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDeleteDialog({ open: true, chat, forBoth: false });
-                                                }}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Удалить чат
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                className="text-red-600"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDeleteDialog({ open: true, chat, forBoth: true });
-                                                }}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Удалить для обоих
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </ScrollArea>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
+            </div>
+
+
 
             <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}>
                 <AlertDialogContent>

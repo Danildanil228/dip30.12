@@ -8,25 +8,25 @@ export default function ChatPage() {
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
     return (
-        <div className="text-base">
-            <div className="md:block flex h-full border rounded-lg overflow-hidden bg-background">
+        <div className="text-base h-130 border rounded-sm">
+            <div className="">
                 <ResizablePanelGroup orientation="horizontal">
                     <ResizablePanel defaultSize={33}>
-                        <div className="flex flex-col h-full">
+                        <div className="">
                             <ChatList onSelectChat={setSelectedChat} selectedChatId={selectedChat?.id || null} />
                         </div>
                     </ResizablePanel>
                     <ResizableHandle withHandle />
                     <ResizablePanel defaultSize={67}>
-                        <div className="flex-1 flex flex-col h-full">
+                        <div className="">
                             <ChatWindow chat={selectedChat} />
                         </div>
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>
-            <div className="md:hidden">
+            {/* <div className="md:hidden">
                 fsdfs
-            </div>
+            </div> */}
         </div>
     );
 }

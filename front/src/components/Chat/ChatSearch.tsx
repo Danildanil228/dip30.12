@@ -71,7 +71,7 @@ export function ChatSearch({ onSelectUser }: ChatSearchProps) {
             </div>
 
             {showResults && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-background rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                <div className=" border absolute top-full left-0 right-0 mt-1 bg-background rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                     {loading && <div className="p-4 text-center text-muted-foreground">Поиск...</div>}
                     {!loading && users.length === 0 && searchTerm.length >= 2 && <div className="p-4 text-center text-muted-foreground">Пользователи не найдены</div>}
                     {users.map((user) => (

@@ -254,8 +254,8 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-shrink-0 p-4 border-b justify-between hidden md:flex items-center flex-wrap">
+        <div className="">
+            <div className="flex p-4 border-b justify-between items-center flex-wrap">
                 <div className="flex items-center gap-4 flex-wrap">
                     <div className="font-medium text-lg">
                         {chat.other_name} {chat.other_secondname}
@@ -265,7 +265,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 <div className="text-xs text-muted-foreground mt-2 md:mt-0">{isConnected ? "Подключено" : "Подключение..."}</div>
             </div>
 
-            <ScrollArea className="h-125">
+            <ScrollArea className="h-">
                 <div className="p-4 space-y-3">
                     {loading ? (
                         <LoadingSpinner />
