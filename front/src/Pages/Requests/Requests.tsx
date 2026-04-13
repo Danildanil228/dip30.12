@@ -37,8 +37,6 @@ export default function Requests() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-    // Пагинация
     const [currentPage, setCurrentPage] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [showAll, setShowAll] = useState(false);
@@ -175,7 +173,7 @@ export default function Requests() {
                 </div>
             </div>
             {filteredRequests.length > itemsPerPage && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pt-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
                     <div className="text-sm text-muted-foreground">Всего заявок: {filteredRequests.length}</div>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={handleToggleShowAll}>

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package, Edit } from "lucide-react";
+import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
@@ -42,6 +42,11 @@ export default function Inventories() {
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [editingInventory, setEditingInventory] = useState<Inventory | null>(null);
 
+    // Пагинация
+    const [currentPage, setCurrentPage] = useState(0);
+    const [itemsPerPage] = useState(10);
+    const [showAll, setShowAll] = useState(false);
+
     // Dialog states
     const [completeDialog, setCompleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
     const [cancelDialog, setCancelDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
@@ -59,9 +64,10 @@ export default function Inventories() {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/inventories`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
             });
             setInventories(response.data.inventories || []);
+            setCurrentPage(0);
         } catch (error) {
             console.error("Ошибка загрузки инвентаризаций:", error);
         } finally {
@@ -76,8 +82,8 @@ export default function Inventories() {
                 `${API_BASE_URL}/inventories/${id}/start`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
+                    headers: { Authorization: `Bearer ${token}` },
+                },
             );
             fetchInventories();
         } catch (error: any) {
@@ -94,8 +100,8 @@ export default function Inventories() {
                 `${API_BASE_URL}/inventories/${completeDialog.id}/complete`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
+                    headers: { Authorization: `Bearer ${token}` },
+                },
             );
             setCompleteDialog({ open: false, id: null, title: "" });
             fetchInventories();
@@ -113,8 +119,8 @@ export default function Inventories() {
                 `${API_BASE_URL}/inventories/${cancelDialog.id}/cancel`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
+                    headers: { Authorization: `Bearer ${token}` },
+                },
             );
             setCancelDialog({ open: false, id: null, title: "" });
             fetchInventories();
@@ -129,7 +135,7 @@ export default function Inventories() {
         try {
             const token = localStorage.getItem("token");
             await axios.delete(`${API_BASE_URL}/inventories/${deleteDialog.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
             });
             setDeleteDialog({ open: false, id: null, title: "" });
             fetchInventories();
@@ -190,6 +196,23 @@ export default function Inventories() {
         return matchesSearch && matchesStatus;
     });
 
+    // Пагинация
+    const totalPages = Math.ceil(filteredInventories.length / itemsPerPage);
+    const paginatedInventories = showAll ? filteredInventories : filteredInventories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+
+    const handleToggleShowAll = () => {
+        if (showAll) {
+            setShowAll(false);
+            setCurrentPage(0);
+        } else {
+            setShowAll(true);
+        }
+    };
+
+    const goToPage = (page: number) => {
+        setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center py-20">
@@ -208,35 +231,103 @@ export default function Inventories() {
             <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
-                    <Input placeholder="Поиск по названию или ответственному..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    <Input
+                        placeholder="Поиск по названию или ответственному..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(0);
+                        }}
+                        className="pl-10"
+                    />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>
+                    <Button
+                        variant={statusFilter === "all" ? "default" : "outline"}
+                        onClick={() => {
+                            setStatusFilter("all");
+                            setCurrentPage(0);
+                        }}
+                    >
                         Все
                     </Button>
-                    <Button variant={statusFilter === "draft" ? "default" : "outline"} onClick={() => setStatusFilter("draft")}>
+                    <Button
+                        variant={statusFilter === "draft" ? "default" : "outline"}
+                        onClick={() => {
+                            setStatusFilter("draft");
+                            setCurrentPage(0);
+                        }}
+                    >
                         Черновики
                     </Button>
-                    <Button variant={statusFilter === "in_progress" ? "default" : "outline"} onClick={() => setStatusFilter("in_progress")}>
+                    <Button
+                        variant={statusFilter === "in_progress" ? "default" : "outline"}
+                        onClick={() => {
+                            setStatusFilter("in_progress");
+                            setCurrentPage(0);
+                        }}
+                    >
                         В процессе
                     </Button>
-                    <Button variant={statusFilter === "completed" ? "default" : "outline"} onClick={() => setStatusFilter("completed")}>
+                    <Button
+                        variant={statusFilter === "completed" ? "default" : "outline"}
+                        onClick={() => {
+                            setStatusFilter("completed");
+                            setCurrentPage(0);
+                        }}
+                    >
                         Завершены
                     </Button>
-                    <Button variant={statusFilter === "approved" ? "default" : "outline"} onClick={() => setStatusFilter("approved")}>
+                    <Button
+                        variant={statusFilter === "approved" ? "default" : "outline"}
+                        onClick={() => {
+                            setStatusFilter("approved");
+                            setCurrentPage(0);
+                        }}
+                    >
                         Утверждены
                     </Button>
-                    <Button variant={statusFilter === "cancelled" ? "default" : "outline"} onClick={() => setStatusFilter("cancelled")}>
+                    <Button
+                        variant={statusFilter === "cancelled" ? "default" : "outline"}
+                        onClick={() => {
+                            setStatusFilter("cancelled");
+                            setCurrentPage(0);
+                        }}
+                    >
                         Отменены
                     </Button>
                 </div>
             </div>
 
+            {filteredInventories.length > itemsPerPage && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div className="text-sm text-muted-foreground">Всего инвентаризаций: {filteredInventories.length}</div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
+                            {showAll ? "Свернуть" : "Развернуть"}
+                        </Button>
+                        {!showAll && (
+                            <>
+                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
+                                    {"<"}
+                                </Button>
+                                <span className="text-sm">
+                                    Стр. {currentPage + 1} из {totalPages}
+                                </span>
+                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
+                                    {">"}
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="space-y-4">
-                {filteredInventories.length === 0 ? (
+                {paginatedInventories.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground">Инвентаризаций не найдено</div>
                 ) : (
-                    filteredInventories.map((inventory) => (
+                    paginatedInventories.map((inventory) => (
                         <Card key={inventory.id} className="overflow-hidden">
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -257,7 +348,6 @@ export default function Inventories() {
                                                     Просмотр
                                                 </DropdownMenuItem>
 
-                                                {/* Кнопка изменения - только для администраторов */}
                                                 {isAdmin && (
                                                     <DropdownMenuItem onClick={() => handleEdit(inventory)}>
                                                         <Edit className="mr-2 h-4 w-4" />
@@ -290,7 +380,9 @@ export default function Inventories() {
                                                     <DropdownMenuItem onClick={() => setCancelDialog({ open: true, id: inventory.id, title: inventory.title })}>Отменить</DropdownMenuItem>
                                                 )}
 
-                                                {isAdmin && inventory.status === "cancelled" && <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>}
+                                                {isAdmin && inventory.status === "cancelled" && (
+                                                    <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
