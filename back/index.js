@@ -52,7 +52,7 @@ const checkAuth = (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        
+
         req.user = {
             id: parseInt(decoded.id) || decoded.id,
             username: decoded.username,
@@ -347,14 +347,14 @@ app.get('/users/search', checkAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         console.log('User ID from token:', userId);
-        
+
         const { q } = req.query;
         console.log('Search query:', q);
-        
+
         if (!q || q.length < 2) {
             return res.json({ users: [] });
         }
-        
+
         const result = await pool.query(`
             SELECT id, username, name, secondname
             FROM users
@@ -362,10 +362,10 @@ app.get('/users/search', checkAuth, async (req, res) => {
             AND (username ILIKE $2 OR name ILIKE $2 OR secondname ILIKE $2)
             LIMIT 20
         `, [userId, `%${q}%`]);
-        
+
         console.log('Found users:', result.rows.length);
         res.json({ users: result.rows });
-        
+
     } catch (error) {
         console.error('ERROR in search:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -2610,7 +2610,7 @@ app.get("/uploads/:filename", (req, res) => {
 app.get('/chats', checkAuth, async (req, res) => {
     try {
         const userId = req.user.id; // уже число
-        
+
         const result = await pool.query(`
             SELECT 
                 c.id,
@@ -2659,7 +2659,7 @@ app.get('/chats', checkAuth, async (req, res) => {
             )
             ORDER BY last_message_time DESC NULLS LAST
         `, [userId]);
-        
+
         res.json({ chats: result.rows });
     } catch (error) {
         console.error('Ошибка получения чатов:', error);
@@ -2858,7 +2858,7 @@ io.on("connection", (socket) => {
     console.log(`User ${socket.userId} (${socket.userName}) connected`);
     activeUsers.set(socket.userId, socket.id);
     userSockets.set(socket.userId, socket);
-
+    socket.join(`user_${socket.userId}`);
     io.emit("active_users", Array.from(activeUsers.keys()));
 
     socket.on("join_chat", (chatId) => {
@@ -2871,48 +2871,153 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send_message", async (data) => {
-        try {
-            const { chatId, message, imageUrl, fileUrl, fileName, fileSize } = data;
+    try {
+        const { chatId, message, imageUrl, fileUrl, fileName, fileSize } = data;
 
-            const result = await pool.query(
-                `INSERT INTO messages (chat_id, sender_id, message, image_url, file_url, file_name, file_size) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7) 
-                 RETURNING *`,
-                [chatId, socket.userId, message, imageUrl, fileUrl, fileName, fileSize]
-            );
+        const result = await pool.query(
+            `INSERT INTO messages (chat_id, sender_id, message, image_url, file_url, file_name, file_size) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) 
+             RETURNING *`,
+            [chatId, socket.userId, message, imageUrl, fileUrl, fileName, fileSize]
+        );
 
-            const newMessage = result.rows[0];
+        const newMessage = result.rows[0];
 
-            await pool.query("UPDATE chats SET updated_at = NOW() WHERE id = $1", [chatId]);
+        await pool.query("UPDATE chats SET updated_at = NOW() WHERE id = $1", [chatId]);
 
-            io.to(`chat_${chatId}`).emit("new_message", {
-                ...newMessage,
-                sender_id: socket.userId,
-                sender_name: socket.userName
-            });
-        } catch (error) {
-            console.error("Ошибка отправки сообщения:", error);
-            socket.emit("error", { message: "Ошибка отправки сообщения" });
-        }
-    });
+        // Получаем информацию о чате
+        const chatInfo = await pool.query(`
+            SELECT c.id, c.user1_id, c.user2_id
+            FROM chats c
+            WHERE c.id = $1
+        `, [chatId]);
+
+        const chat = chatInfo.rows[0];
+        
+        // Получаем последнее сообщение
+        const lastMessageResult = await pool.query(`
+            SELECT message, created_at 
+            FROM messages 
+            WHERE chat_id = $1 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `, [chatId]);
+        
+        const lastMessage = lastMessageResult.rows[0];
+
+        // Считаем непрочитанные для user1
+        const unreadCountUser1 = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM messages 
+            WHERE chat_id = $1 
+            AND is_read = false 
+            AND sender_id != $2
+        `, [chatId, chat.user1_id]);
+        
+        // Считаем непрочитанные для user2
+        const unreadCountUser2 = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM messages 
+            WHERE chat_id = $1 
+            AND is_read = false 
+            AND sender_id != $2
+        `, [chatId, chat.user2_id]);
+
+        // Отправляем обновление для user1
+        io.to(`user_${chat.user1_id}`).emit("chat_updated", {
+            chatId: chatId,
+            last_message: lastMessage?.message || null,
+            last_message_time: lastMessage?.created_at || null,
+            unread_count: parseInt(unreadCountUser1.rows[0].count)
+        });
+        
+        // Отправляем обновление для user2
+        io.to(`user_${chat.user2_id}`).emit("chat_updated", {
+            chatId: chatId,
+            last_message: lastMessage?.message || null,
+            last_message_time: lastMessage?.created_at || null,
+            unread_count: parseInt(unreadCountUser2.rows[0].count)
+        });
+
+        // Отправляем сообщение всем в комнате чата
+        io.to(`chat_${chatId}`).emit("new_message", {
+            ...newMessage,
+            sender_id: socket.userId,
+            sender_name: socket.userName
+        });
+
+    } catch (error) {
+        console.error("Ошибка отправки сообщения:", error);
+        socket.emit("error", { message: "Ошибка отправки сообщения" });
+    }
+});
 
     // Отметка о прочтении
-    socket.on("mark_read", async (data) => {
-        try {
-            const { chatId, messageIds } = data;
-
-            await pool.query(
-                `UPDATE messages 
-                 SET is_read = TRUE, read_at = NOW() 
-                 WHERE id = ANY($1::int[]) AND chat_id = $2 AND sender_id != $3`,
-                [messageIds, chatId, socket.userId]
-            );
-
-            socket.to(`chat_${chatId}`).emit("messages_read", { messageIds, readerId: socket.userId });
-        } catch (error) {
-            console.error("Ошибка отметки о прочтении:", error);
-        }
-    });
+    // Отметка о прочтении
+socket.on("mark_read", async (data) => {
+    try {
+        const { chatId, messageIds } = data;
+        
+        console.log(`mark_read: user ${socket.userId} reading messages ${messageIds} in chat ${chatId}`);
+        
+        // Обновляем сообщения, которые не принадлежат текущему пользователю
+        await pool.query(
+            `UPDATE messages 
+             SET is_read = TRUE, read_at = NOW() 
+             WHERE id = ANY($1::int[]) 
+             AND chat_id = $2 
+             AND sender_id != $3`,
+            [messageIds, chatId, socket.userId]
+        );
+        
+        // Получаем информацию о чате
+        const chatInfo = await pool.query(`
+            SELECT c.id, c.user1_id, c.user2_id
+            FROM chats c
+            WHERE c.id = $1
+        `, [chatId]);
+        
+        const chat = chatInfo.rows[0];
+        
+        // Получаем обновленный счетчик непрочитанных для читающего пользователя
+        const unreadCount = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM messages 
+            WHERE chat_id = $1 
+            AND is_read = false 
+            AND sender_id != $2
+        `, [chatId, socket.userId]);
+        
+        // Получаем последнее сообщение
+        const lastMessageResult = await pool.query(`
+            SELECT message, created_at 
+            FROM messages 
+            WHERE chat_id = $1 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `, [chatId]);
+        
+        const lastMessage = lastMessageResult.rows[0];
+        
+        // Отправляем обновление чата для читающего пользователя
+        io.to(`user_${socket.userId}`).emit("chat_updated", {
+            chatId: chatId,
+            last_message: lastMessage?.message || null,
+            last_message_time: lastMessage?.created_at || null,
+            unread_count: parseInt(unreadCount.rows[0].count)
+        });
+        
+        // Отправляем подтверждение всем в комнате чата
+        io.to(`chat_${chatId}`).emit("messages_read", { 
+            messageIds: messageIds, 
+            readerId: socket.userId,
+            chatId: chatId
+        });
+        
+    } catch (error) {
+        console.error("Ошибка отметки о прочтении:", error);
+    }
+});
 
     // Редактирование сообщения
     socket.on("edit_message", async (data) => {

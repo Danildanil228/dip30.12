@@ -61,6 +61,20 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 });
                 setMessages(response.data.messages);
                 setTimeout(scrollToBottom, 200);
+
+                // Отмечаем прочитанными сообщения, которые не от текущего пользователя
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                const unreadMessages = response.data.messages.filter(
+                    (m: Message) => !m.is_read && m.sender_id !== currentUser.id
+                );
+
+                if (unreadMessages.length > 0 && socket && isConnected) {
+                    console.log("Marking as read:", unreadMessages.map((m: Message) => m.id));
+                    socket.emit("mark_read", {
+                        chatId: chat.id,
+                        messageIds: unreadMessages.map((m: Message) => m.id)
+                    });
+                }
             } catch (error) {
                 console.error("Ошибка загрузки сообщений:", error);
             } finally {
@@ -79,7 +93,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 socket.emit("leave_chat", chat.id);
             }
         };
-    }, [chat, socket]);
+    }, [chat, socket, isConnected]);
 
     useEffect(() => {
         if (!socket) return;
@@ -87,11 +101,34 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         const handleNewMessage = (message: Message) => {
             if (message.chat_id === chat?.id) {
                 setMessages((prev) => [...prev, message]);
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                if (message.sender_id !== currentUser.id && socket && isConnected) {
+                    console.log("Marking new message as read:", message.id);
+                    socket.emit("mark_read", {
+                        chatId: chat.id,
+                        messageIds: [message.id]
+                    });
+                }
             }
         };
 
-        const handleMessagesRead = ({ messageIds, readerId }: { messageIds: number[]; readerId: number }) => {
-            setMessages((prev) => prev.map((msg) => (messageIds.includes(msg.id) && msg.sender_id !== readerId ? { ...msg, is_read: true, read_at: new Date().toISOString() } : msg)));
+        const handleMessagesRead = ({ messageIds, readerId, chatId }: { messageIds: number[]; readerId: number; chatId: number }) => {
+            if (chatId === chat?.id) {
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        messageIds.includes(msg.id) && msg.sender_id !== readerId
+                            ? { ...msg, is_read: true, read_at: new Date().toISOString() }
+                            : msg
+                    )
+                );
+
+                // Если текущий пользователь прочитал сообщения, обновляем счетчик в списке чатов
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                if (readerId === currentUser.id) {
+                    // Отправляем событие для обновления списка чатов
+                    window.dispatchEvent(new CustomEvent("refreshChats"));
+                }
+            }
         };
 
         const handleMessageEdited = ({ id, message, edited_at }: { id: number; message: string; edited_at: string }) => {

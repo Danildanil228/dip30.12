@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "../LoadingSpinner";
+import { useSocket } from "@/hooks/useSocket";
 
 interface ChatListProps {
     onSelectChat: (chat: Chat) => void;
@@ -25,6 +26,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
         chat: null,
         forBoth: false
     });
+    const { socket } = useSocket();
 
     const fetchChats = async () => {
         try {
@@ -44,6 +46,31 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
     useEffect(() => {
         fetchChats();
     }, []);
+
+    // WebSocket обновление чатов
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleChatUpdated = (data: { chatId: number; last_message: string; last_message_time: string; unread_count: number }) => {
+            console.log("Chat updated:", data); 
+            setChats(prev => prev.map(chat =>
+                chat.id === data.chatId
+                    ? {
+                        ...chat,
+                        last_message: data.last_message,
+                        last_message_time: data.last_message_time,
+                        unread_count: data.unread_count
+                    }
+                    : chat
+            ));
+        };
+
+        socket.on("chat_updated", handleChatUpdated);
+
+        return () => {
+            socket.off("chat_updated", handleChatUpdated);
+        };
+    }, [socket]);
 
     const handleSelectUser = async (user: User) => {
         try {
@@ -106,9 +133,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
     };
 
     if (loading) {
-        return (
-            <LoadingSpinner/>
-        );
+        return <LoadingSpinner />;
     }
 
     return (
@@ -117,7 +142,7 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                 <ChatSearch onSelectUser={handleSelectUser} />
             </div>
 
-            <ScrollArea className="flex-1 h-[calc(100vh-280px)] md:h-auto">
+            <ScrollArea className="flex-1">
                 <div className="space-y-1 p-2">
                     {chats.length === 0 ? (
                         <div className="text-center py-10 text-muted-foreground">
@@ -137,12 +162,22 @@ export function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
                                         <span className="font-medium truncate">
                                             {chat.other_name} {chat.other_secondname}
                                         </span>
-                                        {chat.last_message_time && <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">{formatTime(chat.last_message_time)}</span>}
+                                        {chat.last_message_time && (
+                                            <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                                                {formatTime(chat.last_message_time)}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div className="text-sm text-muted-foreground truncate">{chat.last_message || "Нет сообщений"}</div>
+                                    <div className="text-sm text-muted-foreground truncate">
+                                        {chat.last_message || "Нет сообщений"}
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2 ml-2">
-                                    {chat.unread_count > 0 && <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">{chat.unread_count}</span>}
+                                    {chat.unread_count > 0 && (
+                                        <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                            {chat.unread_count}
+                                        </span>
+                                    )}
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

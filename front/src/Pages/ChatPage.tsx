@@ -9,7 +9,7 @@ export default function ChatPage() {
 
     return (
         <div className="text-base">
-            <div className="flex h-full border rounded-lg overflow-hidden bg-background">
+            <div className="md:block flex h-full border rounded-lg overflow-hidden bg-background">
                 <ResizablePanelGroup orientation="horizontal">
                     <ResizablePanel defaultSize={33}>
                         <div className="flex flex-col h-full">
@@ -23,6 +23,9 @@ export default function ChatPage() {
                         </div>
                     </ResizablePanel>
                 </ResizablePanelGroup>
+            </div>
+            <div className="md:hidden">
+                fsdfs
             </div>
         </div>
     );
