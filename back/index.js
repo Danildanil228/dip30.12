@@ -1495,7 +1495,6 @@ app.post("/inventories", async (req, res) => {
 
             await client.query("COMMIT");
 
-            // Логирование с правильным ID
             await Logger.inventoryCreated(decoded.id, decoded.username, title, newInventoryId);
 
             res.json({

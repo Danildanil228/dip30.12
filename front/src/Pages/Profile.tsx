@@ -73,7 +73,6 @@ export default function Profile() {
     const [passwordError, setPasswordError] = useState<string | null>(null);
     const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
-    // Валидация имени
     const validateName = (value: string): string => {
         if (!value.trim()) {
             return "Имя обязательно";
@@ -88,7 +87,6 @@ export default function Profile() {
         return "";
     };
 
-    // Валидация фамилии
     const validateSecondname = (value: string): string => {
         if (!value.trim()) {
             return "Фамилия обязательна";
@@ -103,7 +101,6 @@ export default function Profile() {
         return "";
     };
 
-    // Валидация логина
     const validateUsername = (value: string): string => {
         if (!value.trim()) {
             return "Логин обязателен";
@@ -118,10 +115,9 @@ export default function Profile() {
         return "";
     };
 
-    // Валидация email
     const validateEmail = (value: string): string => {
         if (!value.trim()) {
-            return ""; // Email не обязателен
+            return ""; 
         }
         const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
         if (!emailRegex.test(value)) {
@@ -130,12 +126,11 @@ export default function Profile() {
         return "";
     };
 
-    // Валидация телефона
     const validatePhone = (value: string): string => {
         if (!value.trim()) {
-            return ""; // Телефон не обязателен
+            return ""; 
         }
-        // Поддерживаем форматы: +7XXXXXXXXXX, 8XXXXXXXXXX, XXXXXXXXXX
+       
         const phoneRegex = /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
         const cleanPhone = value.replace(/[\s\-\(\)]/g, "");
         const phoneRegexClean = /^(\+7|8)?[0-9]{10}$/;
@@ -146,7 +141,6 @@ export default function Profile() {
         return "";
     };
 
-    // Форматирование телефона при вводе
     const formatPhoneNumber = (value: string): string => {
         const clean = value.replace(/[^\d+]/g, "");
         if (clean.startsWith("+")) {
@@ -268,7 +262,6 @@ export default function Profile() {
     };
 
     const handleSaveData = async () => {
-        // Отмечаем все поля как touched
         setTouched({
             username: true,
             name: true,
@@ -637,7 +630,6 @@ export default function Profile() {
                                     </Popover>
                                 </div>
 
-                                {/* Блок с правилами ввода - памятка */}
                                 <div className="space-y-1 p-3 border rounded-md bg-muted/20 mt-2">
                                     <p className="text-sm font-medium">Правила ввода:</p>
                                     <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">

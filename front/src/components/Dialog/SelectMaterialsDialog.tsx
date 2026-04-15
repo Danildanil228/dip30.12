@@ -306,7 +306,6 @@ export default function SelectMaterialsDialog({
                         </div>
                     </div>
 
-                    {/* Десктопная таблица */}
                     <div className="hidden md:block border rounded-lg overflow-hidden">
                         <Table>
                             <TableHeader>

@@ -368,7 +368,6 @@ export default function AddUserDialog({
                             </Select>
                         </div>
 
-                        {/* Блок с правилами ввода - всегда отображается */}
                         <div className="space-y-1 p-3 border rounded-md bg-muted/20">
                             <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
                                 <li>Имя: только буквы, минимум 2 символа</li>

@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
-import { Loader2 } from "lucide-react";
 import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
 

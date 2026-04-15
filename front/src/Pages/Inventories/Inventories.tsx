@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package, Edit } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
@@ -41,13 +41,9 @@ export default function Inventories() {
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [editingInventory, setEditingInventory] = useState<Inventory | null>(null);
-
-    // Пагинация
     const [currentPage, setCurrentPage] = useState(0);
     const [itemsPerPage] = useState(10);
     const [showAll, setShowAll] = useState(false);
-
-    // Dialog states
     const [completeDialog, setCompleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
     const [cancelDialog, setCancelDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
@@ -196,7 +192,6 @@ export default function Inventories() {
         return matchesSearch && matchesStatus;
     });
 
-    // Пагинация
     const totalPages = Math.ceil(filteredInventories.length / itemsPerPage);
     const paginatedInventories = showAll ? filteredInventories : filteredInventories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
@@ -433,7 +428,6 @@ export default function Inventories() {
 
             <EditInventoryDialog inventory={editingInventory} open={!!editingInventory} onOpenChange={(open) => !open && setEditingInventory(null)} onInventoryUpdated={handleEditSuccess} />
 
-            {/* Dialog для завершения */}
             <AlertDialog open={completeDialog.open} onOpenChange={(open) => setCompleteDialog((prev) => ({ ...prev, open }))}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -451,7 +445,6 @@ export default function Inventories() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Dialog для отмены */}
             <AlertDialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog((prev) => ({ ...prev, open }))}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -465,7 +458,6 @@ export default function Inventories() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Dialog для удаления */}
             <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

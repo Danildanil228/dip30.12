@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, XCircle, Package, User, Calendar, FileText, Eye } from "lucide-react";
+import { ArrowLeft, XCircle, Package, User, Calendar, FileText } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
@@ -232,7 +232,7 @@ export default function RequestDetails() {
 
                     {request.notes && (
                         <div className="mt-4 flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <FileText className="h-5 w-5 text-gray-400 mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-gray-500">Примечания</div>
                                 <div className="mt-1">
@@ -269,7 +269,6 @@ export default function RequestDetails() {
                 </CardContent>
             </Card>
 
-            {/* Список товаров */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -364,7 +363,6 @@ export default function RequestDetails() {
                 </CardContent>
             </Card>
 
-            {/* Диалог отклонения */}
             <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

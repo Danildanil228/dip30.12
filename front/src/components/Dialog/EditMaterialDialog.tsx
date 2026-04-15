@@ -246,7 +246,6 @@ export default function EditMaterialDialog({
                                 </div>
                             </div>
 
-                            {/* Категория */}
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-material-category">Категория</Label>
                                 <Select

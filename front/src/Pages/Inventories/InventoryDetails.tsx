@@ -7,7 +7,6 @@ import { ArrowLeft, Package, User, Calendar, FileText, CheckCircle } from "lucid
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale/ru";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 
@@ -200,7 +199,7 @@ export default function InventoryDetails() {
 
                     {inventory.description && (
                         <div className="mt-4 flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <FileText className="h-5 w-5 text-gray-600 mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-gray-600">Примечания</div>
                                 <div className="mt-1">
