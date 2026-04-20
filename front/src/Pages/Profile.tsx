@@ -616,12 +616,13 @@ export default function Profile() {
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0" align="start">
                                             <Calendar
+                                                className="text-lg"
                                                 mode="single"
                                                 locale={ru}
                                                 selected={birthday}
                                                 onSelect={setBirthday}
                                                 captionLayout="dropdown"
-                                                fromYear={1900}
+                                                fromYear={1960}
                                                 toYear={new Date().getFullYear() - 18}
                                                 disabled={(date) => date > new Date(new Date().setFullYear(new Date().getFullYear() - 18))}
                                             />
