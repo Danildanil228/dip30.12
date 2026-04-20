@@ -14,6 +14,7 @@ import axios from "axios";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface UserProfile {
     id: number;
@@ -395,9 +396,7 @@ export default function Profile() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
+            <LoadingSpinner/>
         );
     }
 
