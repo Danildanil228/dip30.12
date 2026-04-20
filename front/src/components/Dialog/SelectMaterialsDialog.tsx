@@ -491,7 +491,6 @@ export default function SelectMaterialsDialog({
                     )}
                 </div>
                 
-
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Отмена
