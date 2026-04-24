@@ -129,8 +129,6 @@ export default function InventoryConduct() {
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
-
-            alert("Результаты сохранены");
         } catch (error: any) {
             console.error("Ошибка сохранения:", error);
             setError(error.response?.data?.error || "Ошибка сохранения");
@@ -174,8 +172,6 @@ export default function InventoryConduct() {
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
-
-            alert("Инвентаризация завершена и отправлена на проверку");
             navigate("/inventories");
         } catch (error: any) {
             console.error("Ошибка завершения:", error);

@@ -117,7 +117,6 @@ export default function InventoryReview() {
                 }
             );
 
-            alert("Инвентаризация подтверждена, остатки обновлены");
             navigate("/inventories");
         } catch (error: any) {
             console.error("Ошибка подтверждения:", error);
@@ -141,8 +140,6 @@ export default function InventoryReview() {
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
-
-            alert("Инвентаризация отменена");
             navigate("/inventories");
         } catch (error: any) {
             console.error("Ошибка отмены:", error);
