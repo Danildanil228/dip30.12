@@ -5,9 +5,20 @@ import { RequestsReport } from "@/components/Reports/RequestsReport";
 import { TurnoverBalanceReport } from "@/components/Reports/TurnoverBalanceReport";
 import { UserActivityReport } from "@/components/Reports/UserActivityReport";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { useUser } from "@/hooks/useUser";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Navigate } from "react-router-dom";
 
 export default function Reports() {
     const [activeTab, setActiveTab] = useState("movement");
+    const { user, loading } = useUser();
+
+    if (loading) {
+        return <LoadingSpinner />;
+    }
+    if (user?.role === 'storekeeper') {
+        return <Navigate to="/main" replace />;
+    }
 
     return (
         <div className="space-y-6">

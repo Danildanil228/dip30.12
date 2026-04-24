@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import DarkModeButtonToggle from "./DarkModeButtonToggle";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
@@ -10,6 +10,7 @@ import { useState } from "react";
 export default function Header() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const { isAdmin } = useUser();
+
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
     return (
         <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
@@ -49,9 +50,12 @@ export default function Header() {
                         <DropdownMenuItem>
                             <Link to="/dashboard">Дашборд</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <Link to="/reports">Отчеты</Link>
-                        </DropdownMenuItem>
+                        {user?.role !== "storekeeper" && (
+                            <DropdownMenuItem>
+                                <Link to="/reports">Отчеты</Link>
+                            </DropdownMenuItem>
+                        )}
+
                         <DropdownMenuItem
                             className="cursor-pointer"
                             onSelect={(e) => {
