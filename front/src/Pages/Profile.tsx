@@ -4,7 +4,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { ChevronDownIcon, ArrowLeft, Mail, Phone, Calendar as CalendarIcon, User, Shield, Clock } from "lucide-react";
+import { ChevronDownIcon, ArrowLeft, Mail, Phone, Calendar as CalendarIcon, User, Clock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,7 +118,7 @@ export default function Profile() {
 
     const validateEmail = (value: string): string => {
         if (!value.trim()) {
-            return ""; 
+            return "";
         }
         const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
         if (!emailRegex.test(value)) {
@@ -129,9 +129,9 @@ export default function Profile() {
 
     const validatePhone = (value: string): string => {
         if (!value.trim()) {
-            return ""; 
+            return "";
         }
-       
+
         const phoneRegex = /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
         const cleanPhone = value.replace(/[\s\-\(\)]/g, "");
         const phoneRegexClean = /^(\+7|8)?[0-9]{10}$/;
@@ -395,9 +395,7 @@ export default function Profile() {
     };
 
     if (loading) {
-        return (
-            <LoadingSpinner/>
-        );
+        return <LoadingSpinner />;
     }
 
     if (!user) {

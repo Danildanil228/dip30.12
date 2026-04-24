@@ -61,7 +61,7 @@ export default function Inventories() {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/inventories`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setInventories(response.data.inventories || []);
             setCurrentPage(0);
@@ -79,8 +79,8 @@ export default function Inventories() {
                 `${API_BASE_URL}/inventories/${id}/start`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` },
-                },
+                    headers: { Authorization: `Bearer ${token}` }
+                }
             );
             fetchInventories();
         } catch (error: any) {
@@ -97,8 +97,8 @@ export default function Inventories() {
                 `${API_BASE_URL}/inventories/${completeDialog.id}/complete`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` },
-                },
+                    headers: { Authorization: `Bearer ${token}` }
+                }
             );
             setCompleteDialog({ open: false, id: null, title: "" });
             fetchInventories();
@@ -116,8 +116,8 @@ export default function Inventories() {
                 `${API_BASE_URL}/inventories/${cancelDialog.id}/cancel`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` },
-                },
+                    headers: { Authorization: `Bearer ${token}` }
+                }
             );
             setCancelDialog({ open: false, id: null, title: "" });
             fetchInventories();
@@ -132,7 +132,7 @@ export default function Inventories() {
         try {
             const token = localStorage.getItem("token");
             await axios.delete(`${API_BASE_URL}/inventories/${deleteDialog.id}`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setDeleteDialog({ open: false, id: null, title: "" });
             fetchInventories();
@@ -210,9 +210,7 @@ export default function Inventories() {
     };
 
     if (loading) {
-        return (
-            <LoadingSpinner/>
-        );
+        return <LoadingSpinner />;
     }
 
     return (
@@ -374,9 +372,7 @@ export default function Inventories() {
                                                     <DropdownMenuItem onClick={() => setCancelDialog({ open: true, id: inventory.id, title: inventory.title })}>Отменить</DropdownMenuItem>
                                                 )}
 
-                                                {isAdmin && inventory.status === "cancelled" && (
-                                                    <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>
-                                                )}
+                                                {isAdmin && inventory.status === "cancelled" && <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

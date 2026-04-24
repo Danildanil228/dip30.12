@@ -202,7 +202,7 @@ export default function InventoryConduct() {
         return { checked, total, percent: total === 0 ? 0 : Math.round((checked / total) * 100) };
     };
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -265,22 +265,14 @@ export default function InventoryConduct() {
 
                     {inventory.description && (
                         <div className="mt-4 flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-muted-foreground">Примечания</div>
                                 <div className="mt-1">
-                                    <div
-                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
-                                            }`}
-                                    >
-                                        {inventory.description}
-                                    </div>
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{inventory.description}</div>
                                     {inventory.description.length > 100 && (
-                                        <button
-                                            onClick={() => setNotesExpanded(!notesExpanded)}
-                                            className="text-sm mt-1 underline"
-                                        >
-                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
+                                            {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
                                     )}
                                 </div>
@@ -310,7 +302,7 @@ export default function InventoryConduct() {
                     )}
 
                     <div className="sm:flex gap-3 mt-4 grid sm:justify-end">
-                        <Button onClick={handleSave} disabled={saving || inventory.status !== "in_progress" || !isResponsible()} variant="outline" >
+                        <Button onClick={handleSave} disabled={saving || inventory.status !== "in_progress" || !isResponsible()} variant="outline">
                             <Save className="mr-2 h-4 w-4" />
                             Сохранить
                         </Button>
@@ -386,7 +378,10 @@ export default function InventoryConduct() {
                         <AlertDialogTitle>Завершить инвентаризацию?</AlertDialogTitle>
                         <AlertDialogDescription>
                             {uncheckedCount > 0 ? (
-                                <>Осталось не проверенных товаров: {uncheckedCount}.<br />Вы уверены, что хотите завершить?</>
+                                <>
+                                    Осталось не проверенных товаров: {uncheckedCount}.<br />
+                                    Вы уверены, что хотите завершить?
+                                </>
                             ) : (
                                 "Вы уверены, что хотите завершить инвентаризацию и отправить на проверку? После этого нельзя будет редактировать результаты."
                             )}

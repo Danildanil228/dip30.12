@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Plus, Trash2, AlertCircle, ChevronLeft, ChevronRight} from "lucide-react";
+import { Search, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Badge } from "@/components/ui/badge";
@@ -39,16 +39,10 @@ interface SelectMaterialsDialogProps {
     onOpenChange: (open: boolean) => void;
     onSelect: (items: SelectedItem[]) => void;
     selectedItems: SelectedItem[];
-    requestType: 'incoming' | 'outgoing';
+    requestType: "incoming" | "outgoing";
 }
 
-export default function SelectMaterialsDialog({
-    open,
-    onOpenChange,
-    onSelect,
-    selectedItems,
-    requestType
-}: SelectMaterialsDialogProps) {
+export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, selectedItems, requestType }: SelectMaterialsDialogProps) {
     const [materials, setMaterials] = useState<Material[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
@@ -66,7 +60,7 @@ export default function SelectMaterialsDialog({
             fetchMaterials();
             fetchCategories();
             const initialQuantities: { [key: number]: number } = {};
-            selectedItems.forEach(item => {
+            selectedItems.forEach((item) => {
                 initialQuantities[item.material_id] = item.quantity;
             });
             setQuantities(initialQuantities);
@@ -103,23 +97,21 @@ export default function SelectMaterialsDialog({
         }
     };
 
-    const filteredMaterials = materials.filter(material => {
-        const matchesSearch = searchTerm === "" || 
+    const filteredMaterials = materials.filter((material) => {
+        const matchesSearch =
+            searchTerm === "" ||
             material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             material.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (material.category_name && material.category_name.toLowerCase().includes(searchTerm.toLowerCase()));
-        
-        const matchesCategory = selectedCategory === "all" || 
-            (material.category_id && material.category_id.toString() === selectedCategory);
-        
+
+        const matchesCategory = selectedCategory === "all" || (material.category_id && material.category_id.toString() === selectedCategory);
+
         return matchesSearch && matchesCategory;
     });
 
     const totalItems = filteredMaterials.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const paginatedMaterials = showAll 
-        ? filteredMaterials 
-        : filteredMaterials.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+    const paginatedMaterials = showAll ? filteredMaterials : filteredMaterials.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
     const handleToggleShowAll = () => {
         if (showAll) {
@@ -131,17 +123,17 @@ export default function SelectMaterialsDialog({
     };
 
     const isMaterialSelected = (materialId: number) => {
-        return tempSelected.some(item => item.material_id === materialId);
+        return tempSelected.some((item) => item.material_id === materialId);
     };
 
     const handleQuantityBlur = (material: Material, inputValue: string) => {
         let quantity = parseInt(inputValue);
-        
+
         if (isNaN(quantity) || quantity < 1) {
             quantity = 1;
         }
-        
-        if (requestType === 'outgoing' && quantity > material.quantity) {
+
+        if (requestType === "outgoing" && quantity > material.quantity) {
             alert(`Недостаточно товара. Доступно: ${material.quantity} ${material.unit}`);
             quantity = Math.min(quantity, material.quantity);
             if (quantity < 1) quantity = 1;
@@ -149,7 +141,7 @@ export default function SelectMaterialsDialog({
                 inputRefs.current[material.id]!.value = quantity.toString();
             }
         }
-        
+
         setQuantities({ ...quantities, [material.id]: quantity });
     };
 
@@ -159,8 +151,8 @@ export default function SelectMaterialsDialog({
         }
 
         const quantity = quantities[material.id] || 1;
-        
-        if (requestType === 'outgoing' && quantity > material.quantity) {
+
+        if (requestType === "outgoing" && quantity > material.quantity) {
             alert(`Недостаточно товара. Доступно: ${material.quantity} ${material.unit}`);
             return;
         }
@@ -178,7 +170,7 @@ export default function SelectMaterialsDialog({
     };
 
     const handleRemoveMaterial = (materialId: number) => {
-        setTempSelected(tempSelected.filter(item => item.material_id !== materialId));
+        setTempSelected(tempSelected.filter((item) => item.material_id !== materialId));
         const newQuantities = { ...quantities };
         delete newQuantities[materialId];
         setQuantities(newQuantities);
@@ -186,12 +178,12 @@ export default function SelectMaterialsDialog({
 
     const handleSelectedItemQuantityBlur = (item: SelectedItem, inputValue: string) => {
         let quantity = parseInt(inputValue);
-        
+
         if (isNaN(quantity) || quantity < 1) {
             quantity = 1;
         }
-        
-        if (requestType === 'outgoing' && quantity > item.current_quantity) {
+
+        if (requestType === "outgoing" && quantity > item.current_quantity) {
             alert(`Недостаточно товара. Доступно: ${item.current_quantity} ${item.unit}`);
             quantity = Math.min(quantity, item.current_quantity);
             if (quantity < 1) quantity = 1;
@@ -199,13 +191,9 @@ export default function SelectMaterialsDialog({
                 inputRefs.current[item.material_id]!.value = quantity.toString();
             }
         }
-        
+
         setQuantities({ ...quantities, [item.material_id]: quantity });
-        setTempSelected(tempSelected.map(i =>
-            i.material_id === item.material_id
-                ? { ...i, quantity: quantity }
-                : i
-        ));
+        setTempSelected(tempSelected.map((i) => (i.material_id === item.material_id ? { ...i, quantity: quantity } : i)));
     };
 
     const handleConfirm = () => {
@@ -220,7 +208,7 @@ export default function SelectMaterialsDialog({
     const MaterialCard = ({ material }: { material: Material }) => {
         const isSelected = isMaterialSelected(material.id);
         const currentQuantity = quantities[material.id] || 1;
-        
+
         return (
             <Card className="mb-3">
                 <CardContent className="p-4">
@@ -228,15 +216,13 @@ export default function SelectMaterialsDialog({
                         <div className="flex-1">
                             <h3 className="font-semibold text-base">{material.name}</h3>
                             <p className="text-sm text-gray-500">Код: {material.code}</p>
-                            {material.category_name && (
-                                <p className="text-sm text-gray-500">Категория: {material.category_name}</p>
-                            )}
+                            {material.category_name && <p className="text-sm text-gray-500">Категория: {material.category_name}</p>}
                         </div>
                         <Badge variant={material.quantity === 0 ? "destructive" : "default"}>
                             {material.quantity} {material.unit}
                         </Badge>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm">Кол-во:</span>
@@ -253,12 +239,7 @@ export default function SelectMaterialsDialog({
                             />
                             <span className="text-sm">{material.unit}</span>
                         </div>
-                        <Button
-                            size="sm"
-                            onClick={() => handleAddMaterial(material)}
-                            disabled={isSelected || (requestType === 'outgoing' && material.quantity === 0)}
-                            variant={isSelected ? "secondary" : "default"}
-                        >
+                        <Button size="sm" onClick={() => handleAddMaterial(material)} disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)} variant={isSelected ? "secondary" : "default"}>
                             {isSelected ? "✓" : <Plus className="h-4 w-4" />}
                         </Button>
                     </div>
@@ -343,9 +324,7 @@ export default function SelectMaterialsDialog({
                                                 <TableCell className="font-mono">{material.code}</TableCell>
                                                 <TableCell>{material.name}</TableCell>
                                                 <TableCell>{material.category_name || "-"}</TableCell>
-                                                <TableCell>
-                                                    {material.quantity}
-                                                </TableCell>
+                                                <TableCell>{material.quantity}</TableCell>
                                                 <TableCell>{material.unit}</TableCell>
                                                 <TableCell className="w-24">
                                                     <Input
@@ -361,11 +340,7 @@ export default function SelectMaterialsDialog({
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleAddMaterial(material)}
-                                                        disabled={isSelected || (requestType === 'outgoing' && material.quantity === 0)}
-                                                    >
+                                                    <Button size="sm" onClick={() => handleAddMaterial(material)} disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)}>
                                                         <Plus className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>
@@ -383,46 +358,26 @@ export default function SelectMaterialsDialog({
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2"></div>
                             </div>
                         ) : paginatedMaterials.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                Товары не найдены
-                            </div>
+                            <div className="text-center py-8 text-gray-500">Товары не найдены</div>
                         ) : (
-                            paginatedMaterials.map((material) => (
-                                <MaterialCard key={material.id} material={material} />
-                            ))
+                            paginatedMaterials.map((material) => <MaterialCard key={material.id} material={material} />)
                         )}
                     </div>
 
                     {!showAll && totalPages > 1 && (
                         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                            <div className="text-sm text-gray-500 order-2 md:order-1">
-                                Всего товаров: {totalItems}
-                            </div>
+                            <div className="text-sm text-gray-500 order-2 md:order-1">Всего товаров: {totalItems}</div>
                             <div className="flex items-center gap-2 order-1 md:order-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                                    disabled={currentPage === 0}
-                                >
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
                                     <ChevronLeft className="h-4 w-4" />
                                 </Button>
                                 <span className="text-sm whitespace-nowrap">
                                     {currentPage + 1} / {totalPages}
                                 </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-                                    disabled={currentPage === totalPages - 1}
-                                >
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                                     <ChevronRight className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleToggleShowAll}
-                                >
+                                <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
                                     Развернуть
                                 </Button>
                             </div>
@@ -431,15 +386,9 @@ export default function SelectMaterialsDialog({
 
                     {showAll && totalItems > 10 && (
                         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                            <div className="text-sm text-gray-500 order-2 md:order-1">
-                                Всего товаров: {totalItems}
-                            </div>
+                            <div className="text-sm text-gray-500 order-2 md:order-1">Всего товаров: {totalItems}</div>
                             <div className="order-1 md:order-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleToggleShowAll}
-                                >
+                                <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
                                     Свернуть
                                 </Button>
                             </div>
@@ -475,11 +424,7 @@ export default function SelectMaterialsDialog({
                                                     />
                                                     <span className="text-sm">{item.unit}</span>
                                                 </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleRemoveMaterial(item.material_id)}
-                                                >
+                                                <Button variant="ghost" size="sm" onClick={() => handleRemoveMaterial(item.material_id)}>
                                                     <Trash2 className="h-4 w-4 text-red-500" />
                                                 </Button>
                                             </div>
@@ -490,14 +435,12 @@ export default function SelectMaterialsDialog({
                         </div>
                     )}
                 </div>
-                
+
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Отмена
                     </Button>
-                    <Button onClick={handleConfirm}>
-                        Подтвердить ({tempSelected.length})
-                    </Button>
+                    <Button onClick={handleConfirm}>Подтвердить ({tempSelected.length})</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

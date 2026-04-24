@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,12 +21,7 @@ interface EditCategoryDialogProps {
     children?: React.ReactNode;
 }
 
-export default function EditCategoryDialog({
-    categoryId,
-    onCategoryUpdated,
-    triggerButton,
-    children
-}: EditCategoryDialogProps) {
+export default function EditCategoryDialog({ categoryId, onCategoryUpdated, triggerButton, children }: EditCategoryDialogProps) {
     const [open, setOpen] = useState(false);
     const [category, setCategory] = useState<Category | null>(null);
     const [loading, setLoading] = useState(false);
@@ -48,12 +43,10 @@ export default function EditCategoryDialog({
             const token = localStorage.getItem("token");
 
             const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
 
-            const categoryData = response.data.categories.find(
-                (cat: Category) => cat.id === categoryId
-            );
+            const categoryData = response.data.categories.find((cat: Category) => cat.id === categoryId);
 
             if (categoryData) {
                 setCategory(categoryData);
@@ -62,7 +55,6 @@ export default function EditCategoryDialog({
             } else {
                 setError("Категория не найдена");
             }
-
         } catch (error) {
             console.error("Ошибка загрузки категории:", error);
             setError("Не удалось загрузить данные категории");
@@ -89,10 +81,10 @@ export default function EditCategoryDialog({
                 `${API_BASE_URL}/categories/${categoryId}`,
                 {
                     name: name.trim(),
-                    description: description.trim() || null,
+                    description: description.trim() || null
                 },
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 }
             );
 
@@ -101,7 +93,6 @@ export default function EditCategoryDialog({
             if (onCategoryUpdated) {
                 onCategoryUpdated();
             }
-
         } catch (error: any) {
             console.error("Ошибка обновления категории:", error);
             setError(error.response?.data?.error || "Ошибка обновления категории");
@@ -125,9 +116,7 @@ export default function EditCategoryDialog({
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Редактировать категорию</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {category ? `Редактирование: ${category.name}` : "Загрузка данных..."}
-                    </AlertDialogDescription>
+                    <AlertDialogDescription>{category ? `Редактирование: ${category.name}` : "Загрузка данных..."}</AlertDialogDescription>
                 </AlertDialogHeader>
 
                 {loadingData ? (
@@ -139,35 +128,21 @@ export default function EditCategoryDialog({
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-category-name">Название категории</Label>
-                                <Input
-                                    id="edit-category-name"
-                                    placeholder="Например: Цементные смеси"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    disabled={loading}
-                                    required
-                                />
+                                <Input id="edit-category-name" placeholder="Например: Цементные смеси" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-category-description">Описание</Label>
-                                <Textarea
-                                    id="edit-category-description"
-                                    placeholder="Описание категории..."
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    disabled={loading}
-                                    rows={3}
-                                />
+                                <Textarea id="edit-category-description" placeholder="Описание категории..." value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} rows={3} />
                             </div>
 
-                            {error && (
-                                <div className="text-red-500 text-sm">{error}</div>
-                            )}
+                            {error && <div className="text-red-500 text-sm">{error}</div>}
                         </div>
 
                         <AlertDialogFooter>
-                            <AlertDialogCancel disabled={loading} className="text-base">Отмена</AlertDialogCancel>
+                            <AlertDialogCancel disabled={loading} className="text-base">
+                                Отмена
+                            </AlertDialogCancel>
                             <Button type="submit" disabled={loading}>
                                 {loading ? "Сохранение..." : "Сохранить изменения"}
                             </Button>

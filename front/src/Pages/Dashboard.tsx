@@ -60,7 +60,7 @@ export default function Dashboard() {
     };
 
     if (loading && !metrics) {
-        return <LoadingSpinner/>
+        return <LoadingSpinner />;
     }
 
     return (

@@ -58,7 +58,7 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                 title: title.trim(),
                 request_type: requestType,
                 notes: notes.trim() || null,
-                items: selectedItems.map(item => ({
+                items: selectedItems.map((item) => ({
                     material_id: item.material_id,
                     quantity: item.quantity
                 })),
@@ -78,7 +78,6 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
 
             onOpenChange(false);
             onRequestCreated();
-
         } catch (error: any) {
             console.error("Ошибка создания заявки:", error);
             setError(error.response?.data?.error || "Ошибка создания заявки");
@@ -101,20 +100,11 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                     <div className="space-y-4">
                         <div className="gap-2 grid">
                             <Label htmlFor="title">Название заявки</Label>
-                            <Input
-                                id="title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                disabled={loading}
-                            />
+                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
                         </div>
                         <div className="gap-2 grid">
                             <Label htmlFor="type">Тип заявки</Label>
-                            <Select
-                                value={requestType}
-                                onValueChange={(value: "incoming" | "outgoing") => setRequestType(value)}
-                                disabled={loading}
-                            >
+                            <Select value={requestType} onValueChange={(value: "incoming" | "outgoing") => setRequestType(value)} disabled={loading}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
@@ -126,44 +116,20 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                         </div>
                         <div className="grid gap-2">
                             <Label>Товары</Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full mt-1"
-                                onClick={() => setShowMaterialsDialog(true)}
-                                disabled={loading}
-                            >
+                            <Button type="button" variant="outline" className="w-full mt-1" onClick={() => setShowMaterialsDialog(true)} disabled={loading}>
                                 <Package className="mr-2 h-4 w-4" />
-                                {selectedItems.length === 0
-                                    ? "Выбрать товары"
-                                    : `Выбрано товаров: ${selectedItems.length}`}
+                                {selectedItems.length === 0 ? "Выбрать товары" : `Выбрано товаров: ${selectedItems.length}`}
                             </Button>
-                            {selectedItems.length > 0 && (
-                                <div className="mt-2 text-sm text-green-600">
-                                    {selectedItems.length} товар(ов) добавлено
-                                </div>
-                            )}
+                            {selectedItems.length > 0 && <div className="mt-2 text-sm text-green-600">{selectedItems.length} товар(ов) добавлено</div>}
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="notes">Примечания</Label>
-                            <Textarea
-                                id="notes"
-                                placeholder="Дополнительная информация..."
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                rows={3}
-                                disabled={loading}
-                            />
+                            <Textarea id="notes" placeholder="Дополнительная информация..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} disabled={loading} />
                         </div>
 
                         {isAdmin && (
                             <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="isPublic"
-                                    checked={isPublic}
-                                    onCheckedChange={(checked) => setIsPublic(checked as boolean)}
-                                    disabled={loading}
-                                />
+                                <Checkbox id="isPublic" checked={isPublic} onCheckedChange={(checked) => setIsPublic(checked as boolean)} disabled={loading} />
                                 <Label htmlFor="isPublic" className="cursor-pointer">
                                     Отображать заявку для всех
                                 </Label>
@@ -194,13 +160,7 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                 </DialogContent>
             </Dialog>
 
-            <SelectMaterialsDialog
-                open={showMaterialsDialog}
-                onOpenChange={setShowMaterialsDialog}
-                onSelect={handleSelectMaterials}
-                selectedItems={selectedItems}
-                requestType={requestType}
-            />
+            <SelectMaterialsDialog open={showMaterialsDialog} onOpenChange={setShowMaterialsDialog} onSelect={handleSelectMaterials} selectedItems={selectedItems} requestType={requestType} />
         </>
     );
 }

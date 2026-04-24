@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
@@ -13,10 +13,7 @@ interface CreateBackupDialogProps {
     triggerButton?: React.ReactNode;
 }
 
-export default function CreateBackupDialog({
-    onBackupCreated,
-    triggerButton
-}: CreateBackupDialogProps) {
+export default function CreateBackupDialog({ onBackupCreated, triggerButton }: CreateBackupDialogProps) {
     const [open, setOpen] = useState(false);
     const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);
@@ -36,25 +33,24 @@ export default function CreateBackupDialog({
             const response = await axios.post(
                 `${API_BASE_URL}/backups`,
                 {
-                    description: description.trim() || null,
+                    description: description.trim() || null
                 },
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 }
             );
 
             setDescription("");
             setSuccess("Бэкап успешно создан!");
-            
+
             setTimeout(() => {
                 setOpen(false);
                 setSuccess(null);
-                
+
                 if (onBackupCreated) {
                     onBackupCreated();
                 }
             }, 2000);
-
         } catch (error: any) {
             console.error("Ошибка создания бэкапа:", error);
             setError(error.response?.data?.error || "Ошибка создания бэкапа");
@@ -74,9 +70,7 @@ export default function CreateBackupDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
-            <AlertDialogTrigger asChild>
-                {triggerButton || <Button>Создать</Button>}
-            </AlertDialogTrigger>
+            <AlertDialogTrigger asChild>{triggerButton || <Button>Создать</Button>}</AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Создать новый бэкап базы данных</AlertDialogTitle>
@@ -86,30 +80,13 @@ export default function CreateBackupDialog({
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="backup-description">Описание (необязательно)</Label>
-                            <Textarea
-                                id="backup-description"
-                                placeholder="Например: 'Бэкап перед обновлением системы'"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                disabled={loading}
-                                rows={3}
-                            />
-                            <p className="text-sm text-gray-500">
-                                Бэкап будет создан с текущим состоянием базы данных
-                            </p>
+                            <Textarea id="backup-description" placeholder="Например: 'Бэкап перед обновлением системы'" value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} rows={3} />
+                            <p className="text-sm text-gray-500">Бэкап будет создан с текущим состоянием базы данных</p>
                         </div>
 
-                        {error && (
-                            <div className="text-red-500 text-sm p-3 bg-red-50 rounded-md">
-                                {error}
-                            </div>
-                        )}
+                        {error && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-md">{error}</div>}
 
-                        {success && (
-                            <div className="text-green-500 text-sm p-3 bg-green-50 rounded-md">
-                                {success}
-                            </div>
-                        )}
+                        {success && <div className="text-green-500 text-sm p-3 bg-green-50 rounded-md">{success}</div>}
 
                         {loading && (
                             <div className="flex items-center justify-center p-4">
@@ -120,17 +97,10 @@ export default function CreateBackupDialog({
                     </div>
 
                     <AlertDialogFooter>
-                        <AlertDialogCancel 
-                            className="text-base" 
-                            disabled={loading}
-                        >
+                        <AlertDialogCancel className="text-base" disabled={loading}>
                             Отмена
                         </AlertDialogCancel>
-                        <Button 
-                            type="submit" 
-                            className="text-base" 
-                            disabled={loading || !!success}
-                        >
+                        <Button type="submit" className="text-base" disabled={loading || !!success}>
                             {loading ? "Создание..." : "Создать бэкап"}
                         </Button>
                     </AlertDialogFooter>

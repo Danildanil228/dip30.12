@@ -1,13 +1,13 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState } from "@tanstack/react-table";
 import { ArrowUpDown, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
@@ -55,11 +55,11 @@ export default function Backups() {
     };
 
     const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 B';
+        if (bytes === 0) return "0 B";
         const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const sizes = ["B", "KB", "MB", "GB"];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     };
 
     const handleDeleteBackup = async (id: number) => {
@@ -67,7 +67,7 @@ export default function Backups() {
             setDeleting(id);
             const token = localStorage.getItem("token");
             await axios.delete(`${API_BASE_URL}/backups/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setBackups(backups.filter((backup) => backup.id !== id));
         } catch (error: any) {
@@ -84,17 +84,16 @@ export default function Backups() {
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/backups/${id}/download`, {
                 headers: { Authorization: `Bearer ${token}` },
-                responseType: 'blob'
+                responseType: "blob"
             });
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
+            const link = document.createElement("a");
             link.href = url;
-            link.setAttribute('download', filename);
+            link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
             link.remove();
-
         } catch (error: any) {
             console.error("Ошибка скачивания бэкапа:", error);
             alert(error.response?.data?.error || "Не удалось скачать бэкап");
@@ -114,14 +113,7 @@ export default function Backups() {
                     aria-label="Select all"
                 />
             ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    className="scale-100"
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
+            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} className="scale-100" onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
             enableSorting: false,
             enableHiding: false
         },
@@ -134,10 +126,7 @@ export default function Backups() {
             accessorKey: "filename",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Имя файла
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -154,10 +143,7 @@ export default function Backups() {
             accessorKey: "file_size",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Размер
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -180,10 +166,7 @@ export default function Backups() {
                 }
 
                 return (
-                    <Link
-                        to={`/profile/${createdById}`}
-                        className="text-blue-500"
-                    >
+                    <Link to={`/profile/${createdById}`} className="text-blue-500">
                         {username}
                     </Link>
                 );
@@ -193,10 +176,7 @@ export default function Backups() {
             accessorKey: "created_at",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Дата создания
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -209,7 +189,7 @@ export default function Backups() {
         },
         {
             accessorKey: "actions",
-            header: 'Функции',
+            header: "Функции",
             cell: ({ row }) => {
                 const backup = row.original;
                 const isDownloading = downloading === backup.id;
@@ -217,44 +197,24 @@ export default function Backups() {
 
                 return (
                     <div className="flex items-center gap-3">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDownloadBackup(backup.id, backup.filename)}
-                            disabled={isDownloading || !backup.file_exists}
-                            title="Скачать бэкап"
-                        >
-                            <Download className={`h-4 w-4 ${isDownloading ? 'animate-pulse' : ''}`} />
+                        <Button variant="ghost" size="icon" onClick={() => handleDownloadBackup(backup.id, backup.filename)} disabled={isDownloading || !backup.file_exists} title="Скачать бэкап">
+                            <Download className={`h-4 w-4 ${isDownloading ? "animate-pulse" : ""}`} />
                         </Button>
 
                         {isAdmin && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        disabled={isDeleting}
-                                        title="Удалить бэкап"
-                                    >
-                                        <img
-                                            src="/trash.png"
-                                            className={`icon w-5 ${isDeleting ? 'animate-pulse' : ''}`}
-                                            alt="Удалить"
-                                        />
+                                    <Button variant="ghost" size="icon" disabled={isDeleting} title="Удалить бэкап">
+                                        <img src="/trash.png" className={`icon w-5 ${isDeleting ? "animate-pulse" : ""}`} alt="Удалить" />
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                            Удалить бэкап "{backup.filename}"?
-                                        </AlertDialogTitle>
+                                        <AlertDialogTitle>Удалить бэкап "{backup.filename}"?</AlertDialogTitle>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={() => handleDeleteBackup(backup.id)}
-                                            className="bg-red-600 hover:bg-red-700"
-                                        >
+                                        <AlertDialogAction onClick={() => handleDeleteBackup(backup.id)} className="bg-red-600 hover:bg-red-700">
                                             Удалить
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
@@ -272,7 +232,7 @@ export default function Backups() {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/backups`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setBackups(response.data.backups || []);
         } catch (error: any) {
@@ -306,7 +266,7 @@ export default function Backups() {
             const token = localStorage.getItem("token");
             for (const id of selectedIds) {
                 await axios.delete(`${API_BASE_URL}/backups/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 });
             }
 
@@ -335,13 +295,13 @@ export default function Backups() {
             columnFilters,
             columnVisibility,
             rowSelection,
-            pagination,
-        },
+            pagination
+        }
     });
 
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -353,11 +313,11 @@ export default function Backups() {
             accessorKey: "file_size",
             header: "Размер",
             format: (value: number) => {
-                if (value === 0) return '0 B';
+                if (value === 0) return "0 B";
                 const k = 1024;
-                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const sizes = ["B", "KB", "MB", "GB"];
                 const i = Math.floor(Math.log(value) / Math.log(k));
-                return parseFloat((value / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                return parseFloat((value / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
             }
         },
         { accessorKey: "created_by_username", header: "Создал" },
@@ -370,7 +330,7 @@ export default function Backups() {
 
     return (
         <section className="mx-auto">
-            <ScrollToTop/>
+            <ScrollToTop />
             <div className="flex justify-between items-center mb-6 gap-1">
                 <h1 className="text-2xl font-bold text-wrap">Бэкапы базы данных</h1>
                 {isAdmin && (
@@ -391,9 +351,7 @@ export default function Backups() {
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-600">
-                                Выбрано: {selectedCount}
-                            </span>
+                            <span className="text-sm text-gray-600">Выбрано: {selectedCount}</span>
                             {isAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -402,15 +360,11 @@ export default function Backups() {
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Будет удалено {selectedCount} бэкап(ов). Это действие нельзя отменить.
-                                            </AlertDialogDescription>
+                                            <AlertDialogDescription>Будет удалено {selectedCount} бэкап(ов). Это действие нельзя отменить.</AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteSelected}>
-                                                Удалить
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={handleDeleteSelected}>Удалить</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -419,12 +373,7 @@ export default function Backups() {
                     )}
 
                     <div className="ml-auto flex gap-2">
-                        <ExportButton
-                            data={backups}
-                            columns={backupColumnsForExport}
-                            filename="backups"
-                            title="Бэкапы базы данных"
-                        />
+                        <ExportButton data={backups} columns={backupColumnsForExport} filename="backups" title="Бэкапы базы данных" />
                         <Button variant="outline" onClick={fetchBackups}>
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Обновить
@@ -438,16 +387,7 @@ export default function Backups() {
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => {
-                                        return (
-                                            <TableHead key={header.id}>
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                        header.column.columnDef.header,
-                                                        header.getContext()
-                                                    )}
-                                            </TableHead>
-                                        );
+                                        return <TableHead key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>;
                                     })}
                                 </TableRow>
                             ))}
@@ -455,26 +395,15 @@ export default function Backups() {
                         <TableBody>
                             {table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                    >
+                                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                                         {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
+                                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                                         ))}
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
+                                    <TableCell colSpan={columns.length} className="h-24 text-center">
                                         Нет бэкапов. Создайте первый бэкап.
                                     </TableCell>
                                 </TableRow>
@@ -486,44 +415,25 @@ export default function Backups() {
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
                     <div className="text-sm text-gray-600">
                         Бэкапов: {table.getFilteredRowModel().rows.length}
-                        {backups.length > 0 && (
-                            <span className="ml-2">
-                                (Общий размер: {formatFileSize(backups.reduce((sum, b) => sum + b.file_size, 0))})
-                            </span>
-                        )}
+                        {backups.length > 0 && <span className="ml-2">(Общий размер: {formatFileSize(backups.reduce((sum, b) => sum + b.file_size, 0))})</span>}
                     </div>
                     <div className="flex items-center space-x-2">
                         {backups.length > 10 && (
-                            <Button
-                                variant="outline"
-                                onClick={handleToggleShowAll}
-                                className="ml-2"
-                            >
-                                {showAll ? 'Свернуть' : 'Развернуть'}
+                            <Button variant="outline" onClick={handleToggleShowAll} className="ml-2">
+                                {showAll ? "Свернуть" : "Развернуть"}
                             </Button>
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
                             <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    {'<'}
+                                <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                                    {"<"}
                                 </Button>
                                 <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из{" "}
-                                    {table.getPageCount()}
+                                    Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
                                 </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    {'>'}
+                                <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                                    {">"}
                                 </Button>
                             </div>
                         )}

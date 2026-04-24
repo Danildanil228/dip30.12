@@ -1,13 +1,13 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import ExportButton from "@/components/ExportButton";
@@ -35,7 +35,7 @@ interface Material {
 
 export default function Materials() {
     const { isAdmin } = useUser();
-    const [materials, setMaterials] = useState<Material[]>([])
+    const [materials, setMaterials] = useState<Material[]>([]);
     const [showAll, setShowAll] = useState(false);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -57,7 +57,7 @@ export default function Materials() {
         try {
             const token = localStorage.getItem("token");
             await axios.delete(`${API_BASE_URL}/materials/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setMaterials(materials.filter((material) => material.id !== id));
         } catch (error: any) {
@@ -77,14 +77,7 @@ export default function Materials() {
                     aria-label="Select all"
                 />
             ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    className="scale-100"
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
+            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} className="scale-100" onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
             enableSorting: false,
             enableHiding: false
         },
@@ -97,10 +90,7 @@ export default function Materials() {
             accessorKey: "name",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Название
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -117,10 +107,7 @@ export default function Materials() {
             accessorKey: "quantity",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Количество
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -132,10 +119,7 @@ export default function Materials() {
             accessorKey: "category_name",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Категория
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -162,10 +146,7 @@ export default function Materials() {
                 return (
                     <>
                         {isAdmin ? (
-                            <Link
-                                to={`/profile/${createdById}`}
-                                className="underline"
-                            >
+                            <Link to={`/profile/${createdById}`} className="underline">
                                 {username}
                             </Link>
                         ) : (
@@ -179,10 +160,7 @@ export default function Materials() {
             accessorKey: "created_at",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Дата создания
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -194,7 +172,7 @@ export default function Materials() {
             }
         },
         ...(() => {
-            const hasModifiedMaterials = materials.some(material => {
+            const hasModifiedMaterials = materials.some((material) => {
                 const createdDate = new Date(material.created_at);
                 const updatedDate = new Date(material.updated_at);
                 return createdDate.getTime() !== updatedDate.getTime();
@@ -225,16 +203,12 @@ export default function Materials() {
                         return (
                             <>
                                 {isAdmin ? (
-                                    <Link
-                                        to={`/profile/${userId}`}
-                                        className="underline"
-                                    >
+                                    <Link to={`/profile/${userId}`} className="underline">
                                         {username}
                                     </Link>
                                 ) : (
                                     <p>{username}</p>
                                 )}
-
                             </>
                         );
                     }
@@ -244,41 +218,26 @@ export default function Materials() {
 
         {
             accessorKey: "actions",
-            header: 'Функции',
+            header: "Функции",
             cell: ({ row }) => {
                 const material = row.original;
                 return (
                     <div className="flex items-center gap-5">
                         {isAdmin && (
                             <>
-                                <EditMaterialDialog
-                                    materialId={material.id}
-                                    onMaterialUpdated={fetchMaterials}
-                                    triggerButton={
-                                        <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
-                                    }
-                                />
+                                <EditMaterialDialog materialId={material.id} onMaterialUpdated={fetchMaterials} triggerButton={<img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />} />
 
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <img
-                                            src="/trash.png"
-                                            className=" lg:w-5 w-5 icon cursor-pointer"
-                                            alt="Удалить"
-                                            title="Удалить материал"
-                                        />
+                                        <img src="/trash.png" className=" lg:w-5 w-5 icon cursor-pointer" alt="Удалить" title="Удалить материал" />
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>
-                                                Удалить материал {material.name}?
-                                            </AlertDialogTitle>
+                                            <AlertDialogTitle>Удалить материал {material.name}?</AlertDialogTitle>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>
-                                                Удалить
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>Удалить</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -295,7 +254,7 @@ export default function Materials() {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/materials`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setMaterials(response.data.materials);
         } catch (error: any) {
@@ -325,7 +284,7 @@ export default function Materials() {
             const token = localStorage.getItem("token");
             for (const id of selectedIds) {
                 await axios.delete(`${API_BASE_URL}/materials/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 });
             }
 
@@ -354,13 +313,13 @@ export default function Materials() {
             columnFilters,
             columnVisibility,
             rowSelection,
-            pagination,
-        },
+            pagination
+        }
     });
 
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -385,24 +344,21 @@ export default function Materials() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Материалы</h1>
                 {isAdmin && (
-                    <CreateMaterialDialog onMaterialCreated={() => { fetchMaterials() }} />
+                    <CreateMaterialDialog
+                        onMaterialCreated={() => {
+                            fetchMaterials();
+                        }}
+                    />
                 )}
             </div>
 
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
-                    <Input
-                        placeholder="Поиск по названию..."
-                        value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                        className="max-w-sm"
-                    />
+                    <Input placeholder="Поиск по названию..." value={(table.getColumn("name")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)} className="max-w-sm" />
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm">
-                                Выбрано: {selectedCount}
-                            </span>
+                            <span className="text-sm">Выбрано: {selectedCount}</span>
                             {isAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -414,9 +370,7 @@ export default function Materials() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteSelected}>
-                                                Удалить
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={handleDeleteSelected}>Удалить</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -425,12 +379,7 @@ export default function Materials() {
                     )}
 
                     <div className="ml-auto flex gap-2">
-                        <ExportButton
-                            data={materials}
-                            columns={materialColumnsForExport}
-                            filename="materials"
-                            title="Материалы"
-                        />
+                        <ExportButton data={materials} columns={materialColumnsForExport} filename="materials" title="Материалы" />
                         <Button variant="outline" onClick={fetchMaterials}>
                             Обновить
                         </Button>
@@ -443,16 +392,7 @@ export default function Materials() {
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => {
-                                        return (
-                                            <TableHead key={header.id}>
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                        header.column.columnDef.header,
-                                                        header.getContext()
-                                                    )}
-                                            </TableHead>
-                                        );
+                                        return <TableHead key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>;
                                     })}
                                 </TableRow>
                             ))}
@@ -460,26 +400,15 @@ export default function Materials() {
                         <TableBody>
                             {table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                    >
+                                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                                         {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
+                                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                                         ))}
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
+                                    <TableCell colSpan={columns.length} className="h-24 text-center">
                                         Нет материалов.
                                     </TableCell>
                                 </TableRow>
@@ -488,41 +417,24 @@ export default function Materials() {
                     </Table>
                 </div>
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm">
-                        Материалов: {table.getFilteredRowModel().rows.length}
-                    </div>
+                    <div className="text-sm">Материалов: {table.getFilteredRowModel().rows.length}</div>
                     <div className="flex items-center space-x-2">
                         {materials.length > 10 && (
-                            <Button
-                                variant="outline"
-                                onClick={handleToggleShowAll}
-                                className="ml-2"
-                            >
-                                {showAll ? 'Свернуть' : 'Развернуть'}
+                            <Button variant="outline" onClick={handleToggleShowAll} className="ml-2">
+                                {showAll ? "Свернуть" : "Развернуть"}
                             </Button>
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
                             <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    {'<'}
+                                <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                                    {"<"}
                                 </Button>
                                 <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из{" "}
-                                    {table.getPageCount()}
+                                    Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
                                 </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    {'>'}
+                                <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                                    {">"}
                                 </Button>
                             </div>
                         )}

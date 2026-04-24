@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
@@ -19,16 +19,9 @@ interface CreateMaterialDialogProps {
     triggerButton?: React.ReactNode;
 }
 
-const MATERIAL_UNITS = [
-    "шт", "кг", "г", "т","м", "см", "мм",
-    "м²", "м³","л", "мл","упак.", "рулон", 
-    "лист","мешок", "банка", "ведро", "пара", "комплект", "набор"
-];
+const MATERIAL_UNITS = ["шт", "кг", "г", "т", "м", "см", "мм", "м²", "м³", "л", "мл", "упак.", "рулон", "лист", "мешок", "банка", "ведро", "пара", "комплект", "набор"];
 
-export default function CreateMaterialDialog({
-    onMaterialCreated,
-    triggerButton
-}: CreateMaterialDialogProps) {
+export default function CreateMaterialDialog({ onMaterialCreated, triggerButton }: CreateMaterialDialogProps) {
     const [open, setOpen] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
@@ -53,7 +46,7 @@ export default function CreateMaterialDialog({
             setLoadingCategories(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setCategories(response.data.categories || []);
         } catch (error) {
@@ -66,12 +59,11 @@ export default function CreateMaterialDialog({
     const generateMaterialCode = () => {
         if (!name.trim()) return;
 
-        const words = name.trim().split(' ');
-        let codePrefix = '';
+        const words = name.trim().split(" ");
+        let codePrefix = "";
 
         if (words.length >= 2) {
-            codePrefix = words[0].charAt(0).toUpperCase() +
-                words[1].charAt(0).toUpperCase();
+            codePrefix = words[0].charAt(0).toUpperCase() + words[1].charAt(0).toUpperCase();
         } else {
             codePrefix = words[0].substring(0, 3).toUpperCase();
         }
@@ -115,10 +107,10 @@ export default function CreateMaterialDialog({
                     description: description.trim() || null,
                     unit,
                     quantity: quantityNum,
-                    category_id: categoryIdToSend ? parseInt(categoryIdToSend) : null,
+                    category_id: categoryIdToSend ? parseInt(categoryIdToSend) : null
                 },
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 }
             );
 
@@ -133,7 +125,6 @@ export default function CreateMaterialDialog({
             if (onMaterialCreated) {
                 onMaterialCreated();
             }
-
         } catch (error: any) {
             console.error("Ошибка создания материала:", error);
             setError(error.response?.data?.error || "Ошибка создания материала");
@@ -157,9 +148,7 @@ export default function CreateMaterialDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
-            <AlertDialogTrigger asChild>
-                {triggerButton || <Button>Добавить</Button>}
-            </AlertDialogTrigger>
+            <AlertDialogTrigger asChild>{triggerButton || <Button>Добавить</Button>}</AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Добавить новый материал</AlertDialogTitle>
@@ -170,50 +159,23 @@ export default function CreateMaterialDialog({
                         <div className="grid grid-cols-1 gap-4">
                             <div className="grid gap-4">
                                 <Label htmlFor="material-name">Название материала</Label>
-                                <Input
-                                    id="material-name"
-                                    placeholder="Например: Цемент М500"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    disabled={loading}
-                                    required
-                                />
+                                <Input id="material-name" placeholder="Например: Цемент М500" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
                             </div>
 
                             <div className="grid gap-">
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="material-code">Код</Label>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={generateMaterialCode}
-                                        disabled={!name.trim() || loading}
-                                    >
+                                    <Button type="button" variant="ghost" size="sm" onClick={generateMaterialCode} disabled={!name.trim() || loading}>
                                         Сгенерировать
                                     </Button>
                                 </div>
-                                <Input
-                                    id="material-code"
-                                    placeholder="Например: CEM-001"
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value)}
-                                    disabled={loading}
-                                    required
-                                />
+                                <Input id="material-code" placeholder="Например: CEM-001" value={code} onChange={(e) => setCode(e.target.value)} disabled={loading} required />
                             </div>
                         </div>
 
                         <div className="grid gap-2">
                             <Label htmlFor="material-description">Описание</Label>
-                            <Textarea
-                                id="material-description"
-                                placeholder="Описание материала..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                disabled={loading}
-                                rows={3}
-                            />
+                            <Textarea id="material-description" placeholder="Описание материала..." value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} rows={3} />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -235,25 +197,13 @@ export default function CreateMaterialDialog({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="material-quantity">Начальное количество</Label>
-                                <Input
-                                    id="material-quantity"
-                                    type="number"
-                                    min="0"
-                                    placeholder="0"
-                                    value={quantity}
-                                    onChange={(e) => setQuantity(e.target.value)}
-                                    disabled={loading}
-                                />
+                                <Input id="material-quantity" type="number" min="0" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} disabled={loading} />
                             </div>
                         </div>
 
                         <div className="grid gap-2">
                             <Label htmlFor="material-category">Категория</Label>
-                            <Select
-                                value={categoryId}
-                                onValueChange={setCategoryId}
-                                disabled={loading || loadingCategories}
-                            >
+                            <Select value={categoryId} onValueChange={setCategoryId} disabled={loading || loadingCategories}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Выберите категорию" />
                                 </SelectTrigger>
@@ -266,18 +216,16 @@ export default function CreateMaterialDialog({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {loadingCategories && (
-                                <p className="text-sm text-gray-500">Загрузка категорий...</p>
-                            )}
+                            {loadingCategories && <p className="text-sm text-gray-500">Загрузка категорий...</p>}
                         </div>
 
-                        {error && (
-                            <div className="text-red-500 text-sm">{error}</div>
-                        )}
+                        {error && <div className="text-red-500 text-sm">{error}</div>}
                     </div>
 
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={loading} className="text-base">Отмена</AlertDialogCancel>
+                        <AlertDialogCancel disabled={loading} className="text-base">
+                            Отмена
+                        </AlertDialogCancel>
                         <Button className="text-base" type="submit" disabled={loading}>
                             {loading ? "Создание..." : "Создать материал"}
                         </Button>

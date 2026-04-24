@@ -28,8 +28,8 @@ interface RequestItem {
 interface Request {
     id: number;
     title: string;
-    request_type: 'incoming' | 'outgoing';
-    status: 'pending' | 'approved' | 'rejected';
+    request_type: "incoming" | "outgoing";
+    status: "pending" | "approved" | "rejected";
     created_by: number;
     created_by_username: string;
     created_by_name: string;
@@ -53,8 +53,8 @@ export default function RequestDetails() {
     const [rejectionReason, setRejectionReason] = useState("");
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [processing, setProcessing] = useState(false);
-    const isAccountant = user?.role === 'accountant';
-    const canApprove = (isAdmin || isAccountant) && request?.status === 'pending';
+    const isAccountant = user?.role === "accountant";
+    const canApprove = (isAdmin || isAccountant) && request?.status === "pending";
     const [notesExpanded, setNotesExpanded] = useState(false);
 
     useEffect(() => {
@@ -88,9 +88,13 @@ export default function RequestDetails() {
         setProcessing(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`${API_BASE_URL}/requests/${id}/approve`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await axios.put(
+                `${API_BASE_URL}/requests/${id}/approve`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
             fetchRequestDetails();
         } catch (error: any) {
             console.error("Ошибка подтверждения:", error);
@@ -109,11 +113,15 @@ export default function RequestDetails() {
         setProcessing(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`${API_BASE_URL}/requests/${id}/reject`, {
-                rejection_reason: rejectionReason.trim()
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await axios.put(
+                `${API_BASE_URL}/requests/${id}/reject`,
+                {
+                    rejection_reason: rejectionReason.trim()
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
             setShowRejectDialog(false);
             setRejectionReason("");
             fetchRequestDetails();
@@ -127,11 +135,11 @@ export default function RequestDetails() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'pending':
+            case "pending":
                 return <Badge>На рассмотрении</Badge>;
-            case 'approved':
+            case "approved":
                 return <Badge>Подтверждена</Badge>;
-            case 'rejected':
+            case "rejected":
                 return <Badge>Отклонена</Badge>;
             default:
                 return <Badge>{status}</Badge>;
@@ -140,16 +148,16 @@ export default function RequestDetails() {
 
     const getTypeBadge = (type: string) => {
         switch (type) {
-            case 'incoming':
+            case "incoming":
                 return <Badge variant="outline">Приход</Badge>;
-            case 'outgoing':
+            case "outgoing":
                 return <Badge variant="outline">Расход</Badge>;
             default:
                 return <Badge variant="outline">{type}</Badge>;
         }
     };
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -167,11 +175,7 @@ export default function RequestDetails() {
 
     return (
         <div className="">
-            <Button
-                variant="ghost"
-                onClick={() => navigate("/requests")}
-                className="mb-4"
-            >
+            <Button variant="ghost" onClick={() => navigate("/requests")} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к заявкам
             </Button>
@@ -184,12 +188,9 @@ export default function RequestDetails() {
                             <div className="flex flex-wrap gap-2">
                                 {getStatusBadge(request.status)}
                                 {getTypeBadge(request.request_type)}
-                                {!request.is_public && (
-                                    <Badge variant="secondary">Приватная</Badge>
-                                )}
+                                {!request.is_public && <Badge variant="secondary">Приватная</Badge>}
                             </div>
                         </div>
-
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -236,18 +237,10 @@ export default function RequestDetails() {
                             <div className="flex-1">
                                 <div className="text-sm text-gray-500">Примечания</div>
                                 <div className="mt-1">
-                                    <div
-                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
-                                            }`}
-                                    >
-                                        {request.notes}
-                                    </div>
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{request.notes}</div>
                                     {request.notes.length > 100 && (
-                                        <button
-                                            onClick={() => setNotesExpanded(!notesExpanded)}
-                                            className="text-sm mt-1 underline"
-                                        >
-                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
+                                            {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
                                     )}
                                 </div>
@@ -260,9 +253,7 @@ export default function RequestDetails() {
                             <XCircle className="h-5 w-5 mt-0.5 text-gray-400" />
                             <div>
                                 <div className="text-sm text-gray-500">Причина отклонения</div>
-                                <div className="mt-1 text-base rounded">
-                                    {request.rejection_reason}
-                                </div>
+                                <div className="mt-1 text-base rounded">{request.rejection_reason}</div>
                             </div>
                         </div>
                     )}
@@ -303,9 +294,7 @@ export default function RequestDetails() {
                                                 <TableCell>{item.name}</TableCell>
                                                 <TableCell className="text-center">{item.unit}</TableCell>
                                                 <TableCell className="text-center">{item.current_quantity_at_request}</TableCell>
-                                                <TableCell className="text-center">
-                                                    {item.quantity}
-                                                </TableCell>
+                                                <TableCell className="text-center">{item.quantity}</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -316,10 +305,7 @@ export default function RequestDetails() {
                             <div className="sm:flex gap-2 grid sm:justify-end">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button
-                                            disabled={processing}
-                                            className=""
-                                        >
+                                        <Button disabled={processing} className="">
                                             Подтвердить
                                         </Button>
                                     </AlertDialogTrigger>
@@ -328,33 +314,17 @@ export default function RequestDetails() {
                                             <AlertDialogTitle>Подтвердить заявку?</AlertDialogTitle>
                                             <div className="py-2">
                                                 <p>{request?.title}</p>
-                                                {request?.request_type === 'incoming' && (
-                                                    <p className="text-sm mt-2">
-                                                        После подтверждения товары будут добавлены на склад.
-                                                    </p>
-                                                )}
-                                                {request?.request_type === 'outgoing' && (
-                                                    <p className="text-sm mt-2">
-                                                        После подтверждения товары будут списаны со склада.
-                                                    </p>
-                                                )}
+                                                {request?.request_type === "incoming" && <p className="text-sm mt-2">После подтверждения товары будут добавлены на склад.</p>}
+                                                {request?.request_type === "outgoing" && <p className="text-sm mt-2">После подтверждения товары будут списаны со склада.</p>}
                                             </div>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={handleApprove}
-                                            >
-                                                Подтвердить
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={handleApprove}>Подтвердить</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                                <Button
-                                    onClick={() => setShowRejectDialog(true)}
-                                    disabled={processing}
-                                    variant="destructive"
-                                >
+                                <Button onClick={() => setShowRejectDialog(true)} disabled={processing} variant="destructive">
                                     Отклонить
                                 </Button>
                             </div>
@@ -370,22 +340,11 @@ export default function RequestDetails() {
                     </AlertDialogHeader>
                     <div className="py-4">
                         <Label htmlFor="rejection-reason">Причина отклонения *</Label>
-                        <Textarea
-                            id="rejection-reason"
-                            placeholder="Укажите причину отклонения заявки..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            rows={4}
-                            className="mt-2"
-                        />
+                        <Textarea id="rejection-reason" placeholder="Укажите причину отклонения заявки..." value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={4} className="mt-2" />
                     </div>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={processing}>Отмена</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleReject}
-                            disabled={processing || !rejectionReason.trim()}
-                            className="bg-red-500 hover:bg-red-600"
-                        >
+                        <AlertDialogAction onClick={handleReject} disabled={processing || !rejectionReason.trim()} className="bg-red-500 hover:bg-red-600">
                             {processing ? "Отклонение..." : "Отклонить"}
                         </AlertDialogAction>
                     </AlertDialogFooter>

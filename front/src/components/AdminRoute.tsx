@@ -1,7 +1,7 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useUser } from '@/hooks/useUser';
-import { LoadingSpinner } from './LoadingSpinner';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useUser } from "@/hooks/useUser";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface AdminRouteProps {
     children: React.ReactNode;
@@ -9,7 +9,7 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     const { isAdmin, loading } = useUser();
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
     if (!isAdmin) {

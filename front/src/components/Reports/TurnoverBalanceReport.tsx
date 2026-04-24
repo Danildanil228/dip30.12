@@ -151,7 +151,7 @@ export function TurnoverBalanceReport() {
             />
 
             {loading ? (
-                <LoadingSpinner/>
+                <LoadingSpinner />
             ) : (
                 <>
                     <ExportButton

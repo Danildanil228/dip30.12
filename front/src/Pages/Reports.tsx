@@ -16,7 +16,7 @@ export default function Reports() {
     if (loading) {
         return <LoadingSpinner />;
     }
-    if (user?.role === 'storekeeper') {
+    if (user?.role === "storekeeper") {
         return <Navigate to="/main" replace />;
     }
 

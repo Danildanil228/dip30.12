@@ -81,8 +81,6 @@ export function ReportFilters({
                     <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={onStartDateChange} onEndDateChange={onEndDateChange} />
                 </div>
 
-                
-
                 {categories.length > 0 && onCategoryChange && (
                     <div>
                         <Label className="text-sm mb-2 block">Категория</Label>
@@ -139,7 +137,6 @@ export function ReportFilters({
                         </Select>
                     </div>
                 )}
-                
 
                 {statuses.length > 0 && onStatusChange && (
                     <div>
@@ -189,7 +186,6 @@ export function ReportFilters({
                     </div>
                 )}
             </div>
-            
 
             <div className="flex flex-wrap justify-between gap-2">
                 <div className="flex gap-2">

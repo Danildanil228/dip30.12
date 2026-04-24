@@ -157,7 +157,7 @@ export function RequestsReport() {
             />
 
             {loading ? (
-                <LoadingSpinner/>
+                <LoadingSpinner />
             ) : (
                 <>
                     <ExportButton
@@ -165,21 +165,27 @@ export function RequestsReport() {
                         columns={[
                             { accessorKey: "id", header: "№" },
                             { accessorKey: "title", header: "Название" },
-                            { accessorKey: "request_type", header: "Тип", format: (v) => v === "incoming" ? "Приход" : "Расход" },
+                            { accessorKey: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
                             {
-                                accessorKey: "status", header: "Статус", format: (v) => {
+                                accessorKey: "status",
+                                header: "Статус",
+                                format: (v) => {
                                     switch (v) {
-                                        case "pending": return "На рассмотрении";
-                                        case "approved": return "Подтверждена";
-                                        case "rejected": return "Отклонена";
-                                        default: return v;
+                                        case "pending":
+                                            return "На рассмотрении";
+                                        case "approved":
+                                            return "Подтверждена";
+                                        case "rejected":
+                                            return "Отклонена";
+                                        default:
+                                            return v;
                                     }
                                 }
                             },
                             { accessorKey: "created_by_username", header: "Создал" },
                             { accessorKey: "reviewed_by_username", header: "Рассмотрел", format: (v) => v || "-" },
                             { accessorKey: "created_at", header: "Дата создания", format: (v) => format(new Date(v), "dd.MM.yyyy") },
-                            { accessorKey: "items_preview", header: "Товары", format: (v) => v ? v.map((i: any) => `${i.name} (${i.quantity})`).join(", ") : "-" }
+                            { accessorKey: "items_preview", header: "Товары", format: (v) => (v ? v.map((i: any) => `${i.name} (${i.quantity})`).join(", ") : "-") }
                         ]}
                         filename="requests"
                         title="Отчет по заявкам"

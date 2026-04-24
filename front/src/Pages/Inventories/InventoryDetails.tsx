@@ -9,7 +9,6 @@ import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
-
 interface InventoryItem {
     id: number;
     inventory_id: number;
@@ -120,7 +119,7 @@ export default function InventoryDetails() {
         }
     };
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -203,18 +202,10 @@ export default function InventoryDetails() {
                             <div className="flex-1">
                                 <div className="text-sm text-gray-600">Примечания</div>
                                 <div className="mt-1">
-                                    <div
-                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
-                                            }`}
-                                    >
-                                        {inventory.description}
-                                    </div>
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{inventory.description}</div>
                                     {inventory.description.length > 100 && (
-                                        <button
-                                            onClick={() => setNotesExpanded(!notesExpanded)}
-                                            className="text-sm mt-1 underline"
-                                        >
-                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
+                                            {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
                                     )}
                                 </div>

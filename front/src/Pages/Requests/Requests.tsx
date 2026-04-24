@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus} from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
@@ -48,7 +48,7 @@ export default function Requests() {
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/requests`, {
                 headers: { Authorization: `Bearer ${token}` },
-                params: { status: statusFilter !== "all" ? statusFilter : undefined },
+                params: { status: statusFilter !== "all" ? statusFilter : undefined }
             });
             setRequests(response.data.requests);
             setCurrentPage(0);
@@ -63,9 +63,7 @@ export default function Requests() {
         fetchRequests();
     }, [statusFilter]);
 
-    const filteredRequests = requests.filter(
-        (request) => request.title.toLowerCase().includes(searchTerm.toLowerCase()) || request.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+    const filteredRequests = requests.filter((request) => request.title.toLowerCase().includes(searchTerm.toLowerCase()) || request.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
     const paginatedRequests = showAll ? filteredRequests : filteredRequests.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
@@ -103,9 +101,7 @@ export default function Requests() {
     };
 
     if (loading) {
-        return (
-            <LoadingSpinner/>
-        );
+        return <LoadingSpinner />;
     }
 
     return (

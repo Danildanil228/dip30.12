@@ -20,25 +20,29 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
     const exportToCSV = () => {
         setExporting(true);
         try {
-            const headers = columns.map(col => col.header).join(',');
-            const rows = data.map(item => 
-                columns.map(col => {
-                    let value = item[col.accessorKey];
-                    if (col.format) {
-                        value = col.format(value);
-                    }
-                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-                        value = `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value || '';
-                }).join(',')
-            ).join('\n');
-            
-            const csvContent = headers + '\n' + rows;
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const headers = columns.map((col) => col.header).join(",");
+            const rows = data
+                .map((item) =>
+                    columns
+                        .map((col) => {
+                            let value = item[col.accessorKey];
+                            if (col.format) {
+                                value = col.format(value);
+                            }
+                            if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+                                value = `"${value.replace(/"/g, '""')}"`;
+                            }
+                            return value || "";
+                        })
+                        .join(",")
+                )
+                .join("\n");
+
+            const csvContent = headers + "\n" + rows;
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `${filename}_${new Date().toISOString().split("T")[0]}.csv`;
             link.click();
         } catch (error) {
             console.error("Ошибка экспорта в CSV:", error);
@@ -51,11 +55,11 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
     const exportToExcel = async () => {
         setExporting(true);
         try {
-            const XLSX = await import('xlsx');
-            
-            const worksheetData = data.map(item => {
+            const XLSX = await import("xlsx");
+
+            const worksheetData = data.map((item) => {
                 const row: any = {};
-                columns.forEach(col => {
+                columns.forEach((col) => {
                     let value = item[col.accessorKey];
                     if (col.format) {
                         value = col.format(value);
@@ -64,12 +68,12 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                 });
                 return row;
             });
-            
+
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, title);
-            
-            XLSX.writeFile(workbook, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+            XLSX.writeFile(workbook, `${filename}_${new Date().toISOString().split("T")[0]}.xlsx`);
         } catch (error) {
             console.error("Ошибка экспорта в Excel:", error);
             alert("Ошибка при экспорте в Excel");
@@ -85,11 +89,11 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
         }
 
         setExporting(true);
-        
+
         try {
-            const printWindow = window.open('', '_blank');
+            const printWindow = window.open("", "_blank");
             if (!printWindow) {
-                alert('Разрешите всплывающие окна для экспорта');
+                alert("Разрешите всплывающие окна для экспорта");
                 setExporting(false);
                 return;
             }
@@ -209,7 +213,7 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                     <div class="header">
                         <h1>${title}</h1>
                         <div class="info">
-                            <div>Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
+                            <div>Дата: ${new Date().toLocaleDateString("ru-RU")}</div>
                             <div>Всего записей: ${data.length}</div>
                         </div>
                     </div>
@@ -217,25 +221,29 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                     <table>
                         <thead>
                             <tr>
-                                ${columns.map(col => `<th>${col.header}</th>`).join('')}
+                                ${columns.map((col) => `<th>${col.header}</th>`).join("")}
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(item => `
+                            ${data
+                                .map(
+                                    (item) => `
                                 <tr>
-                                    ${columns.map(col => {
-                                        let value = item[col.accessorKey];
-                                        if (col.format) {
-                                            value = col.format(value);
-                                        }
-                                        const text = String(value || '');
-                                        const displayText = text.length > 80 
-                                            ? text.substring(0, 77) + '...' 
-                                            : text;
-                                        return `<td>${displayText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
-                                    }).join('')}
+                                    ${columns
+                                        .map((col) => {
+                                            let value = item[col.accessorKey];
+                                            if (col.format) {
+                                                value = col.format(value);
+                                            }
+                                            const text = String(value || "");
+                                            const displayText = text.length > 80 ? text.substring(0, 77) + "..." : text;
+                                            return `<td>${displayText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</td>`;
+                                        })
+                                        .join("")}
                                 </tr>
-                            `).join('')}
+                            `
+                                )
+                                .join("")}
                         </tbody>
                     </table>
                     
@@ -256,11 +264,10 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
 
             printWindow.document.write(html);
             printWindow.document.close();
-            
+
             setTimeout(() => {
                 setExporting(false);
             }, 1000);
-            
         } catch (error) {
             console.error("Ошибка экспорта:", error);
             alert("Ошибка при подготовке документа");
@@ -272,11 +279,7 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={exporting || data.length === 0}>
-                    {exporting ? (
-                        <Loader2 className=" mr-2 animate-spin" />
-                    ) : (
-                        <Download className="mr-2" />
-                    )}
+                    {exporting ? <Loader2 className=" mr-2 animate-spin" /> : <Download className="mr-2" />}
                     {exporting ? "Экспорт..." : "Экспорт"}
                 </Button>
             </DropdownMenuTrigger>

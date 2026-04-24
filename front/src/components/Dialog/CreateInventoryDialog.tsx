@@ -128,32 +128,22 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
 
     const filteredUsers = users.filter((user) => {
         const search = userSearch.toLowerCase();
-        return (
-            user.name?.toLowerCase().includes(search) ||
-            user.secondname?.toLowerCase().includes(search) ||
-            user.username?.toLowerCase().includes(search)
-        );
+        return user.name?.toLowerCase().includes(search) || user.secondname?.toLowerCase().includes(search) || user.username?.toLowerCase().includes(search);
     });
 
     const filteredCategories = categories.filter((category) => category.name.toLowerCase().includes(categorySearch.toLowerCase()));
 
     const filteredMaterials = materials.filter((material) => {
-        const matchesSearch =
-            materialSearch === "" ||
-            material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-            material.code.toLowerCase().includes(materialSearch.toLowerCase());
+        const matchesSearch = materialSearch === "" || material.name.toLowerCase().includes(materialSearch.toLowerCase()) || material.code.toLowerCase().includes(materialSearch.toLowerCase());
 
-        const matchesCategory =
-            materialSelectedCategory === "all" || (material.category_id && material.category_id.toString() === materialSelectedCategory);
+        const matchesCategory = materialSelectedCategory === "all" || (material.category_id && material.category_id.toString() === materialSelectedCategory);
 
         return matchesSearch && matchesCategory;
     });
 
     const totalMaterials = filteredMaterials.length;
     const totalPages = Math.ceil(totalMaterials / itemsPerPage);
-    const paginatedMaterials = showAllMaterials
-        ? filteredMaterials
-        : filteredMaterials.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+    const paginatedMaterials = showAllMaterials ? filteredMaterials : filteredMaterials.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
     const handleCategoryToggle = (categoryId: number) => {
         setSelectedCategories((prev) => (prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]));
@@ -248,13 +238,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 <div className="space-y-4">
                     <div className="grid gap-2">
                         <Label htmlFor="title">Название</Label>
-                        <Input
-                            id="title"
-                            placeholder="Инвентаризация склада"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            disabled={loading}
-                        />
+                        <Input id="title" placeholder="Инвентаризация склада" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
                     </div>
                     <div className="grid gap-2">
                         <Label>Ответственный</Label>
@@ -280,8 +264,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                 {user.name} {user.secondname}
                                             </div>
                                             <div className="text-sm text-gray-500">
-                                                {user.username} •{" "}
-                                                {user.role === "admin" ? "Администратор" : user.role === "accountant" ? "Бухгалтер" : "Кладовщик"}
+                                                {user.username} • {user.role === "admin" ? "Администратор" : user.role === "accountant" ? "Бухгалтер" : "Кладовщик"}
                                             </div>
                                         </div>
                                         {responsiblePerson === user.id.toString() && <div className="text-gray-500 text-sm">Выбран</div>}
@@ -315,27 +298,14 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={endDate}
-                                        onSelect={setEndDate}
-                                        locale={ru}
-                                        disabled={(date) => (startDate ? date < startDate : false)}
-                                    />
+                                    <Calendar mode="single" selected={endDate} onSelect={setEndDate} locale={ru} disabled={(date) => (startDate ? date < startDate : false)} />
                                 </PopoverContent>
                             </Popover>
                         </div>
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="description">Описание</Label>
-                        <Textarea
-                            id="description"
-                            placeholder="Дополнительная информация..."
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            rows={2}
-                            disabled={loading}
-                        />
+                        <Textarea id="description" placeholder="Дополнительная информация..." value={description} onChange={(e) => setDescription(e.target.value)} rows={2} disabled={loading} />
                     </div>
 
                     <div className="border rounded-lg p-4">
@@ -343,24 +313,12 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
 
                         <div className="space-y-3 text-base">
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    id="all"
-                                    name="selectionMode"
-                                    checked={selectionMode === "all"}
-                                    onChange={() => setSelectionMode("all")}
-                                />
+                                <input type="radio" id="all" name="selectionMode" checked={selectionMode === "all"} onChange={() => setSelectionMode("all")} />
                                 <label htmlFor="all">Все товары</label>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    id="categories"
-                                    name="selectionMode"
-                                    checked={selectionMode === "categories"}
-                                    onChange={() => setSelectionMode("categories")}
-                                />
+                                <input type="radio" id="categories" name="selectionMode" checked={selectionMode === "categories"} onChange={() => setSelectionMode("categories")} />
                                 <label htmlFor="categories">Выбрать категории</label>
                             </div>
 
@@ -368,12 +326,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                 <div className="ml-6">
                                     <div className="relative mb-2">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                                        <Input
-                                            placeholder="Поиск категорий..."
-                                            value={categorySearch}
-                                            onChange={(e) => setCategorySearch(e.target.value)}
-                                            className="pl-10"
-                                        />
+                                        <Input placeholder="Поиск категорий..." value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} className="pl-10" />
                                     </div>
                                     <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2">
                                         {filteredCategories.length === 0 ? (
@@ -381,11 +334,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         ) : (
                                             filteredCategories.map((category) => (
                                                 <div key={category.id} className="flex items-center gap-2">
-                                                    <Checkbox
-                                                        id={`cat-${category.id}`}
-                                                        checked={selectedCategories.includes(category.id)}
-                                                        onCheckedChange={() => handleCategoryToggle(category.id)}
-                                                    />
+                                                    <Checkbox id={`cat-${category.id}`} checked={selectedCategories.includes(category.id)} onCheckedChange={() => handleCategoryToggle(category.id)} />
                                                     <label htmlFor={`cat-${category.id}`}>{category.name}</label>
                                                 </div>
                                             ))
@@ -395,13 +344,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                             )}
 
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    id="materials"
-                                    name="selectionMode"
-                                    checked={selectionMode === "materials"}
-                                    onChange={() => setSelectionMode("materials")}
-                                />
+                                <input type="radio" id="materials" name="selectionMode" checked={selectionMode === "materials"} onChange={() => setSelectionMode("materials")} />
                                 <label htmlFor="materials">Выбрать конкретные товары</label>
                             </div>
 
@@ -442,11 +385,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         ) : (
                                             paginatedMaterials.map((material) => (
                                                 <div key={material.id} className="flex items-center gap-2">
-                                                    <Checkbox
-                                                        id={`mat-${material.id}`}
-                                                        checked={selectedMaterials.includes(material.id)}
-                                                        onCheckedChange={() => handleMaterialToggle(material.id)}
-                                                    />
+                                                    <Checkbox id={`mat-${material.id}`} checked={selectedMaterials.includes(material.id)} onCheckedChange={() => handleMaterialToggle(material.id)} />
                                                     <label htmlFor={`mat-${material.id}`} className="text-sm">
                                                         {material.name} ({material.code})
                                                     </label>
@@ -459,23 +398,13 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         <div className="flex items-center justify-between mt-3">
                                             <div className="text-xs text-gray-500">Всего: {totalMaterials}</div>
                                             <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-                                                    disabled={currentPage === 0}
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
                                                     <ChevronLeft className="h-4 w-4" />
                                                 </Button>
                                                 <span className="text-sm">
                                                     {currentPage + 1} / {totalPages}
                                                 </span>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-                                                    disabled={currentPage === totalPages - 1}
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                                                     <ChevronRight className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="outline" size="sm" onClick={() => setShowAllMaterials(true)}>

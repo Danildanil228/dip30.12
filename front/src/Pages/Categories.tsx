@@ -55,7 +55,7 @@ export default function Categories() {
         try {
             const token = localStorage.getItem("token");
             const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.data.materialCount > 0) {
@@ -81,14 +81,7 @@ export default function Categories() {
                     aria-label="Select all"
                 />
             ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    className="scale-100"
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
+            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} className="scale-100" onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
             enableSorting: false,
             enableHiding: false
         },
@@ -101,10 +94,7 @@ export default function Categories() {
             accessorKey: "name",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Название
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -130,12 +120,13 @@ export default function Categories() {
 
                 return (
                     <>
-                        {isAdmin ? (<Link
-                            to={`/profile/${createdById}`}
-                            className="underline"
-                        >
-                            {username}
-                        </Link>) : (<p>{username}</p>)}
+                        {isAdmin ? (
+                            <Link to={`/profile/${createdById}`} className="underline">
+                                {username}
+                            </Link>
+                        ) : (
+                            <p>{username}</p>
+                        )}
                     </>
                 );
             }
@@ -144,10 +135,7 @@ export default function Categories() {
             accessorKey: "created_at",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Дата создания
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -159,7 +147,7 @@ export default function Categories() {
             }
         },
         ...(() => {
-            const hasModifiedCategory = categories.some(category => {
+            const hasModifiedCategory = categories.some((category) => {
                 const createdDate = new Date(category.created_at);
                 const updatedDate = new Date(category.updated_at);
                 return createdDate.getTime() !== updatedDate.getTime();
@@ -189,14 +177,14 @@ export default function Categories() {
 
                         return (
                             <>
-                            {isAdmin ? (<Link
-                                to={`/profile/${userId}`}
-                                className="underline"
-                            >
-                                {username}
-                            </Link>):(<p>{username}</p>)}
+                                {isAdmin ? (
+                                    <Link to={`/profile/${userId}`} className="underline">
+                                        {username}
+                                    </Link>
+                                ) : (
+                                    <p>{username}</p>
+                                )}
                             </>
-                            
                         );
                     }
                 }
@@ -204,43 +192,26 @@ export default function Categories() {
         })(),
         {
             accessorKey: "actions",
-            header: 'Функции',
+            header: "Функции",
             cell: ({ row }) => {
                 const category = row.original;
                 return (
                     <div className="flex items-center gap-5">
                         {isAdmin && (
                             <>
-                                <EditCategoryDialog
-                                    categoryId={category.id}
-                                    onCategoryUpdated={fetchCategories}
-                                    triggerButton={
-                                        <img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />
-                                    }
-                                />
-
-
+                                <EditCategoryDialog categoryId={category.id} onCategoryUpdated={fetchCategories} triggerButton={<img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />} />
 
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <img
-                                            src="/trash.png"
-                                            className="w-5 icon cursor-pointer"
-                                            alt="Удалить"
-                                            title="Удалить категорию"
-                                        />
+                                        <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить категорию" />
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>
-                                                Удалить категорию "{category.name}"?
-                                            </AlertDialogTitle>
+                                            <AlertDialogTitle>Удалить категорию "{category.name}"?</AlertDialogTitle>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
-                                                Удалить
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>Удалить</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -257,7 +228,7 @@ export default function Categories() {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setCategories(response.data.categories);
         } catch (error: any) {
@@ -287,7 +258,7 @@ export default function Categories() {
             const token = localStorage.getItem("token");
             for (const id of selectedIds) {
                 await axios.delete(`${API_BASE_URL}/categories/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 });
             }
 
@@ -316,13 +287,13 @@ export default function Categories() {
             columnFilters,
             columnVisibility,
             rowSelection,
-            pagination,
-        },
+            pagination
+        }
     });
 
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -339,7 +310,7 @@ export default function Categories() {
         {
             accessorKey: "updated_at",
             header: "Дата изменения",
-            format: (value: string) => value ? new Date(value).toLocaleDateString() : "-"
+            format: (value: string) => (value ? new Date(value).toLocaleDateString() : "-")
         }
     ];
 
@@ -349,24 +320,21 @@ export default function Categories() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Категории материалов</h1>
                 {isAdmin && (
-                    <CreateCategoryDialog onCategoryCreated={() => { fetchCategories() }} />
+                    <CreateCategoryDialog
+                        onCategoryCreated={() => {
+                            fetchCategories();
+                        }}
+                    />
                 )}
             </div>
 
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
-                    <Input
-                        placeholder="Поиск по названию..."
-                        value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                        className="max-w-sm"
-                    />
+                    <Input placeholder="Поиск по названию..." value={(table.getColumn("name")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)} className="max-w-sm" />
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm">
-                                Выбрано: {selectedCount}
-                            </span>
+                            <span className="text-sm">Выбрано: {selectedCount}</span>
                             {isAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -378,9 +346,7 @@ export default function Categories() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteSelected}>
-                                                Удалить
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={handleDeleteSelected}>Удалить</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -389,12 +355,7 @@ export default function Categories() {
                     )}
 
                     <div className="ml-auto flex gap-2">
-                        <ExportButton
-                            data={categories}
-                            columns={categoryColumnsForExport}
-                            filename="categories"
-                            title="Категории материалов"
-                        />
+                        <ExportButton data={categories} columns={categoryColumnsForExport} filename="categories" title="Категории материалов" />
                         <Button variant="outline" onClick={fetchCategories}>
                             Обновить
                         </Button>
@@ -407,16 +368,7 @@ export default function Categories() {
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => {
-                                        return (
-                                            <TableHead key={header.id}>
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                        header.column.columnDef.header,
-                                                        header.getContext()
-                                                    )}
-                                            </TableHead>
-                                        );
+                                        return <TableHead key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>;
                                     })}
                                 </TableRow>
                             ))}
@@ -424,26 +376,15 @@ export default function Categories() {
                         <TableBody>
                             {table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                    >
+                                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                                         {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
+                                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                                         ))}
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
+                                    <TableCell colSpan={columns.length} className="h-24 text-center">
                                         Нет категорий.
                                     </TableCell>
                                 </TableRow>
@@ -453,41 +394,24 @@ export default function Categories() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm">
-                        Категорий: {table.getFilteredRowModel().rows.length}
-                    </div>
+                    <div className="text-sm">Категорий: {table.getFilteredRowModel().rows.length}</div>
                     <div className="flex items-center space-x-2">
                         {categories.length > 10 && (
-                            <Button
-                                variant="outline"
-                                onClick={handleToggleShowAll}
-                                className="ml-2"
-                            >
-                                {showAll ? 'Свернуть' : 'Развернуть'}
+                            <Button variant="outline" onClick={handleToggleShowAll} className="ml-2">
+                                {showAll ? "Свернуть" : "Развернуть"}
                             </Button>
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
                             <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    {'<'}
+                                <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                                    {"<"}
                                 </Button>
                                 <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из{" "}
-                                    {table.getPageCount()}
+                                    Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
                                 </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    {'>'}
+                                <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                                    {">"}
                                 </Button>
                             </div>
                         )}

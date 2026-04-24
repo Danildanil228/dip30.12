@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import AddUserDialog from "@/components/Dialog/AddUserDialog";
@@ -45,93 +45,65 @@ export default function AllUsers() {
         setShowAll(!showAll);
     };
 
-
     const columns: ColumnDef<User>[] = [
         {
             id: "select",
             header: ({ table }) => (
                 <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
                     className="scale-100 sm:scale-100"
                     onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
                     aria-label="Select all"
                 />
             ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    className="scale-100 sm:scale-100"
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
+            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} className="scale-100 sm:scale-100" onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
             enableSorting: false,
-            enableHiding: false,
+            enableHiding: false
         },
         {
             accessorKey: "id",
             header: "ID",
-            cell: ({ row }) => <div>{row.getValue("id")}</div>,
+            cell: ({ row }) => <div>{row.getValue("id")}</div>
         },
         {
             accessorKey: "username",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Логин
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
             },
-            cell: ({ row }) => <div>{row.getValue("username")}</div>,
+            cell: ({ row }) => <div>{row.getValue("username")}</div>
         },
         {
             accessorKey: "name",
             header: "Имя",
-            cell: ({ row }) => <div>{row.getValue("name") || "-"}</div>,
+            cell: ({ row }) => <div>{row.getValue("name") || "-"}</div>
         },
         {
             accessorKey: "secondname",
             header: "Фамилия",
-            cell: ({ row }) => <div>{row.getValue("secondname") || "-"}</div>,
+            cell: ({ row }) => <div>{row.getValue("secondname") || "-"}</div>
         },
         {
             accessorKey: "role",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Роль
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
             },
-            cell: ({ row }) => (
-                <div className="capitalize">
-                    {row.getValue("role") === "admin"
-                        ? "Администратор"
-                        : row.getValue("role") === "accountant"
-                            ? "Бухгалтер"
-                            : "Кладовщик"}
-                </div>
-            ),
+            cell: ({ row }) => <div className="capitalize">{row.getValue("role") === "admin" ? "Администратор" : row.getValue("role") === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>
         },
         {
             accessorKey: "created_at",
             header: ({ column }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
                         Дата создания
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -140,11 +112,11 @@ export default function AllUsers() {
             cell: ({ row }) => {
                 const date = new Date(row.getValue("created_at"));
                 return <div>{date.toLocaleString("ru-RU")}</div>;
-            },
+            }
         },
         {
             accessorKey: "actions",
-            header: 'Функции',
+            header: "Функции",
             cell: ({ row }) => {
                 const user = row.original;
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -159,30 +131,22 @@ export default function AllUsers() {
                         </Link>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <img
-                                    src="/trash.png"
-                                    className="w-5 icon cursor-pointer"
-                                    alt="Удалить"
-                                />
+                                <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" />
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                        Удалить пользователя {user.username}?
-                                    </AlertDialogTitle>
+                                    <AlertDialogTitle>Удалить пользователя {user.username}?</AlertDialogTitle>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
-                                        Удалить
-                                    </AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Удалить</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
                 );
-            },
-        },
+            }
+        }
     ];
 
     const fetchUsers = async () => {
@@ -190,7 +154,7 @@ export default function AllUsers() {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${API_BASE_URL}/users`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setUsers(response.data.users);
         } catch (error: any) {
@@ -218,7 +182,7 @@ export default function AllUsers() {
         try {
             const token = localStorage.getItem("token");
             await axios.delete(`${API_BASE_URL}/users/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setUsers(users.filter((user) => user.id !== id));
         } catch (error: any) {
@@ -246,7 +210,7 @@ export default function AllUsers() {
             const token = localStorage.getItem("token");
             for (const id of selectedIds) {
                 await axios.delete(`${API_BASE_URL}/users/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` }
                 });
             }
 
@@ -275,11 +239,11 @@ export default function AllUsers() {
             columnFilters,
             columnVisibility,
             rowSelection,
-            pagination,
-        },
+            pagination
+        }
     });
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -293,10 +257,14 @@ export default function AllUsers() {
             header: "Роль",
             format: (value: string) => {
                 switch (value) {
-                    case 'admin': return 'Администратор';
-                    case 'accountant': return 'Бухгалтер';
-                    case 'storekeeper': return 'Кладовщик';
-                    default: return value;
+                    case "admin":
+                        return "Администратор";
+                    case "accountant":
+                        return "Бухгалтер";
+                    case "storekeeper":
+                        return "Кладовщик";
+                    default:
+                        return value;
                 }
             }
         },
@@ -311,31 +279,24 @@ export default function AllUsers() {
 
     return (
         <section className="mx-auto">
-            <ScrollToTop/>
+            <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Все пользователи</h1>
                 <AddUserDialog onUserCreated={fetchUsers} />
-
             </div>
 
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
                     <Input
                         placeholder="Поиск по фамилии..."
-                        value={
-                            (table.getColumn("secondname")?.getFilterValue() as string) ?? ""
-                        }
-                        onChange={(event) =>
-                            table.getColumn("secondname")?.setFilterValue(event.target.value)
-                        }
+                        value={(table.getColumn("secondname")?.getFilterValue() as string) ?? ""}
+                        onChange={(event) => table.getColumn("secondname")?.setFilterValue(event.target.value)}
                         className="max-w-sm"
                     />
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-600">
-                                Выбрано: {selectedCount}
-                            </span>
+                            <span className="text-sm text-gray-600">Выбрано: {selectedCount}</span>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive">Удалить пользователей</Button>
@@ -346,9 +307,7 @@ export default function AllUsers() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDeleteSelected}>
-                                            Удалить
-                                        </AlertDialogAction>
+                                        <AlertDialogAction onClick={handleDeleteSelected}>Удалить</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -356,12 +315,7 @@ export default function AllUsers() {
                     )}
 
                     <div className="ml-auto flex gap-2">
-                        <ExportButton
-                            data={users}
-                            columns={userColumnsForExport}
-                            filename="users"
-                            title="Пользователи"
-                        />
+                        <ExportButton data={users} columns={userColumnsForExport} filename="users" title="Пользователи" />
                         <Button variant="outline" onClick={fetchUsers}>
                             Обновить
                         </Button>
@@ -374,16 +328,7 @@ export default function AllUsers() {
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => {
-                                        return (
-                                            <TableHead key={header.id}>
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                        header.column.columnDef.header,
-                                                        header.getContext()
-                                                    )}
-                                            </TableHead>
-                                        );
+                                        return <TableHead key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>;
                                     })}
                                 </TableRow>
                             ))}
@@ -391,26 +336,15 @@ export default function AllUsers() {
                         <TableBody>
                             {table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                    >
+                                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                                         {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
+                                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                                         ))}
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
+                                    <TableCell colSpan={columns.length} className="h-24 text-center">
                                         Нет пользователей.
                                     </TableCell>
                                 </TableRow>
@@ -420,42 +354,24 @@ export default function AllUsers() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-gray-600">
-                        Пользователей: {table.getFilteredRowModel().rows.length}
-                    </div>
+                    <div className="text-sm text-gray-600">Пользователей: {table.getFilteredRowModel().rows.length}</div>
                     <div className="flex items-center space-x-2">
                         {users.length > 10 && (
-
-                            <Button
-                                variant="outline"
-                                onClick={handleToggleShowAll}
-                                className="ml-2"
-                            >
-                                {showAll ? 'Свернуть' : 'Развернуть'}
+                            <Button variant="outline" onClick={handleToggleShowAll} className="ml-2">
+                                {showAll ? "Свернуть" : "Развернуть"}
                             </Button>
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
                             <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    {'<'}
+                                <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                                    {"<"}
                                 </Button>
                                 <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из{" "}
-                                    {table.getPageCount()}
+                                    Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
                                 </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    {'>'}
+                                <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                                    {">"}
                                 </Button>
                             </div>
                         )}

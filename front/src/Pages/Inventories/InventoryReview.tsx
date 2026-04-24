@@ -169,7 +169,7 @@ export default function InventoryReview() {
         return { total, withDifference, surplus, shortage };
     };
 
-        if (loading) {
+    if (loading) {
         return <LoadingSpinner />;
     }
 
@@ -230,22 +230,14 @@ export default function InventoryReview() {
 
                     {inventory.description && (
                         <div className="mt-4 flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-muted-foreground">Примечания</div>
                                 <div className="mt-1">
-                                    <div
-                                        className={`text-sm rounded ${!notesExpanded ? 'line-clamp-2' : ''
-                                            }`}
-                                    >
-                                        {inventory.description}
-                                    </div>
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{inventory.description}</div>
                                     {inventory.description.length > 100 && (
-                                        <button
-                                            onClick={() => setNotesExpanded(!notesExpanded)}
-                                            className="text-sm mt-1 underline"
-                                        >
-                                            {notesExpanded ? 'Свернуть' : 'Развернуть'}
+                                        <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
+                                            {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
                                     )}
                                 </div>
@@ -353,7 +345,8 @@ export default function InventoryReview() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Подтвердить инвентаризацию?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Вы уверены, что хотите подтвердить инвентаризацию "{inventory.title}"?<br />
+                            Вы уверены, что хотите подтвердить инвентаризацию "{inventory.title}"?
+                            <br />
                             Остатки на складе будут обновлены согласно результатам.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -369,7 +362,8 @@ export default function InventoryReview() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Отменить инвентаризацию?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Вы уверены, что хотите отменить инвентаризацию "{inventory.title}"?<br />
+                            Вы уверены, что хотите отменить инвентаризацию "{inventory.title}"?
+                            <br />
                             Все результаты будут отклонены.
                         </AlertDialogDescription>
                     </AlertDialogHeader>

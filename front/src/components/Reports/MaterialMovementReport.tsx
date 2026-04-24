@@ -153,7 +153,7 @@ export function MaterialMovementReport() {
             />
 
             {loading ? (
-                <LoadingSpinner/>
+                <LoadingSpinner />
             ) : (
                 <>
                     <ExportButton
@@ -161,7 +161,7 @@ export function MaterialMovementReport() {
                         columns={[
                             { accessorKey: "date", header: "Дата", format: (v) => format(new Date(v), "dd.MM.yyyy") },
                             { accessorKey: "request_title", header: "Заявка" },
-                            { accessorKey: "request_type", header: "Тип", format: (v) => v === "incoming" ? "Приход" : "Расход" },
+                            { accessorKey: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
                             { accessorKey: "material_name", header: "Материал" },
                             { accessorKey: "code", header: "Код" },
                             { accessorKey: "category_name", header: "Категория" },

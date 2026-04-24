@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface User {
     id: number;
@@ -13,18 +13,18 @@ export const useUser = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = localStorage.getItem("user");
         if (userData) {
             try {
                 setUser(JSON.parse(userData));
             } catch (error) {
-                console.error('Ошибка при парсинге user из localStorage:', error);
+                console.error("Ошибка при парсинге user из localStorage:", error);
             }
         }
         setLoading(false);
     }, []);
 
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === "admin";
 
     return { user, loading, isAdmin };
 };

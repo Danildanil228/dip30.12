@@ -160,7 +160,7 @@ export function UserActivityReport() {
             <ReportFilters startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} onApply={handleApply} onReset={handleReset} loading={loading} />
 
             {loading ? (
-                <LoadingSpinner/>
+                <LoadingSpinner />
             ) : (
                 <>
                     <ExportButton
@@ -178,10 +178,14 @@ export function UserActivityReport() {
                                 header: "Роль",
                                 format: (v: string) => {
                                     switch (v) {
-                                        case "admin": return "Администратор";
-                                        case "accountant": return "Бухгалтер";
-                                        case "storekeeper": return "Кладовщик";
-                                        default: return v;
+                                        case "admin":
+                                            return "Администратор";
+                                        case "accountant":
+                                            return "Бухгалтер";
+                                        case "storekeeper":
+                                            return "Кладовщик";
+                                        default:
+                                            return v;
                                     }
                                 }
                             },
