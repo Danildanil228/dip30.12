@@ -46,7 +46,7 @@ export default function AddUserDialog({
         if (!value.trim()) {
             return "Имя обязательно";
         }
-        const lettersRegex = /^[A-Za-zА-Яа-яЁё]+$/;
+        const lettersRegex = /^[А-Яа-яЁё]+$/;
         if (!lettersRegex.test(value)) {
             return "Имя должно содержать только буквы";
         }
@@ -60,7 +60,7 @@ export default function AddUserDialog({
         if (!value.trim()) {
             return "Фамилия обязательна";
         }
-        const lettersRegex = /^[A-Za-zА-Яа-яЁё]+$/;
+        const lettersRegex = /^[А-Яа-яЁё]+$/;
         if (!lettersRegex.test(value)) {
             return "Фамилия должна содержать только буквы";
         }
