@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus } from "lucide-react";
+import { Search} from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
@@ -110,7 +110,6 @@ export default function Requests() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Заявки</h1>
                 <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
                     Создать
                 </Button>
             </div>

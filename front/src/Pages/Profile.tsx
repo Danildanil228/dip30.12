@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { CapitalizedInput } from "@/components/CapitalizedInput";
 
 interface UserProfile {
     id: number;
@@ -523,7 +524,7 @@ export default function Profile() {
 
                                 <div className="grid gap-2">
                                     <label className="text-sm font-medium">Имя</label>
-                                    <Input
+                                    <CapitalizedInput
                                         type="text"
                                         placeholder="Имя"
                                         value={editData.name}
@@ -540,7 +541,7 @@ export default function Profile() {
 
                                 <div className="grid gap-2">
                                     <label className="text-sm font-medium">Фамилия</label>
-                                    <Input
+                                    <CapitalizedInput
                                         type="text"
                                         placeholder="Фамилия"
                                         value={editData.secondname}

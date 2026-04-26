@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface Category {
     id: number;
@@ -128,7 +129,7 @@ export default function EditCategoryDialog({ categoryId, onCategoryUpdated, trig
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-category-name">Название категории</Label>
-                                <Input id="edit-category-name" placeholder="Например: Цементные смеси" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
+                                <CapitalizedInput id="edit-category-name" placeholder="Например: Цементные смеси" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
                             </div>
 
                             <div className="grid gap-2">

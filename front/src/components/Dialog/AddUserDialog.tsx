@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface AddUserDialogProps {
     onUserCreated?: () => void;
@@ -253,7 +254,7 @@ export default function AddUserDialog({
                         <div className="grid lg:grid-cols-2 gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="add-user-name" className="text-lg">Имя</Label>
-                                <Input
+                                <CapitalizedInput
                                     id="add-user-name"
                                     placeholder="Имя"
                                     value={name}
@@ -272,7 +273,7 @@ export default function AddUserDialog({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="add-user-secondname" className="text-lg">Фамилия</Label>
-                                <Input
+                                <CapitalizedInput
                                     id="add-user-secondname"
                                     placeholder="Фамилия"
                                     value={secondname}

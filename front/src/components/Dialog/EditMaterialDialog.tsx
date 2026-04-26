@@ -9,6 +9,7 @@ import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Link } from "react-router-dom";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface Category {
     id: number;
@@ -162,7 +163,7 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="edit-material-name">Название материала</Label>
-                                    <Input id="edit-material-name" placeholder="Например: Цемент М500" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
+                                    <CapitalizedInput id="edit-material-name" placeholder="Например: Цемент М500" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
                                 </div>
 
                                 <div className="grid gap-2">

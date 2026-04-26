@@ -7,6 +7,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface CreateCategoryDialogProps {
     onCategoryCreated?: () => void;
@@ -81,7 +82,7 @@ export default function CreateCategoryDialog({ onCategoryCreated, triggerButton 
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="category-name">Название категории</Label>
-                            <Input id="category-name" placeholder="Например: Цементные смеси" value={categoryName} onChange={(e) => setCategoryName(e.target.value)} disabled={loading} required />
+                            <CapitalizedInput id="category-name" placeholder="Например: Цементные смеси" value={categoryName} onChange={(e) => setCategoryName(e.target.value)} disabled={loading} required />
                         </div>
 
                         <div className="grid gap-2">

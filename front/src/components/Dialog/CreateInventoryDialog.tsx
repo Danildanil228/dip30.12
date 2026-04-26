@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface User {
     id: number;
@@ -238,7 +239,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 <div className="space-y-4">
                     <div className="grid gap-2">
                         <Label htmlFor="title">Название</Label>
-                        <Input id="title" placeholder="Инвентаризация склада" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
+                        <CapitalizedInput id="title" placeholder="Инвентаризация склада" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
                     </div>
                     <div className="grid gap-2">
                         <Label>Ответственный</Label>

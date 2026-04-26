@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface Category {
     id: number;
@@ -159,7 +160,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                         <div className="grid grid-cols-1 gap-4">
                             <div className="grid gap-4">
                                 <Label htmlFor="material-name">Название материала</Label>
-                                <Input id="material-name" placeholder="Например: Цемент М500" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
+                                <CapitalizedInput id="material-name" placeholder="Например: Цемент М500" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
                             </div>
 
                             <div className="grid gap-">

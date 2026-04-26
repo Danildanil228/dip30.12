@@ -11,6 +11,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
 import SelectMaterialsDialog from "./SelectMaterialsDialog";
+import { CapitalizedInput } from "../CapitalizedInput";
 
 interface SelectedItem {
     material_id: number;
@@ -100,7 +101,7 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
                     <div className="space-y-4">
                         <div className="gap-2 grid">
                             <Label htmlFor="title">Название заявки</Label>
-                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
+                            <CapitalizedInput id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
                         </div>
                         <div className="gap-2 grid">
                             <Label htmlFor="type">Тип заявки</Label>
