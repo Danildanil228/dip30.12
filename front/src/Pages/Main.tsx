@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
-import { ChevronDown, ChevronUp, BookOpen, UserCog, Package, ClipboardList, BarChart3, FileText, Users, Database, Eye, PlusCircle, Search, CheckCircle, Edit } from "lucide-react";
+import { ChevronDown, ClipboardList, ChevronUp, BookOpen, UserCog, Package, BarChart3, FileText, Users, Database, PlusCircle, Search, CheckCircle, Edit } from "lucide-react";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Section {
@@ -13,17 +13,32 @@ interface Section {
 export default function Main() {
     const { user, isAdmin } = useUser();
     const [hideInstructions, setHideInstructions] = useState(false);
-    const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
-    const [sections, setSections] = useState<Section[]>([
-        { id: "welcome", title: "Добро пожаловать", icon: <BookOpen className="h-4 w-4" />, isOpen: true },
-        { id: "overview", title: "О программе", icon: <BookOpen className="h-4 w-4" />, isOpen: false },
-        { id: "navigation", title: "Навигация по системе", icon: <BookOpen className="h-4 w-4" />, isOpen: false },
-        { id: "storekeeper", title: "Инструкция для кладовщика", icon: <Package className="h-4 w-4" />, isOpen: false },
-        { id: "accountant", title: "Инструкция для бухгалтера", icon: <BarChart3 className="h-4 w-4" />, isOpen: false },
-        { id: "admin", title: "Инструкция для администратора", icon: <UserCog className="h-4 w-4" />, isOpen: false },
-        { id: "faq", title: "Часто задаваемые вопросы", icon: <BookOpen className="h-4 w-4" />, isOpen: false }
-    ]);
+    const allSections = useMemo<Section[]>(() => {
+        const base: Section[] = [
+            { id: "welcome", title: "Добро пожаловать", icon: <BookOpen className="h-4 w-4" />, isOpen: true },
+            { id: "overview", title: "О программе", icon: <BookOpen className="h-4 w-4" />, isOpen: false },
+            { id: "navigation", title: "Навигация по системе", icon: <BookOpen className="h-4 w-4" />, isOpen: false }
+        ];
+
+        if (user?.role === "storekeeper" || isAdmin) {
+            base.push({ id: "storekeeper", title: "Инструкция для кладовщика", icon: <Package className="h-4 w-4" />, isOpen: false });
+        }
+        if (user?.role === "accountant" || isAdmin) {
+            base.push({ id: "accountant", title: "Инструкция для бухгалтера", icon: <BarChart3 className="h-4 w-4" />, isOpen: false });
+        }
+        if (isAdmin) {
+            base.push({ id: "admin", title: "Инструкция для администратора", icon: <UserCog className="h-4 w-4" />, isOpen: false });
+        }
+
+        return base;
+    }, [user, isAdmin]);
+
+    const [sections, setSections] = useState<Section[]>(allSections);
+
+    useEffect(() => {
+        setSections(allSections);
+    }, [allSections]);
 
     useEffect(() => {
         const saved = localStorage.getItem("hideInstructions");
@@ -36,71 +51,14 @@ export default function Main() {
         setSections((prev) => prev.map((section) => (section.id === id ? { ...section, isOpen: !section.isOpen } : section)));
     };
 
-    const toggleHideInstructions = () => {
-        const newState = !hideInstructions;
-        setHideInstructions(newState);
-        localStorage.setItem("hideInstructions", String(newState));
-    };
-
-    const faqItems = [
-        {
-            question: "Что делать, если я забыл пароль?",
-            answer: "Обратитесь к администратору системы. Он сможет сбросить ваш пароль и выдать временный."
-        },
-        {
-            question: "Могу ли я редактировать созданную заявку?",
-            answer: "Нет, заявку нельзя редактировать после создания. Если вы ошиблись, создайте новую, а старую администратор может отклонить."
-        },
-        {
-            question: "Почему я не вижу некоторые заявки?",
-            answer: "Если заявка создана как приватная, её видят только создатель и администраторы. Публичные заявки видны всем пользователям."
-        },
-        {
-            question: "Как часто нужно делать бэкапы?",
-            answer: "Рекомендуется создавать бэкапы ежедневно или после каждого важного изменения."
-        },
-        {
-            question: "Что такое оборотно-сальдовая ведомость?",
-            answer: "Это отчёт, который показывает остатки материалов на начало и конец периода, а также движение (приход и расход) за выбранный промежуток времени."
-        },
-        {
-            question: "Можно ли восстановить удалённый материал?",
-            answer: "Нет, удаление материала необратимо. Если материал был удалён по ошибке, его нужно добавить заново."
-        }
-    ];
-
-    if (hideInstructions) {
-        return (
-            <div className="space-y-6">
-                <ScrollToTop />
-                <div className="border rounded-lg p-8 text-center">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <h2 className="text-lg font-medium mb-2">Инструкции скрыты</h2>
-                    <p className="text-lg text-muted-foreground mb-4">Вы скрыли обучающие инструкции. Вы всегда можете их снова показать.</p>
-                    <button onClick={toggleHideInstructions} className="px-4 py-2 text-lg border rounded-md hover:bg-muted transition-colors">
-                        Показать инструкции
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-4">
             <ScrollToTop />
-
-            <div className="flex justify-end">
-                <button onClick={toggleHideInstructions} className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    Скрыть инструкции
-                </button>
-            </div>
-
             <div className="border rounded-lg p-6">
                 <h1 className="text-xl font-semibold mb-1">
                     Добро пожаловать, {user?.name} {user?.secondname}
                 </h1>
-                <p className="text-lg text-muted-foreground">{user?.role === "admin" ? "Администратор" : user?.role === "accountant" ? "Бухгалтер" : "Кладовщик"} · Material House</p>
+                <p className="text-lg text-muted-foreground">{user?.role === "admin" ? "Администратор" : user?.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</p>
             </div>
 
             {sections.map((section) => (
@@ -225,12 +183,11 @@ export default function Main() {
                                 </div>
                             )}
 
-                            {section.id === "storekeeper" && (user?.role === "storekeeper" || isAdmin) && (
+                            {section.id === "storekeeper" && (
                                 <div className="space-y-4 text-lg">
                                     <div className="border-l-2 pl-3">
                                         <p className="text-sm text-muted-foreground">Как кладовщик, вы отвечаете за оперативную работу со складом.</p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <PlusCircle className="h-3 w-3" />
@@ -245,7 +202,6 @@ export default function Main() {
                                             <li>Нажмите «Создать заявку»</li>
                                         </ol>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2">Статусы заявок</h3>
                                         <ul className="space-y-1 text-sm text-muted-foreground ml-2">
@@ -254,7 +210,6 @@ export default function Main() {
                                             <li>• Отклонена — отказано, указана причина</li>
                                         </ul>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <ClipboardList className="h-3 w-3" />
@@ -262,7 +217,7 @@ export default function Main() {
                                         </h3>
                                         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
                                             <li>Перейдите в раздел «Инвентаризация»</li>
-                                            <li>Найдите инвентаризацию, где вы ответственный</li>
+                                            <li>Выберете инвентаризацию</li>
                                             <li>Нажмите «Начать»</li>
                                             <li>Введите фактическое количество для каждого товара</li>
                                             <li>При расхождениях укажите причину</li>
@@ -270,7 +225,6 @@ export default function Main() {
                                             <li>По окончании нажмите «Завершить»</li>
                                         </ol>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <Search className="h-3 w-3" />
@@ -281,12 +235,11 @@ export default function Main() {
                                 </div>
                             )}
 
-                            {section.id === "accountant" && (user?.role === "accountant" || isAdmin) && (
+                            {section.id === "accountant" && (
                                 <div className="space-y-4 text-lg">
                                     <div className="border-l-2 pl-3">
                                         <p className="text-sm text-muted-foreground">Как бухгалтер, вы контролируете движение товаров и формируете отчётность.</p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <CheckCircle className="h-3 w-3" />
@@ -299,7 +252,6 @@ export default function Main() {
                                             <li>Или «Отклонить» (обязательно укажите причину)</li>
                                         </ol>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <FileText className="h-3 w-3" />
@@ -314,7 +266,6 @@ export default function Main() {
                                         </ul>
                                         <p className="text-sm text-muted-foreground mt-1">Все отчёты можно экспортировать в Excel, CSV и PDF.</p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <ClipboardList className="h-3 w-3" />
@@ -324,7 +275,6 @@ export default function Main() {
                                             После завершения инвентаризации кладовщиком, она появляется в списке со статусом «Завершена, ожидает проверки». Откройте, проверьте расхождения и подтвердите (остатки обновятся) или отмените.
                                         </p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <BarChart3 className="h-3 w-3" />
@@ -335,12 +285,11 @@ export default function Main() {
                                 </div>
                             )}
 
-                            {section.id === "admin" && isAdmin && (
+                            {section.id === "admin" && (
                                 <div className="space-y-4 text-lg">
                                     <div className="border-l-2 pl-3">
                                         <p className="text-sm text-muted-foreground">Как администратор, вы имеете полный доступ ко всем функциям системы.</p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <Users className="h-3 w-3" />
@@ -354,7 +303,6 @@ export default function Main() {
                                             <li>Массовое удаление через чекбоксы</li>
                                         </ul>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <Database className="h-3 w-3" />
@@ -364,10 +312,8 @@ export default function Main() {
                                         <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
                                             <li>Создание бэкапов с описанием</li>
                                             <li>Скачивание бэкапов на компьютер</li>
-                                            <li>Автоматическое хранение 10 последних бэкапов</li>
                                         </ul>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <Edit className="h-3 w-3" />
@@ -377,7 +323,6 @@ export default function Main() {
                                             Только администратор может создавать, редактировать и удалять категории. При удалении категории с материалами или материала с ненулевым остатком система заблокирует удаление.
                                         </p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
                                             <FileText className="h-3 w-3" />
@@ -385,7 +330,6 @@ export default function Main() {
                                         </h3>
                                         <p className="text-sm text-muted-foreground">Раздел «Журнал» — все действия пользователей с фильтрацией по типу события.</p>
                                     </div>
-
                                     <div>
                                         <h3 className="font-medium text-sm mb-2">Дополнительные возможности</h3>
                                         <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
@@ -395,20 +339,6 @@ export default function Main() {
                                             <li>Мгновенное подтверждение заявок при создании</li>
                                         </ul>
                                     </div>
-                                </div>
-                            )}
-
-                            {section.id === "faq" && (
-                                <div className="space-y-2">
-                                    {faqItems.map((item, index) => (
-                                        <div key={index} className="border-b last:border-b-0 pb-2 last:pb-0">
-                                            <button onClick={() => setExpandedFaq(expandedFaq === index ? null : index)} className="w-full flex items-center justify-between py-2 text-left">
-                                                <span className="text-sm font-medium">{item.question}</span>
-                                                {expandedFaq === index ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                            </button>
-                                            {expandedFaq === index && <p className="text-sm text-muted-foreground pb-2">{item.answer}</p>}
-                                        </div>
-                                    ))}
                                 </div>
                             )}
                         </div>
