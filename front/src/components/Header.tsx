@@ -5,18 +5,32 @@ import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { useUser } from "@/hooks/useUser";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Header() {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const { isAdmin } = useUser();
-
+    const { user, isAdmin } = useUser();
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+    const [updateKey, setUpdateKey] = useState(0);
+
+    useEffect(() => {
+        const handleProfileUpdate = () => {
+            setUpdateKey((prev) => prev + 1);
+        };
+
+        window.addEventListener("profile-updated", handleProfileUpdate);
+        return () => {
+            window.removeEventListener("profile-updated", handleProfileUpdate);
+        };
+    }, []);
+
+    if (!user) return null;
+
     return (
         <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
             <Link to="/profile">{user.role === "admin" ? "Администратор" : user.role === "storekeeper" ? "Работник склада" : user.role === "accountant" ? "Бухгалтер" : "Неизвестная роль"}</Link>
             <Link to="/profile" className="lg:flex hidden">
-                {user.name + " " + user.secondname}
+                {user.name} {user.secondname}
             </Link>
 
             <div className="items-center flex gap-2 ">

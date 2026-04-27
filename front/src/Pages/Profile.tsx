@@ -48,6 +48,14 @@ export default function Profile() {
             const response = await axios.get(`${API_BASE_URL}/users/${targetUserId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            if (isOwnProfile) {
+                const updatedUser = {
+                    ...currentUser,
+                    ...response.data.user
+                };
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+                window.dispatchEvent(new Event("profile-updated")); // ← добавить
+            }
             setUser(response.data.user);
         } catch (error: any) {
             console.error("Ошибка загрузки профиля:", error);

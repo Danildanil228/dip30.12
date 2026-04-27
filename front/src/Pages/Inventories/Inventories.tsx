@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 import EditInventoryDialog from "@/components/Dialog/EditInventoryDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Inventory {
     id: number;
@@ -215,6 +216,7 @@ export default function Inventories() {
 
     return (
         <div>
+            <ScrollToTop/>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold">Инвентаризация</h1>
                 {isAdminOrAccountant && <Button onClick={() => setShowCreateDialog(true)}>Создать</Button>}
