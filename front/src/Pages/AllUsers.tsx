@@ -35,6 +35,7 @@ export default function AllUsers() {
         pageIndex: 0,
         pageSize: 10
     });
+    const [globalFilter, setGlobalFilter] = useState("");
 
     const handleToggleShowAll = () => {
         if (showAll) {
@@ -234,11 +235,13 @@ export default function AllUsers() {
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
         onPaginationChange: setPagination,
+        onGlobalFilterChange: setGlobalFilter,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
+            globalFilter,
             pagination
         }
     });
@@ -287,12 +290,7 @@ export default function AllUsers() {
 
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
-                    <Input
-                        placeholder="Поиск по фамилии..."
-                        value={(table.getColumn("secondname")?.getFilterValue() as string) ?? ""}
-                        onChange={(event) => table.getColumn("secondname")?.setFilterValue(event.target.value)}
-                        className="max-w-sm"
-                    />
+                    <Input placeholder="Поиск..." value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="max-w-sm" />
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">

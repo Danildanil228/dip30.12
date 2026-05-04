@@ -320,7 +320,7 @@ export default function Categories() {
 
             <div className="w-full">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
-                    <Input placeholder="Поиск по названию..." value={(table.getColumn("name")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)} className="max-w-sm" />
+                    <Input placeholder="Поиск..." value={(table.getColumn("name")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)} className="max-w-sm" />
 
                     {selectedCount > 0 && (
                         <div className="flex items-center gap-4">
