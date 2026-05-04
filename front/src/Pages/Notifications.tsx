@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
+import { X, FunnelPlus, FunnelX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,6 +32,16 @@ export default function Notifications({ onVisited }: LogsProps) {
     const [logs, setLogs] = useState<Log[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [itemsPerPage] = useState(10);
+    const [showAll, setShowAll] = useState(false);
+
+    const filteredLogs = selectedTypes.length > 0 ? logs.filter((log) => selectedTypes.includes(log.type)) : logs;
+    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+    const paginatedLogs = showAll ? filteredLogs : filteredLogs.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+    const handleResetFilters = () => {
+        setSelectedTypes([]);
+    };
 
     const LOG_TYPES = [
         { value: "user_created", label: "Создание пользователя", category: "users" },
@@ -107,8 +118,6 @@ export default function Notifications({ onVisited }: LogsProps) {
             console.error("Ошибка удаления логов:", error);
         }
     };
-
-    const filteredLogs = selectedTypes.length > 0 ? logs.filter((log) => selectedTypes.includes(log.type)) : logs;
 
     const handleTypeChange = (type: string, checked: boolean) => {
         if (checked) {
@@ -303,7 +312,10 @@ export default function Notifications({ onVisited }: LogsProps) {
                     <ExportButton data={filteredLogs} columns={logColumnsForExport} filename="logs" title="Журнал действий" />
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline">Фильтры {selectedTypes.length > 0 && `(${selectedTypes.length})`}</Button>
+                            <Button variant="outline">
+                                <FunnelPlus />
+                                Фильтры {selectedTypes.length > 0 && `(${selectedTypes.length})`}
+                            </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 p-4 max-h-96 overflow-y-auto">
                             <div className="space-y-4">
@@ -325,6 +337,11 @@ export default function Notifications({ onVisited }: LogsProps) {
                             </div>
                         </PopoverContent>
                     </Popover>
+                    {selectedTypes.length > 0 && (
+                        <Button variant="outline" onClick={handleResetFilters}>
+                            <FunnelX />
+                        </Button>
+                    )}
 
                     {logs.length > 1 && (
                         <AlertDialog>
@@ -343,10 +360,42 @@ export default function Notifications({ onVisited }: LogsProps) {
                         </AlertDialog>
                     )}
                 </div>
+                
             </div>
+            {filteredLogs.length > itemsPerPage && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+                    <div className="text-sm text-muted-foreground">Всего записей: {filteredLogs.length}</div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setShowAll(!showAll);
+                                if (!showAll) setCurrentPage(0);
+                            }}
+                        >
+                            {showAll ? "Свернуть" : "Развернуть"}
+                        </Button>
+
+                        {!showAll && totalPages > 1 && (
+                            <>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
+                                    {"<"}
+                                </Button>
+                                <span className="text-sm">
+                                    Стр. {currentPage + 1} из {totalPages}
+                                </span>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
+                                    {">"}
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-3 text-base!">
-                {filteredLogs.map((log) => (
+                {paginatedLogs.map((log) => (
                     <div key={log.id} className={`p-4 border rounded-lg`}>
                         <div className="flex justify-between items-center">
                             <div className="flex justify-between w-full gap-10 items-center">
@@ -370,8 +419,10 @@ export default function Notifications({ onVisited }: LogsProps) {
                     </div>
                 ))}
 
-                {filteredLogs.length === 0 && <p className="text-center py-10 text-muted-foreground">{selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}</p>}
+                {paginatedLogs.length === 0 && <p className="text-center py-10 text-muted-foreground">{selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}</p>}
             </div>
+
+            
         </div>
     );
 }
