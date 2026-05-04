@@ -25,24 +25,36 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
 
     useEffect(() => {
         const root = window.document.documentElement;
-
         root.classList.remove("light", "dark");
 
         if (theme === "system") {
             const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-
             root.classList.add(systemTheme);
-            return;
+        } else {
+            root.classList.add(theme);
         }
+    }, [theme]);
 
-        root.classList.add(theme);
+    useEffect(() => {
+        if (theme !== "system") return;
+
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+        const handleChange = (e: MediaQueryListEvent) => {
+            const root = window.document.documentElement;
+            root.classList.remove("light", "dark");
+            root.classList.add(e.matches ? "dark" : "light");
+        };
+
+        mediaQuery.addEventListener("change", handleChange);
+        return () => mediaQuery.removeEventListener("change", handleChange);
     }, [theme]);
 
     const value = {
         theme,
-        setTheme: (theme: Theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+        setTheme: (newTheme: Theme) => {
+            localStorage.setItem(storageKey, newTheme);
+            setTheme(newTheme);
         }
     };
 
@@ -55,8 +67,6 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
 
 export const useTheme = () => {
     const context = useContext(ThemeProviderContext);
-
     if (context === undefined) throw new Error("useTheme must be used within a ThemeProvider");
-
     return context;
 };

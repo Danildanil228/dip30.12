@@ -1,19 +1,32 @@
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Monitor } from "lucide-react";
 
 export default function DarkModeButtonToggle() {
     const { theme, setTheme } = useTheme();
 
     const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
+        if (theme === "light") setTheme("dark");
+        else if (theme === "dark") setTheme("system");
+        else setTheme("light");
+    };
+
+    const getIcon = () => {
+        if (theme === "light") return <Sun className="h-[1.2rem] w-[1.2rem]" />;
+        if (theme === "dark") return <Moon className="h-[1.2rem] w-[1.2rem]" />;
+        return <Monitor className="h-[1.2rem] w-[1.2rem]" />;
+    };
+
+    const getTitle = () => {
+        if (theme === "light") return "Светлая тема";
+        if (theme === "dark") return "Тёмная тема";
+        return "Системная тема";
     };
 
     return (
-        <Button type="button" variant="outline" size="icon" onClick={toggleTheme} title={theme === "dark" ? "Переключить на светлую тему" : "Переключить на темную тему"}>
-            <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-            <span className="sr-only">{theme === "dark" ? "Переключить на светлую тему" : "Переключить на темную тему"}</span>
+        <Button type="button" variant="outline" size="icon" onClick={toggleTheme} title={getTitle()}>
+            {getIcon()}
+            <span className="sr-only">{getTitle()}</span>
         </Button>
     );
 }

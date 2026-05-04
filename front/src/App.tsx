@@ -23,167 +23,165 @@ import Reports from "./Pages/Reports";
 
 function App() {
     return (
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <Router>
-                <Routes>
-                    <Route path="/" element={<Login />} />
-                    <Route path="*" element={<NotFound />} />
-                    <Route path="/login" element={<Login />} />
+        <Router>
+            <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="*" element={<NotFound />} />
+                <Route path="/login" element={<Login />} />
 
+                <Route
+                    element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }
+                >
                     <Route
+                        path="/main"
                         element={
                             <ProtectedRoute>
-                                <Layout />
+                                <Main />
                             </ProtectedRoute>
                         }
-                    >
-                        <Route
-                            path="/main"
-                            element={
-                                <ProtectedRoute>
-                                    <Main />
-                                </ProtectedRoute>
-                            }
-                        />
+                    />
 
-                        <Route
-                            path="/inventories"
-                            element={
-                                <ProtectedRoute>
-                                    <Inventories />
-                                </ProtectedRoute>
-                            }
-                        />
+                    <Route
+                        path="/inventories"
+                        element={
+                            <ProtectedRoute>
+                                <Inventories />
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/inventories/:id/conduct"
-                            element={
-                                <ProtectedRoute>
-                                    <InventoryConduct />
-                                </ProtectedRoute>
-                            }
-                        />
+                    <Route
+                        path="/inventories/:id/conduct"
+                        element={
+                            <ProtectedRoute>
+                                <InventoryConduct />
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/inventories/:id/review"
-                            element={
-                                <ProtectedRoute>
-                                    <InventoryReview />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/inventories/:id"
-                            element={
-                                <ProtectedRoute>
-                                    <InventoryDetails />
-                                </ProtectedRoute>
-                            }
-                        />
+                    <Route
+                        path="/inventories/:id/review"
+                        element={
+                            <ProtectedRoute>
+                                <InventoryReview />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/inventories/:id"
+                        element={
+                            <ProtectedRoute>
+                                <InventoryDetails />
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/requests"
-                            element={
-                                <ProtectedRoute>
-                                    <Requests />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/requests/:id"
-                            element={
-                                <ProtectedRoute>
-                                    <RequestDetails />
-                                </ProtectedRoute>
-                            }
-                        />
+                    <Route
+                        path="/requests"
+                        element={
+                            <ProtectedRoute>
+                                <Requests />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/requests/:id"
+                        element={
+                            <ProtectedRoute>
+                                <RequestDetails />
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/materials"
-                            element={
-                                <ProtectedRoute>
-                                    <Materials />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/category"
-                            element={
-                                <ProtectedRoute>
-                                    <Categories />
-                                </ProtectedRoute>
-                            }
-                        />
+                    <Route
+                        path="/materials"
+                        element={
+                            <ProtectedRoute>
+                                <Materials />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/category"
+                        element={
+                            <ProtectedRoute>
+                                <Categories />
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/profile/:id"
-                            element={
-                                <ProtectedRoute>
-                                    <AdminRoute>
-                                        <Profile />
-                                    </AdminRoute>
-                                </ProtectedRoute>
-                            }
-                        />
-
-                        <Route
-                            path="/profile"
-                            element={
-                                <ProtectedRoute>
+                    <Route
+                        path="/profile/:id"
+                        element={
+                            <ProtectedRoute>
+                                <AdminRoute>
                                     <Profile />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/backups"
-                            element={
-                                <ProtectedRoute>
-                                    <AdminRoute>
-                                        <Backups />
-                                    </AdminRoute>
-                                </ProtectedRoute>
-                            }
-                        />
+                                </AdminRoute>
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/notifications"
-                            element={
-                                <ProtectedRoute>
-                                    <Notifications />
-                                </ProtectedRoute>
-                            }
-                        />
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <Profile />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/backups"
+                        element={
+                            <ProtectedRoute>
+                                <AdminRoute>
+                                    <Backups />
+                                </AdminRoute>
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        <Route
-                            path="/allusers"
-                            element={
-                                <ProtectedRoute>
-                                    <AdminRoute>
-                                        <AllUsers />
-                                    </AdminRoute>
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/dashboard"
-                            element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/reports"
-                            element={
-                                <ProtectedRoute>
-                                    <Reports />
-                                </ProtectedRoute>
-                            }
-                        />
-                    </Route>
-                </Routes>
-            </Router>
-        </ThemeProvider>
+                    <Route
+                        path="/notifications"
+                        element={
+                            <ProtectedRoute>
+                                <Notifications />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/allusers"
+                        element={
+                            <ProtectedRoute>
+                                <AdminRoute>
+                                    <AllUsers />
+                                </AdminRoute>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <ProtectedRoute>
+                                <Dashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/reports"
+                        element={
+                            <ProtectedRoute>
+                                <Reports />
+                            </ProtectedRoute>
+                        }
+                    />
+                </Route>
+            </Routes>
+        </Router>
     );
 }
 
