@@ -138,11 +138,6 @@ export default function Materials() {
             cell: ({ row }) => {
                 const username = row.getValue("created_by_username") as string;
                 const createdById = row.original.created_by;
-
-                if (!username || !createdById) {
-                    return <div>-</div>;
-                }
-
                 return (
                     <>
                         {isAdmin ? (
@@ -195,11 +190,6 @@ export default function Materials() {
                     cell: ({ row }) => {
                         const username = row.original.updated_by_username;
                         const userId = row.original.updated_by;
-
-                        if (!username || !userId) {
-                            return <div>-</div>;
-                        }
-
                         return (
                             <>
                                 {isAdmin ? (
