@@ -100,11 +100,9 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
 
     const validatePhone = (value: string): string => {
         if (!value.trim()) return "";
-        const phoneRegex = /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
-        const cleanPhone = value.replace(/[\s\-\(\)]/g, "");
-        const phoneRegexClean = /^(\+7|8)?[0-9]{10}$/;
-        if (!phoneRegex.test(value) && !phoneRegexClean.test(cleanPhone)) {
-            return "Введите корректный номер телефона (10 цифр)";
+        const digits = value.replace(/\D/g, "").slice(1);
+        if (digits.length !== 10) {
+            return "Введите 10 цифр после +7";
         }
         return "";
     };
@@ -126,8 +124,17 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         return clean.slice(0, 1) + " " + clean.slice(1, 4) + " " + clean.slice(4, 7) + " " + clean.slice(7, 9) + " " + clean.slice(9, 11);
     };
 
+    const handlePhoneFocus = () => {
+        if (!editData.phone || editData.phone === "") {
+            setEditData({ ...editData, phone: "+7" });
+        }
+    };
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatPhoneNumber(e.target.value);
+        let raw = e.target.value;
+        if (!raw.startsWith("+7")) {
+            raw = "+7";
+        }
+        const formatted = formatPhoneNumber(raw);
         setEditData({ ...editData, phone: formatted });
         if (fieldErrors.phone && touched.phone) {
             setFieldErrors((prev) => ({ ...prev, phone: undefined }));
@@ -353,6 +360,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                                 placeholder="+7 XXX XXX XX XX"
                                 value={editData.phone}
                                 onChange={handlePhoneChange}
+                                onFocus={handlePhoneFocus}
                                 onBlur={() => {
                                     setTouched((prev) => ({ ...prev, phone: true }));
                                     const phoneError = validatePhone(editData.phone);
