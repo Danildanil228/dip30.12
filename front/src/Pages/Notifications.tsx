@@ -305,7 +305,7 @@ export default function Notifications({ onVisited }: LogsProps) {
     return (
         <div className="lg:my-0 my-10">
             <ScrollToTop />
-            <div className="sm:flex grid items-start sm:justify-between mb-4">
+            <div className="sm:flex grid items-start sm:justify-between">
                 <h1 className="text-2xl mb-4">Журнал действий {logs.length !== filteredLogs.length && `(${filteredLogs.length}/${logs.length})`}</h1>
 
                 <div className="sm:flex gap-3 grid">
