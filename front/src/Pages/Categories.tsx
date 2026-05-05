@@ -1,206 +1,23 @@
-import { Checkbox } from "@/components/ui/checkbox";
-import { useState, useEffect } from "react";
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowUpDown } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Link } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
-import ExportButton from "@/components/ExportButton";
 import EditCategoryDialog from "@/components/Dialog/EditCategoryDialog";
 import CreateCategoryDialog from "@/components/Dialog/CreateCategoryDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Category } from '@/types/material.types';
+import { DataTable } from "@/components/ui/DataTable";
+import type { Category } from "@/types/material.types";
+import type { ColumnDef } from "@tanstack/react-table";
 
 export default function Categories() {
     const { isAdmin } = useUser();
     const [categories, setCategories] = useState<Category[]>([]);
-    const [showAll, setShowAll] = useState(false);
-    const [sorting, setSorting] = useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-    const [rowSelection, setRowSelection] = useState({});
-    const [pagination, setPagination] = useState({
-        pageIndex: 0,
-        pageSize: 10
-    });
     const [loading, setLoading] = useState(true);
-
-    const handleToggleShowAll = () => {
-        if (showAll) {
-            setPagination({ pageIndex: 0, pageSize: 10 });
-        } else {
-            setPagination({ pageIndex: 0, pageSize: categories.length });
-        }
-        setShowAll(!showAll);
-    };
-
-    const handleDeleteCategory = async (id: number) => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data.materialCount > 0) {
-                alert(`В категории находится ${response.data.materialCount} материалов. Сначала удалите или переместите их.`);
-                return;
-            }
-
-            setCategories(categories.filter((category) => category.id !== id));
-        } catch (error: any) {
-            console.error("Ошибка удаления категории:", error);
-            alert(error.response?.data?.error || "Не удалось удалить категорию");
-        }
-    };
-
-    const columns: ColumnDef<Category>[] = [
-        {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-                    className="scale-100"
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} className="scale-100" onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
-            enableSorting: false,
-            enableHiding: false
-        },
-        {
-            accessorKey: "id",
-            header: "ID",
-            cell: ({ row }) => <div>{row.getValue("id")}</div>
-        },
-        {
-            accessorKey: "name",
-            header: ({ column }) => {
-                return (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Название
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => <div>{row.getValue("name")}</div>
-        },
-        {
-            accessorKey: "description",
-            header: "Описание",
-            cell: ({ row }) => <div className="max-w-50 truncate">{row.getValue("description") || "-"}</div>
-        },
-        {
-            accessorKey: "created_by_username",
-            header: "Создал",
-            cell: ({ row }) => {
-                const username = row.getValue("created_by_username") as string;
-                const createdById = row.original.created_by;
-                return (
-                    <>
-                        {isAdmin ? (
-                            <Link to={`/profile/${createdById}`} className="underline">
-                                {username}
-                            </Link>
-                        ) : (
-                            <p>{username}</p>
-                        )}
-                    </>
-                );
-            }
-        },
-        {
-            accessorKey: "created_at",
-            header: ({ column }) => {
-                return (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Дата создания
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => {
-                const date = new Date(row.getValue("created_at"));
-                return <div>{date.toLocaleString("ru-RU")}</div>;
-            }
-        },
-        ...(() => {
-            const hasModifiedCategory = categories.some((category) => {
-                const createdDate = new Date(category.created_at);
-                const updatedDate = new Date(category.updated_at);
-                return createdDate.getTime() !== updatedDate.getTime();
-            });
-
-            if (!hasModifiedCategory) return [];
-
-            return [
-                {
-                    accessorKey: "updated_at",
-                    header: "Дата изменения",
-                    cell: ({ row }) => {
-                        const updatedDate = new Date(row.original.updated_at);
-                        return <div>{updatedDate.toLocaleString("ru-RU")}</div>;
-                    }
-                },
-                {
-                    accessorKey: "updated_by_username",
-                    header: "Кем изменено",
-                    cell: ({ row }) => {
-                        const username = row.original.updated_by_username;
-                        const userId = row.original.updated_by;
-                        return (
-                            <>
-                                {isAdmin ? (
-                                    <Link to={`/profile/${userId}`} className="underline">
-                                        {username}
-                                    </Link>
-                                ) : (
-                                    <p>{username}</p>
-                                )}
-                            </>
-                        );
-                    }
-                }
-            ];
-        })(),
-        {
-            accessorKey: "actions",
-            header: "Функции",
-            cell: ({ row }) => {
-                const category = row.original;
-                return (
-                    <div className="flex items-center gap-5">
-                        {isAdmin && (
-                            <>
-                                <EditCategoryDialog categoryId={category.id} onCategoryUpdated={fetchCategories} triggerButton={<img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />} />
-
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить категорию" />
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Удалить категорию "{category.name}"?</AlertDialogTitle>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>Удалить</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </>
-                        )}
-                    </div>
-                );
-            }
-        }
-    ];
 
     const fetchCategories = async () => {
         try {
@@ -210,11 +27,8 @@ export default function Categories() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setCategories(response.data.categories);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Ошибка загрузки категорий:", error);
-            if (error.response?.status === 403) {
-                alert("Недостаточно прав для просмотра категорий");
-            }
         } finally {
             setLoading(false);
         }
@@ -224,179 +38,182 @@ export default function Categories() {
         fetchCategories();
     }, []);
 
-    const handleDeleteSelected = async () => {
-        const selectedRows = table.getFilteredSelectedRowModel().rows;
-        const selectedIds = selectedRows.map((row) => row.original.id);
-
-        if (selectedIds.length === 0) {
-            alert("Выберите категории для удаления");
-            return;
-        }
-
+    const handleDeleteCategory = async (id: number) => {
         try {
             const token = localStorage.getItem("token");
-            for (const id of selectedIds) {
-                await axios.delete(`${API_BASE_URL}/categories/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+            const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.data.materialCount > 0) {
+                alert(`В категории находится ${response.data.materialCount} материалов. Сначала удалите или переместите их.`);
+                return;
             }
-
-            setCategories(categories.filter((category) => !selectedIds.includes(category.id)));
-            setRowSelection({});
-        } catch (error: any) {
-            console.error("Ошибка удаления категорий:", error);
-            alert(error.response?.data?.error || "Не удалось удалить категории");
+            setCategories(categories.filter((category) => category.id !== id));
+        } catch (error: unknown) {
+            console.error("Ошибка удаления категории:", error);
+            alert("Не удалось удалить категорию");
         }
     };
 
-    const table = useReactTable({
-        data: categories,
-        columns,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        onPaginationChange: setPagination,
-        state: {
-            sorting,
-            columnFilters,
-            columnVisibility,
-            rowSelection,
-            pagination
+    const handleDeleteSelected = async (selectedIds: number[]) => {
+        try {
+            const token = localStorage.getItem("token");
+            for (const id of selectedIds) {
+                const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.data.materialCount > 0) {
+                    alert(`В категории ${id} находится ${response.data.materialCount} материалов. Удаление отменено.`);
+                    return;
+                }
+            }
+            setCategories(categories.filter((category) => !selectedIds.includes(category.id)));
+        } catch (error: unknown) {
+            console.error("Ошибка удаления категорий:", error);
+            alert("Не удалось удалить категории");
         }
-    });
+    };
 
-    const selectedCount = table.getFilteredSelectedRowModel().rows.length;
-
-    if (loading) {
-        return <LoadingSpinner />;
-    }
-
-    const categoryColumnsForExport = [
-        { accessorKey: "id", header: "ID" },
-        { accessorKey: "name", header: "Название" },
-        { accessorKey: "description", header: "Описание" },
-        { accessorKey: "created_by_username", header: "Создал" },
-        {
-            accessorKey: "created_at",
-            header: "Дата создания",
-            format: (value: string) => new Date(value).toLocaleDateString()
-        },
-        {
-            accessorKey: "updated_at",
-            header: "Дата изменения",
-            format: (value: string) => (value ? new Date(value).toLocaleDateString() : "-")
-        }
-    ];
+    const columns = useMemo<ColumnDef<Category>[]>(
+        () => [
+            {
+                id: "select",
+                header: ({ table }) => (
+                    <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
+                ),
+                cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
+                enableSorting: false,
+                enableHiding: false
+            },
+            {
+                accessorKey: "id",
+                header: "ID"
+            },
+            {
+                accessorKey: "name",
+                header: ({ column }) => (
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                        Название
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            {
+                accessorKey: "description",
+                header: "Описание",
+                cell: ({ row }) => <div className="max-w-50 truncate">{row.original.description || "-"}</div>
+            },
+            {
+                accessorKey: "created_by_username",
+                header: "Создал",
+                cell: ({ row }) => {
+                    const username = row.original.created_by_username;
+                    const createdById = row.original.created_by;
+                    if (!username || !createdById) return <div>-</div>;
+                    return isAdmin ? (
+                        <Link to={`/profile/${createdById}`} className="underline">
+                            {username}
+                        </Link>
+                    ) : (
+                        <p>{username}</p>
+                    );
+                }
+            },
+            {
+                accessorKey: "created_at",
+                header: ({ column }) => (
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                        Дата создания
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                ),
+                cell: ({ row }) => <div>{new Date(row.original.created_at).toLocaleString("ru-RU")}</div>
+            },
+            ...(categories.some((c) => new Date(c.created_at).getTime() !== new Date(c.updated_at).getTime())
+                ? [
+                      {
+                          accessorKey: "updated_at",
+                          header: "Дата изменения",
+                          cell: ({ row }: { row: { original: Category } }) => <div>{new Date(row.original.updated_at).toLocaleString("ru-RU")}</div>
+                      },
+                      {
+                          accessorKey: "updated_by_username",
+                          header: "Кем изменено",
+                          cell: ({ row }: { row: { original: Category } }) => {
+                              const username = row.original.updated_by_username;
+                              const userId = row.original.updated_by;
+                              if (!username || !userId) return <div>-</div>;
+                              return isAdmin ? (
+                                  <Link to={`/profile/${userId}`} className="underline">
+                                      {username}
+                                  </Link>
+                              ) : (
+                                  <p>{username}</p>
+                              );
+                          }
+                      }
+                  ]
+                : []),
+            {
+                accessorKey: "actions",
+                header: "Функции",
+                cell: ({ row }) => {
+                    const category = row.original;
+                    if (!isAdmin) return null;
+                    return (
+                        <div className="flex items-center gap-5">
+                            <EditCategoryDialog categoryId={category.id} onCategoryUpdated={fetchCategories} triggerButton={<img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />} />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить категорию" />
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Удалить категорию "{category.name}"?</AlertDialogTitle>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>Удалить</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    );
+                }
+            }
+        ],
+        [isAdmin, categories]
+    );
 
     return (
         <section className="mx-auto">
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Категории материалов</h1>
-                {isAdmin && (
-                    <CreateCategoryDialog
-                        onCategoryCreated={() => {
-                            fetchCategories();
-                        }}
-                    />
-                )}
+                {isAdmin && <CreateCategoryDialog onCategoryCreated={fetchCategories} />}
             </div>
 
-            <div className="w-full">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
-                    <Input placeholder="Поиск..." value={(table.getColumn("name")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)} className="max-w-sm" />
-
-                    {selectedCount > 0 && (
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm">Выбрано: {selectedCount}</span>
-                            {isAdmin && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive">Удалить категории</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteSelected}>Удалить</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
-                        </div>
-                    )}
-
-                    <div className="ml-auto flex gap-2">
-                        <ExportButton data={categories} columns={categoryColumnsForExport} filename="categories" title="Категории материалов" />
-                        <Button variant="outline" onClick={fetchCategories}>
-                            Обновить
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="overflow-hidden rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => {
-                                        return <TableHead key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>;
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows?.length ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                                        Нет категорий.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm">Категорий: {table.getFilteredRowModel().rows.length}</div>
-                    <div className="flex items-center space-x-2">
-                        {categories.length > 10 && (
-                            <Button variant="outline" onClick={handleToggleShowAll} className="ml-2">
-                                {showAll ? "Свернуть" : "Развернуть"}
-                            </Button>
-                        )}
-
-                        {!showAll && table.getPageCount() > 1 && (
-                            <div className="flex items-center space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                                    {"<"}
-                                </Button>
-                                <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
-                                </span>
-                                <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                                    {">"}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            <DataTable
+                columns={columns}
+                data={categories}
+                loading={loading}
+                searchPlaceholder="Поиск по названию..."
+                onDeleteSelected={isAdmin ? handleDeleteSelected : undefined}
+                showCheckboxes={isAdmin}
+                exportFilename="categories"
+                exportTitle="Категории материалов"
+                exportColumns={[
+                    { accessorKey: "id", header: "ID" },
+                    { accessorKey: "name", header: "Название" },
+                    { accessorKey: "description", header: "Описание" },
+                    { accessorKey: "created_by_username", header: "Создал" },
+                    {
+                        accessorKey: "created_at",
+                        header: "Дата создания",
+                        format: (value) => new Date(value as string).toLocaleDateString()
+                    }
+                ]}
+            />
         </section>
     );
 }
