@@ -15,23 +15,7 @@ import EditMaterialDialog from "@/components/Dialog/EditMaterialDialog";
 import CreateMaterialDialog from "@/components/Dialog/CreateMaterialDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface Material {
-    id: number;
-    name: string;
-    code: string;
-    description: string | null;
-    unit: string;
-    quantity: number;
-    category_id: number | null;
-    category_name: string | null;
-    created_by: number | null;
-    updated_by: number | null;
-    created_by_username: string | null;
-    updated_by_username: string | null;
-    created_at: string;
-    updated_at: string;
-}
+import type { Material } from '@/types/material.types';
 
 export default function Materials() {
     const { isAdmin } = useUser();

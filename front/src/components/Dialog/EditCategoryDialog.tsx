@@ -8,12 +8,7 @@ import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
-
-interface Category {
-    id: number;
-    name: string;
-    description: string | null;
-}
+import type { Category } from '@/types/material.types';
 
 interface EditCategoryDialogProps {
     categoryId: number;

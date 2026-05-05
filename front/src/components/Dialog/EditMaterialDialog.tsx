@@ -10,21 +10,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { Link } from "react-router-dom";
 import { CapitalizedInput } from "../CapitalizedInput";
-
-interface Category {
-    id: number;
-    name: string;
-}
-
-interface Material {
-    id: number;
-    name: string;
-    code: string;
-    description: string | null;
-    unit: string;
-    quantity: number;
-    category_id: number | null;
-}
+import type { Category, Material } from '@/types/material.types';
 
 interface EditMaterialDialogProps {
     materialId: number;

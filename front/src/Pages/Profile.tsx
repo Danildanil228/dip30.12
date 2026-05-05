@@ -10,19 +10,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import EditProfileDialog from "@/components/Dialog/EditProfileDialog";
 import ChangePasswordDialog from "@/components/Dialog/ChangePasswordDialog";
-
-interface UserProfile {
-    id: number;
-    username: string;
-    role: string;
-    name: string;
-    secondname: string;
-    email: string;
-    phone: string;
-    birthday: string | null;
-    created_at: string;
-    updated_at: string;
-}
+import type { UserProfile } from '@/types/user.types';
 
 export default function Profile() {
     const { id } = useParams<{ id: string }>();

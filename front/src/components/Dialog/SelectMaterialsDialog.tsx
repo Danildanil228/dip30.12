@@ -9,16 +9,7 @@ import { API_BASE_URL } from "@/components/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface Material {
-    id: number;
-    name: string;
-    code: string;
-    unit: string;
-    quantity: number;
-    category_name?: string;
-    category_id?: number;
-}
+import type { Material, Category } from '@/types/material.types';
 
 interface SelectedItem {
     material_id: number;
@@ -29,11 +20,6 @@ interface SelectedItem {
     current_quantity: number;
 }
 
-interface Category {
-    id: number;
-    name: string;
-}
-
 interface SelectMaterialsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -41,6 +27,7 @@ interface SelectMaterialsDialogProps {
     selectedItems: SelectedItem[];
     requestType: "incoming" | "outgoing";
 }
+
 
 export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, selectedItems, requestType }: SelectMaterialsDialogProps) {
     const [materials, setMaterials] = useState<Material[]>([]);

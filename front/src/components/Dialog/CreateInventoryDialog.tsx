@@ -14,27 +14,8 @@ import { ru } from "date-fns/locale/ru";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
-
-interface User {
-    id: number;
-    username: string;
-    name: string;
-    secondname: string;
-    role: string;
-}
-
-interface Category {
-    id: number;
-    name: string;
-}
-
-interface Material {
-    id: number;
-    name: string;
-    code: string;
-    category_id: number | null;
-    category_name?: string;
-}
+import type { User } from '@/types/user.types';
+import type { Category, Material } from '@/types/material.types';
 
 interface CreateInventoryDialogProps {
     open: boolean;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search} from "lucide-react";
+import { Search } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
@@ -11,25 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import CreateRequestDialog from "@/components/Dialog/CreateRequestDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface RequestItem {
-    id: number;
-    name: string;
-    quantity: number;
-}
-
-interface Request {
-    id: number;
-    title: string;
-    request_type: "incoming" | "outgoing";
-    status: "pending" | "approved" | "rejected" | "draft";
-    created_by: number;
-    created_by_username: string;
-    created_at: string;
-    is_public: boolean;
-    items_preview: RequestItem[];
-    rejection_reason?: string;
-}
+import type { Request, RequestPreviewItem } from "@/types/request.types";
 
 export default function Requests() {
     const { user, isAdmin } = useUser();
@@ -109,9 +91,7 @@ export default function Requests() {
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Заявки</h1>
-                <Button onClick={() => setShowCreateDialog(true)}>
-                    Создать
-                </Button>
+                <Button onClick={() => setShowCreateDialog(true)}>Создать</Button>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
@@ -212,10 +192,10 @@ export default function Requests() {
                                             <span className="font-medium">Товары:</span>{" "}
                                             {request.items_preview.map((item, idx) => (
                                                 <span key={idx}>
-                                                    {item.name} ({item.quantity}){idx < request.items_preview.length - 1 && ", "}
+                                                    {item.name} ({item.quantity}){idx < (request.items_preview?.length ?? 0) - 1 && ", "}
                                                 </span>
                                             ))}
-                                            {request.items_preview.length >= 3 && " ..."}
+                                            {(request.items_preview?.length ?? 0) >= 3 && " ..."}
                                         </div>
                                     )}
                                     {request.rejection_reason && request.status === "rejected" && <div className="text-sm text-red-500 mt-2">Причина отклонения: {request.rejection_reason}</div>}

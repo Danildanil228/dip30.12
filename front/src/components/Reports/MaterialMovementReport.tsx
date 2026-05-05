@@ -7,17 +7,7 @@ import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
-
-interface MovementItem {
-    date: string;
-    request_title: string;
-    request_type: string;
-    material_name: string;
-    code: string;
-    category_name: string;
-    quantity: number;
-    created_by_username: string;
-}
+import type { MovementItem } from '@/types/report.types';
 
 interface Category {
     id: number;

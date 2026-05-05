@@ -10,19 +10,7 @@ import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface Log {
-    id: number;
-    user_id: number;
-    type: string;
-    title: string;
-    message: string;
-    read: boolean;
-    created_at: string;
-    user_name: string;
-    name: string;
-    secondname: string;
-}
+import type { Log } from '@/types/common.types';
 
 interface LogsProps {
     onVisited?: () => void;

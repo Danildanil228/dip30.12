@@ -9,18 +9,7 @@ import { format, subMonths } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
-
-interface UserActivity {
-    id: number;
-    username: string;
-    name: string;
-    secondname: string;
-    role: string;
-    requests_created: number;
-    requests_approved: number;
-    requests_rejected: number;
-    inventories_completed: number;
-}
+import type { UserActivity } from '@/types/report.types';
 
 export function UserActivityReport() {
     const navigate = useNavigate();

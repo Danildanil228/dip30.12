@@ -14,20 +14,7 @@ import ExportButton from "@/components/ExportButton";
 import CreateBackupDialog from "@/components/Dialog/CreateBackupDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface Backup {
-    id: number;
-    filename: string;
-    filepath: string;
-    file_size: number;
-    created_by: number | null;
-    created_at: string;
-    description: string | null;
-    created_by_username: string | null;
-    name: string | null;
-    secondname: string | null;
-    file_exists: boolean;
-}
+import type { Backup } from '@/types/backup.types';
 
 export default function Backups() {
     const { isAdmin } = useUser();

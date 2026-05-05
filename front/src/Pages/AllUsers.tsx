@@ -13,15 +13,7 @@ import ExportButton from "@/components/ExportButton";
 import AddUserDialog from "@/components/Dialog/AddUserDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface User {
-    id: number;
-    username: string;
-    role: string;
-    name: string;
-    secondname: string;
-    created_at: string;
-}
+import type { User } from '@/types/user.types';
 
 export default function AllUsers() {
     const [users, setUsers] = useState<User[]>([]);

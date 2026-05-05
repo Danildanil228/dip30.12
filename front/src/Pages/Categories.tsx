@@ -15,18 +15,7 @@ import EditCategoryDialog from "@/components/Dialog/EditCategoryDialog";
 import CreateCategoryDialog from "@/components/Dialog/CreateCategoryDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface Category {
-    id: number;
-    name: string;
-    description: string | null;
-    created_by: number | null;
-    updated_by: number | null;
-    created_by_username: string | null;
-    updated_by_username: string | null;
-    created_at: string;
-    updated_at: string;
-}
+import type { Category } from '@/types/material.types';
 
 export default function Categories() {
     const { isAdmin } = useUser();
