@@ -11,19 +11,7 @@ import { ru } from "date-fns/locale/ru";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
-
-interface UserProfile {
-    id: number;
-    username: string;
-    role: string;
-    name: string;
-    secondname: string;
-    email: string;
-    phone: string;
-    birthday: string | null;
-    created_at: string;
-    updated_at: string;
-}
+import type { UserProfile } from "@/types/user.types";
 
 interface EditProfileDialogProps {
     open: boolean;
@@ -375,7 +363,14 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                         {isAdmin && !isOwnProfile && (
                             <div className="grid gap-2">
                                 <label className="text-sm font-medium">Роль</label>
-                                <Select value={editData.role} onValueChange={(value) => setEditData({ ...editData, role: value })} disabled={loading}>
+                                <Select
+                                    value={editData.role}
+                                    onValueChange={(value: string) => {
+                                        const validRole = value as "admin" | "accountant" | "storekeeper";
+                                        setEditData({ ...editData, role: validRole });
+                                    }}
+                                    disabled={loading}
+                                >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Роль" />
                                     </SelectTrigger>

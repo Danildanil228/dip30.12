@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-
-interface User {
-    id: number;
-    username: string;
-    role: string;
-    name: string;
-    secondname: string;
-}
+import type { User } from '@/types/user.types';
 
 export const useUser = () => {
     const [user, setUser] = useState<User | null>(null);

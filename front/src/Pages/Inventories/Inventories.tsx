@@ -15,24 +15,7 @@ import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 import EditInventoryDialog from "@/components/Dialog/EditInventoryDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ScrollToTop } from "@/components/ScrollToTop";
-
-interface Inventory {
-    id: number;
-    title: string;
-    status: string;
-    created_by: number;
-    created_by_username: string;
-    responsible_person: number;
-    responsible_username: string;
-    start_date: string;
-    end_date: string;
-    description: string | null;
-    created_at: string;
-    completed_at: string | null;
-    approved_at: string | null;
-    total_items: number;
-    checked_items: number;
-}
+import type { Inventory } from "@/types/inventory.types";
 
 export default function Inventories() {
     const navigate = useNavigate();
@@ -184,8 +167,10 @@ export default function Inventories() {
     };
 
     const getProgress = (inventory: Inventory) => {
-        if (inventory.total_items === 0) return 0;
-        return Math.round((inventory.checked_items / inventory.total_items) * 100);
+        const total = inventory.total_items ?? 0;
+        const checked = inventory.checked_items ?? 0;
+        if (total === 0) return 0;
+        return Math.round((checked / total) * 100);
     };
 
     const filteredInventories = inventories.filter((inv) => {
@@ -403,7 +388,7 @@ export default function Inventories() {
                                             <div className="flex justify-between text-sm mb-1">
                                                 <span>Прогресс</span>
                                                 <span>
-                                                    {getProgress(inventory)}% ({inventory.checked_items}/{inventory.total_items})
+                                                    {getProgress(inventory)}% ({inventory.checked_items ?? 0}/{inventory.total_items ?? 0})
                                                 </span>
                                             </div>
                                             <div className="w-full bg-muted rounded-full h-2">

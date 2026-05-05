@@ -12,25 +12,8 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import axios from "axios";
 import { API_BASE_URL } from "@/components/api";
-
-interface User {
-    id: number;
-    username: string;
-    name: string;
-    secondname: string;
-    role: string;
-}
-
-interface Inventory {
-    id: number;
-    title: string;
-    status: string;
-    responsible_person: number;
-    responsible_username: string;
-    start_date: string;
-    end_date: string;
-    description: string | null;
-}
+import type { User } from '@/types/user.types';
+import type { Inventory } from '@/types/inventory.types';
 
 interface EditInventoryDialogProps {
     inventory: Inventory | null;

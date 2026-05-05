@@ -7,18 +7,7 @@ import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
-
-interface TurnoverItem {
-    id: number;
-    name: string;
-    code: string;
-    unit: string;
-    category_name: string;
-    opening_balance: number;
-    incoming: number;
-    outgoing: number;
-    closing_balance: number;
-}
+import type { TurnoverItem } from '@/types/report.types';
 
 interface Category {
     id: number;
