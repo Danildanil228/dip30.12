@@ -1,22 +1,21 @@
 const express = require("express");
 const cors = require("cors");
-const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const app = express();
-const PORT = 3000;
-const JWT_SECRET = "key";
+const pool = require("./config/db");
 const Logger = require("./logger");
 const backupRoutes = require("./backup");
+require("dotenv").config(); 
 
-const pool = new Pool({
-    user: "postgres",
-    password: "1234",
-    host: "localhost",
-    port: "5432",
-    database: "materialHousedb"
-});
-app.set("pool", pool);
+const app = express();
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// проверка JWT_SECRET
+if (!JWT_SECRET) {
+    console.error("КРИТИЧЕСКАЯ ОШИБКА: JWT_SECRET не установлен в переменных окружения!");
+    process.exit(1);
+}
 
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
