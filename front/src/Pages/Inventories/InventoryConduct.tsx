@@ -12,6 +12,7 @@ import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import type { Inventory, InventoryItem } from '@/types/inventory.types';
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 export default function InventoryConduct() {
     const { id } = useParams<{ id: string }>();
@@ -207,6 +208,7 @@ export default function InventoryConduct() {
 
     return (
         <div>
+            <ScrollToTop/>
             <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
