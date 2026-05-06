@@ -4,12 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Search, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Material, Category } from '@/types/material.types';
+import { materialService } from "@/services/materialService";
+import type { Material, Category } from "@/types/material.types";
 
 interface SelectedItem {
     material_id: number;
@@ -27,7 +26,6 @@ interface SelectMaterialsDialogProps {
     selectedItems: SelectedItem[];
     requestType: "incoming" | "outgoing";
 }
-
 
 export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, selectedItems, requestType }: SelectMaterialsDialogProps) {
     const [materials, setMaterials] = useState<Material[]>([]);
@@ -60,11 +58,8 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
     const fetchMaterials = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/materials`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setMaterials(response.data.materials);
+            const { materials: materialsData } = await materialService.getMaterials();
+            setMaterials(materialsData);
         } catch (error) {
             console.error("Ошибка загрузки материалов:", error);
         } finally {
@@ -74,11 +69,8 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
 
     const fetchCategories = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCategories(response.data.categories || []);
+            const categoriesData = await materialService.getCategories();
+            setCategories(categoriesData);
         } catch (error) {
             console.error("Ошибка загрузки категорий:", error);
         }
@@ -150,7 +142,7 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
             code: material.code,
             unit: material.unit,
             quantity: quantity,
-            current_quantity: material.quantity
+            current_quantity: material.quantity,
         };
 
         setTempSelected([...tempSelected, newItem]);
@@ -226,7 +218,12 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
                             />
                             <span className="text-sm">{material.unit}</span>
                         </div>
-                        <Button size="sm" onClick={() => handleAddMaterial(material)} disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)} variant={isSelected ? "secondary" : "default"}>
+                        <Button
+                            size="sm"
+                            onClick={() => handleAddMaterial(material)}
+                            disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)}
+                            variant={isSelected ? "secondary" : "default"}
+                        >
                             {isSelected ? "✓" : <Plus className="h-4 w-4" />}
                         </Button>
                     </div>

@@ -6,11 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { Link } from "react-router-dom";
 import { CapitalizedInput } from "../CapitalizedInput";
-import type { Category, Material } from '@/types/material.types';
+import { materialService } from "@/services/materialService";
+import type { Category, Material } from "@/types/material.types";
 
 interface EditMaterialDialogProps {
     materialId: number;
@@ -43,18 +42,11 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
     const fetchData = async () => {
         try {
             setLoadingData(true);
-            const token = localStorage.getItem("token");
 
-            const categoriesResponse = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCategories(categoriesResponse.data.categories || []);
+            const categoriesData = await materialService.getCategories();
+            setCategories(categoriesData);
 
-            const materialResponse = await axios.get(`${API_BASE_URL}/materials/${materialId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const materialData = materialResponse.data.material;
+            const materialData = await materialService.getMaterialById(materialId);
             setMaterial(materialData);
 
             setName(materialData.name || "");
@@ -92,21 +84,13 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
                 return;
             }
 
-            const token = localStorage.getItem("token");
-
-            await axios.put(
-                `${API_BASE_URL}/materials/${materialId}`,
-                {
-                    name: name.trim(),
-                    code: code.trim(),
-                    description: description.trim() || null,
-                    unit,
-                    category_id: categoryId !== "0" ? parseInt(categoryId) : null
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await materialService.updateMaterial(materialId, {
+                name: name.trim(),
+                code: code.trim(),
+                description: description.trim() || null,
+                unit,
+                category_id: categoryId !== "0" ? parseInt(categoryId) : null,
+            });
 
             setOpen(false);
 
@@ -160,7 +144,14 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
 
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-material-description">Описание</Label>
-                                <Textarea id="edit-material-description" placeholder="Описание материала, технические характеристики..." value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} rows={3} />
+                                <Textarea
+                                    id="edit-material-description"
+                                    placeholder="Описание материала, технические характеристики..."
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    disabled={loading}
+                                    rows={3}
+                                />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -196,7 +187,9 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
                                 <Label htmlFor="edit-material-category">Категория</Label>
                                 <Select value={categoryId} onValueChange={setCategoryId} disabled={loading}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Выберите категорию">{categoryId !== "0" ? categories.find((c) => c.id.toString() === categoryId)?.name : "Без категории"}</SelectValue>
+                                        <SelectValue placeholder="Выберите категорию">
+                                            {categoryId !== "0" ? categories.find((c) => c.id.toString() === categoryId)?.name : "Без категории"}
+                                        </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="0">Без категории</SelectItem>

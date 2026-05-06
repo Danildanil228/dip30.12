@@ -2,50 +2,32 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
-import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
 import { Badge } from "@/components/ui/badge";
 import CreateRequestDialog from "@/components/Dialog/CreateRequestDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Request, RequestPreviewItem } from "@/types/request.types";
+import { useRequests } from "@/hooks/useRequests";
+import { useUser } from "@/hooks/useUser";
 
 export default function Requests() {
-    const { user, isAdmin } = useUser();
-    const [requests, setRequests] = useState<Request[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { isAdmin } = useUser();
+    const { requests, loading, fetchRequests } = useRequests();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage] = useState(10);
     const [showAll, setShowAll] = useState(false);
 
-    const fetchRequests = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/requests`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { status: statusFilter !== "all" ? statusFilter : undefined }
-            });
-            setRequests(response.data.requests);
-            setCurrentPage(0);
-        } catch (error) {
-            console.error("Ошибка загрузки заявок:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchRequests();
-    }, [statusFilter]);
+        fetchRequests(statusFilter !== "all" ? statusFilter : undefined);
+    }, [statusFilter, fetchRequests]);
 
-    const filteredRequests = requests.filter((request) => request.title.toLowerCase().includes(searchTerm.toLowerCase()) || request.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filteredRequests = requests.filter(
+        (request) => request.title.toLowerCase().includes(searchTerm.toLowerCase()) || request.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
 
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
     const paginatedRequests = showAll ? filteredRequests : filteredRequests.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
@@ -71,8 +53,6 @@ export default function Requests() {
                 return "Подтверждена";
             case "rejected":
                 return "Отклонена";
-            case "draft":
-                return "Черновик";
             default:
                 return status;
         }
@@ -87,7 +67,7 @@ export default function Requests() {
     }
 
     return (
-        <div className="">
+        <div>
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Заявки</h1>
@@ -146,6 +126,7 @@ export default function Requests() {
                     </Button>
                 </div>
             </div>
+
             {filteredRequests.length > itemsPerPage && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
                     <div className="text-sm text-muted-foreground">Всего заявок: {filteredRequests.length}</div>
@@ -206,7 +187,7 @@ export default function Requests() {
                 )}
             </div>
 
-            <CreateRequestDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onRequestCreated={fetchRequests} />
+            <CreateRequestDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onRequestCreated={() => fetchRequests(statusFilter !== "all" ? statusFilter : undefined)} />
         </div>
     );
 }

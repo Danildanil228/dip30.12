@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { authService } from "@/services/authService";
 import DarkModeButtonToggle from "@/components/DarkModeButtonToggle";
-import { API_BASE_URL } from "@/components/api";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -21,8 +20,8 @@ export default function Login() {
 
     const checkFirstRun = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/countUsers`);
-            setIsFirst(!response.data.hasUsers);
+            const data = await authService.countUsers();
+            setIsFirst(!data.hasUsers);
         } catch (error) {
             setError("Не удалось подключиться к серверу");
         }
@@ -62,19 +61,13 @@ export default function Login() {
         try {
             let response;
             if (isFirst) {
-                response = await axios.post(`${API_BASE_URL}/registerFirst`, {
-                    username: username.trim(),
-                    password: password.trim()
-                });
+                response = await authService.registerFirst(username.trim(), password.trim());
             } else {
-                response = await axios.post(`${API_BASE_URL}/login`, {
-                    username: username.trim(),
-                    password: password.trim()
-                });
+                response = await authService.login(username.trim(), password.trim());
             }
 
-            localStorage.setItem("token", response.data.token);
-            localStorage.setItem("user", JSON.stringify(response.data.user));
+            localStorage.setItem("token", response.token);
+            localStorage.setItem("user", JSON.stringify(response.user));
             navigate("/main");
         } catch (error: any) {
             setError(error.response?.data?.error || "Ошибка");

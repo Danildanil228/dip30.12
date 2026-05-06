@@ -11,11 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
-import type { User } from '@/types/user.types';
-import type { Category, Material } from '@/types/material.types';
+import { userService } from "@/services/userService";
+import { materialService } from "@/services/materialService";
+import { inventoryService } from "@/services/inventoryService";
+import type { User } from "@/types/user.types";
+import type { Category, Material } from "@/types/material.types";
 
 interface CreateInventoryDialogProps {
     open: boolean;
@@ -74,11 +75,8 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUsers(response.data.users || []);
+            const usersData = await userService.getUsers();
+            setUsers(usersData);
         } catch (error) {
             console.error("Ошибка загрузки пользователей:", error);
         }
@@ -86,11 +84,8 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
 
     const fetchCategories = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCategories(response.data.categories || []);
+            const categoriesData = await materialService.getCategories();
+            setCategories(categoriesData);
         } catch (error) {
             console.error("Ошибка загрузки категорий:", error);
         }
@@ -98,11 +93,8 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
 
     const fetchMaterials = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/materials`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setMaterials(response.data.materials || []);
+            const { materials: materialsData } = await materialService.getMaterials();
+            setMaterials(materialsData);
         } catch (error) {
             console.error("Ошибка загрузки материалов:", error);
         }
@@ -135,18 +127,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         setSelectedMaterials((prev) => (prev.includes(materialId) ? prev.filter((id) => id !== materialId) : [...prev, materialId]));
     };
 
-    const handleSelectAllInCategory = (categoryId: number) => {
-        const categoryMaterials = materials.filter((m) => m.category_id === categoryId);
-        const allSelected = categoryMaterials.every((m) => selectedMaterials.includes(m.id));
-
-        if (allSelected) {
-            setSelectedMaterials((prev) => prev.filter((id) => !categoryMaterials.some((m) => m.id === id)));
-        } else {
-            const newIds = categoryMaterials.map((m) => m.id);
-            setSelectedMaterials((prev) => [...new Set([...prev, ...newIds])]);
-        }
-    };
-
     const handleSubmit = async () => {
         if (!title.trim()) {
             setError("Введите название");
@@ -173,13 +153,12 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
             const payload: any = {
                 title: title.trim(),
                 responsible_person: parseInt(responsiblePerson),
                 start_date: format(startDate, "yyyy-MM-dd"),
                 end_date: format(endDate, "yyyy-MM-dd"),
-                description: description.trim() || null
+                description: description.trim() || null,
             };
 
             if (selectionMode === "categories" && selectedCategories.length > 0) {
@@ -188,9 +167,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 payload.materials = selectedMaterials;
             }
 
-            await axios.post(`${API_BASE_URL}/inventories`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await inventoryService.createInventory(payload);
 
             resetForm();
             onOpenChange(false);
@@ -202,13 +179,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
             setLoading(false);
         }
     };
-
-    const materialsByCategory = categories
-        .map((category) => ({
-            ...category,
-            materials: materials.filter((m) => m.category_id === category.id)
-        }))
-        .filter((c) => c.materials.length > 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -222,6 +192,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                         <Label htmlFor="title">Название</Label>
                         <CapitalizedInput id="title" placeholder="Инвентаризация склада" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading} />
                     </div>
+
                     <div className="grid gap-2">
                         <Label>Ответственный</Label>
                         <div className="relative mb-2">
@@ -255,6 +226,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                             )}
                         </div>
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label>Дата начала</Label>
@@ -285,6 +257,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                             </Popover>
                         </div>
                     </div>
+
                     <div className="grid gap-2">
                         <Label htmlFor="description">Описание</Label>
                         <Textarea id="description" placeholder="Дополнительная информация..." value={description} onChange={(e) => setDescription(e.target.value)} rows={2} disabled={loading} />
@@ -386,7 +359,12 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                 <span className="text-sm">
                                                     {currentPage + 1} / {totalPages}
                                                 </span>
-                                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+                                                    disabled={currentPage === totalPages - 1}
+                                                >
                                                     <ChevronRight className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="outline" size="sm" onClick={() => setShowAllMaterials(true)}>

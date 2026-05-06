@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
 import { CapitalizedInput } from "../CapitalizedInput";
+import { materialService } from "@/services/materialService";
 
 interface CreateCategoryDialogProps {
     onCategoryCreated?: () => void;
@@ -33,18 +32,10 @@ export default function CreateCategoryDialog({ onCategoryCreated, triggerButton 
                 return;
             }
 
-            const token = localStorage.getItem("token");
-
-            await axios.post(
-                `${API_BASE_URL}/categories`,
-                {
-                    name: categoryName.trim(),
-                    description: categoryDescription.trim() || null
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await materialService.createCategory({
+                name: categoryName.trim(),
+                description: categoryDescription.trim() || null,
+            });
 
             setCategoryName("");
             setCategoryDescription("");
@@ -82,12 +73,26 @@ export default function CreateCategoryDialog({ onCategoryCreated, triggerButton 
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="category-name">Название категории</Label>
-                            <CapitalizedInput id="category-name" placeholder="Например: Цементные смеси" value={categoryName} onChange={(e) => setCategoryName(e.target.value)} disabled={loading} required />
+                            <CapitalizedInput
+                                id="category-name"
+                                placeholder="Например: Цементные смеси"
+                                value={categoryName}
+                                onChange={(e) => setCategoryName(e.target.value)}
+                                disabled={loading}
+                                required
+                            />
                         </div>
 
                         <div className="grid gap-2">
                             <Label htmlFor="category-description">Описание</Label>
-                            <Textarea id="category-description" placeholder="Описание категории..." value={categoryDescription} onChange={(e) => setCategoryDescription(e.target.value)} disabled={loading} rows={3} />
+                            <Textarea
+                                id="category-description"
+                                placeholder="Описание категории..."
+                                value={categoryDescription}
+                                onChange={(e) => setCategoryDescription(e.target.value)}
+                                disabled={loading}
+                                rows={3}
+                            />
                         </div>
 
                         {error && <div className="text-red-500 text-sm">{error}</div>}

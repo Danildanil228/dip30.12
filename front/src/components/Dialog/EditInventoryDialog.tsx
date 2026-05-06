@@ -10,10 +10,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
-import type { User } from '@/types/user.types';
-import type { Inventory } from '@/types/inventory.types';
+import { userService } from "@/services/userService";
+import { inventoryService } from "@/services/inventoryService";
+import type { User } from "@/types/user.types";
+import type { Inventory } from "@/types/inventory.types";
 
 interface EditInventoryDialogProps {
     inventory: Inventory | null;
@@ -47,11 +47,8 @@ export default function EditInventoryDialog({ inventory, open, onOpenChange, onI
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUsers(response.data.users || []);
+            const usersData = await userService.getUsers();
+            setUsers(usersData);
         } catch (error) {
             console.error("Ошибка загрузки пользователей:", error);
         }
@@ -83,20 +80,13 @@ export default function EditInventoryDialog({ inventory, open, onOpenChange, onI
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
-            await axios.put(
-                `${API_BASE_URL}/inventories/${inventory?.id}`,
-                {
-                    title: title.trim(),
-                    responsible_person: parseInt(responsiblePerson),
-                    start_date: format(startDate, "yyyy-MM-dd"),
-                    end_date: format(endDate, "yyyy-MM-dd"),
-                    description: description.trim() || null
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await inventoryService.updateInventory(inventory!.id, {
+                title: title.trim(),
+                responsible_person: parseInt(responsiblePerson),
+                start_date: format(startDate, "yyyy-MM-dd"),
+                end_date: format(endDate, "yyyy-MM-dd"),
+                description: description.trim() || null,
+            });
 
             onOpenChange(false);
             onInventoryUpdated();

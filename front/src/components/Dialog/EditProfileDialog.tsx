@@ -8,9 +8,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { ChevronDownIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
+import { userService } from "@/services/userService";
 import type { UserProfile } from "@/types/user.types";
 
 interface EditProfileDialogProps {
@@ -37,7 +36,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         secondname: user.secondname,
         email: user.email || "",
         phone: user.phone || "",
-        role: user.role
+        role: user.role,
     });
     const [birthday, setBirthday] = useState<Date | undefined>(user.birthday ? new Date(user.birthday) : undefined);
     const [loading, setLoading] = useState(false);
@@ -48,7 +47,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         name: false,
         secondname: false,
         email: false,
-        phone: false
+        phone: false,
     });
 
     const validateName = (value: string): string => {
@@ -65,7 +64,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         const lettersRegex = /^[А-Яа-яЁё]+$/;
         if (!lettersRegex.test(value)) return "Фамилия должна содержать только русские буквы";
         if (value.length < 3) return "Фамилия должна содержать минимум 3 символа";
-        if (value.length > 30) return "Имя не должно превышать 30 символов";
+        if (value.length > 30) return "Фамилия не должна превышать 30 символов";
         return "";
     };
 
@@ -117,6 +116,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
             setEditData({ ...editData, phone: "+7" });
         }
     };
+
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let raw = e.target.value;
         if (!raw.startsWith("+7")) {
@@ -135,30 +135,6 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         setEditData({ ...editData, username: filtered });
         if (fieldErrors.username && touched.username) {
             setFieldErrors((prev) => ({ ...prev, username: undefined }));
-        }
-    };
-
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setEditData({ ...editData, name: value });
-        if (fieldErrors.name && touched.name) {
-            setFieldErrors((prev) => ({ ...prev, name: undefined }));
-        }
-    };
-
-    const handleSecondnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setEditData({ ...editData, secondname: value });
-        if (fieldErrors.secondname && touched.secondname) {
-            setFieldErrors((prev) => ({ ...prev, secondname: undefined }));
-        }
-    };
-
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setEditData({ ...editData, email: value });
-        if (fieldErrors.email && touched.email) {
-            setFieldErrors((prev) => ({ ...prev, email: undefined }));
         }
     };
 
@@ -192,7 +168,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
             name: true,
             secondname: true,
             email: true,
-            phone: true
+            phone: true,
         });
 
         if (!validateEditForm()) {
@@ -202,12 +178,8 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         try {
             setError(null);
             setLoading(true);
-            const token = localStorage.getItem("token");
 
-            const currentData = await axios.get(`${API_BASE_URL}/users/${user.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const currentUserData = currentData.data.user;
+            const currentUserData = await userService.getUserById(user.id);
 
             const formattedBirthday = birthday ? format(birthday, "yyyy-MM-dd") : null;
 
@@ -242,9 +214,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                 return;
             }
 
-            await axios.put(`${API_BASE_URL}/users/${user.id}`, updateData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await userService.updateUser(user.id, updateData);
 
             onOpenChange(false);
             setFieldErrors({});
@@ -291,7 +261,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                                 type="text"
                                 placeholder="Имя"
                                 value={editData.name}
-                                onChange={handleNameChange}
+                                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                                 onBlur={() => {
                                     setTouched((prev) => ({ ...prev, name: true }));
                                     const nameError = validateName(editData.name);
@@ -310,7 +280,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                                 type="text"
                                 placeholder="Фамилия"
                                 value={editData.secondname}
-                                onChange={handleSecondnameChange}
+                                onChange={(e) => setEditData({ ...editData, secondname: e.target.value })}
                                 onBlur={() => {
                                     setTouched((prev) => ({ ...prev, secondname: true }));
                                     const secondnameError = validateSecondname(editData.secondname);
@@ -329,7 +299,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                                 type="email"
                                 placeholder="example@mail.com"
                                 value={editData.email}
-                                onChange={handleEmailChange}
+                                onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                                 onBlur={() => {
                                     setTouched((prev) => ({ ...prev, email: true }));
                                     const emailError = validateEmail(editData.email);

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
-import { X, FunnelPlus, FunnelX } from "lucide-react";
+import { FunnelPlus, FunnelX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,25 +8,48 @@ import { Link } from "react-router-dom";
 import ExportButton from "@/components/ExportButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useNotifications } from "@/hooks/useNotifications";
 import type { Log } from '@/types/common.types';
 
-interface LogsProps {
+interface NotificationsProps {
     onVisited?: () => void;
 }
 
-export default function Notifications({ onVisited }: LogsProps) {
-    const [logs, setLogs] = useState<Log[]>([]);
-    const [loading, setLoading] = useState(true);
+const formatDateTime = (value: unknown): string => {
+    if (!value) return "";
+    try {
+        const date = new Date(value as string);
+        if (isNaN(date.getTime())) return "";
+        return date.toLocaleDateString("ru-RU") + " " + date.toLocaleTimeString("ru-RU");
+    } catch {
+        return "";
+    }
+};
+
+export default function Notifications({ onVisited }: NotificationsProps) {
+    const { logs, loading, deleteLog, deleteAllLogs, fetchLogs } = useNotifications();
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [itemsPerPage] = useState(10);
     const [showAll, setShowAll] = useState(false);
 
+    useEffect(() => {
+        fetchLogs();
+    }, []);
+
+    useEffect(() => {
+        if (onVisited && logs.length > 0) {
+            onVisited();
+        }
+    }, [logs, onVisited]);
+
     const filteredLogs = selectedTypes.length > 0 ? logs.filter((log) => selectedTypes.includes(log.type)) : logs;
     const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
     const paginatedLogs = showAll ? filteredLogs : filteredLogs.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+
     const handleResetFilters = () => {
         setSelectedTypes([]);
+        setCurrentPage(0);
     };
 
     const LOG_TYPES = [
@@ -62,57 +83,13 @@ export default function Notifications({ onVisited }: LogsProps) {
         { value: "inventory_deleted", label: "Удаление инвентаризации", category: "inventories" }
     ];
 
-    const fetchLogs = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/logs`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setLogs(response.data.logs);
-            if (onVisited) {
-                onVisited();
-            }
-        } catch (error) {
-            console.error("Ошибка загрузки логов:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchLogs();
-    }, []);
-
-    const handleDeleteLog = async (id: number) => {
-        try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/logs/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setLogs(logs.filter((log) => log.id !== id));
-        } catch (error) {
-            console.error("Ошибка удаления лога:", error);
-        }
-    };
-
-    const handleDeleteAllLogs = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/logs`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setLogs([]);
-        } catch (error) {
-            console.error("Ошибка удаления логов:", error);
-        }
-    };
-
     const handleTypeChange = (type: string, checked: boolean) => {
         if (checked) {
             setSelectedTypes([...selectedTypes, type]);
         } else {
             setSelectedTypes(selectedTypes.filter((t) => t !== type));
         }
+        setCurrentPage(0);
     };
 
     const parseMessageWithLinks = (message: string) => {
@@ -144,7 +121,7 @@ export default function Notifications({ onVisited }: LogsProps) {
             if (requestMatch) {
                 parts.push({
                     type: "request",
-                    content: `заявку`,
+                    content: "заявку",
                     id: parseInt(requestMatch[1])
                 });
             }
@@ -153,7 +130,7 @@ export default function Notifications({ onVisited }: LogsProps) {
             if (inventoryMatch) {
                 parts.push({
                     type: "inventory",
-                    content: `инвентаризаци(ю/и/я)`,
+                    content: "инвентаризацию",
                     id: parseInt(inventoryMatch[1])
                 });
             }
@@ -201,93 +178,16 @@ export default function Notifications({ onVisited }: LogsProps) {
         return <LoadingSpinner />;
     }
 
-    const logColumnsForExport = [
-        { accessorKey: "id", header: "ID" },
-        {
-            accessorKey: "type",
-            header: "Тип",
-            format: (value: string) => {
-                const typeMap: Record<string, string> = {
-                    user_created: "Создание пользователя",
-                    user_deleted: "Удаление пользователя",
-                    profile_updated: "Изменение профиля",
-                    password_changed: "Смена пароля",
-                    admin_user_updated: "Админ изменил данные пользователя",
-                    admin_password_changed: "Админ сменил пароль пользователя",
-                    login: "Вход в систему",
-                    logout: "Выход из системы",
-                    backup_created: "Создание бэкапа",
-                    backup_downloaded: "Скачивание бэкапа",
-                    backup_deleted: "Удаление бэкапа",
-                    material_created: "Создание материала",
-                    material_updated: "Изменение материала",
-                    material_deleted: "Удаление материала",
-                    category_created: "Создание категории",
-                    category_updated: "Изменение категории",
-                    category_deleted: "Удаление категории",
-                    request_created: "Создание заявки",
-                    request_approved: "Подтверждение заявки",
-                    request_rejected: "Отклонение заявки",
-                    inventory_created: "Создание инвентаризации",
-                    inventory_started: "Начало инвентаризации",
-                    inventory_saved: "Сохранение результатов",
-                    inventory_completed: "Завершение инвентаризации",
-                    inventory_approved: "Подтверждение инвентаризации",
-                    inventory_cancelled: "Отмена инвентаризации",
-                    inventory_updated: "Изменение инвентаризации",
-                    inventory_deleted: "Удаление инвентаризации"
-                };
-                return typeMap[value] || value;
-            }
-        },
-        { accessorKey: "title", header: "Заголовок" },
-        { accessorKey: "message", header: "Сообщение" },
-        { accessorKey: "user_name", header: "Пользователь" },
-        {
-            accessorKey: "created_at",
-            header: "Дата",
-            format: (value: string) => new Date(value).toLocaleString()
-        },
-        {
-            accessorKey: "read",
-            header: "Статус",
-            format: (value: boolean) => (value ? "Прочитано" : "Новое")
-        }
-    ];
 
     const filterGroups = [
-        {
-            title: "Пользователи",
-            types: LOG_TYPES.filter((t) => t.category === "users")
-        },
-        {
-            title: "Профиль",
-            types: LOG_TYPES.filter((t) => t.category === "profile")
-        },
-        {
-            title: "Авторизация",
-            types: LOG_TYPES.filter((t) => t.category === "auth")
-        },
-        {
-            title: "Бэкапы",
-            types: LOG_TYPES.filter((t) => t.category === "backups")
-        },
-        {
-            title: "Материалы",
-            types: LOG_TYPES.filter((t) => t.category === "materials")
-        },
-        {
-            title: "Категории",
-            types: LOG_TYPES.filter((t) => t.category === "categories")
-        },
-        {
-            title: "Заявки",
-            types: LOG_TYPES.filter((t) => t.category === "requests")
-        },
-        {
-            title: "Инвентаризации",
-            types: LOG_TYPES.filter((t) => t.category === "inventories")
-        }
+        { title: "Пользователи", types: LOG_TYPES.filter((t) => t.category === "users") },
+        { title: "Профиль", types: LOG_TYPES.filter((t) => t.category === "profile") },
+        { title: "Авторизация", types: LOG_TYPES.filter((t) => t.category === "auth") },
+        { title: "Бэкапы", types: LOG_TYPES.filter((t) => t.category === "backups") },
+        { title: "Материалы", types: LOG_TYPES.filter((t) => t.category === "materials") },
+        { title: "Категории", types: LOG_TYPES.filter((t) => t.category === "categories") },
+        { title: "Заявки", types: LOG_TYPES.filter((t) => t.category === "requests") },
+        { title: "Инвентаризации", types: LOG_TYPES.filter((t) => t.category === "inventories") }
     ];
 
     return (
@@ -297,7 +197,6 @@ export default function Notifications({ onVisited }: LogsProps) {
                 <h1 className="text-2xl mb-4">Журнал действий {logs.length !== filteredLogs.length && `(${filteredLogs.length}/${logs.length})`}</h1>
 
                 <div className="sm:flex gap-3 grid">
-                    <ExportButton data={filteredLogs} columns={logColumnsForExport} filename="logs" title="Журнал действий" />
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline">
@@ -342,14 +241,14 @@ export default function Notifications({ onVisited }: LogsProps) {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteAllLogs}>Удалить</AlertDialogAction>
+                                    <AlertDialogAction onClick={deleteAllLogs}>Удалить</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
                 </div>
-                
             </div>
+
             {filteredLogs.length > itemsPerPage && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
                     <div className="text-sm text-muted-foreground">Всего записей: {filteredLogs.length}</div>
@@ -364,7 +263,6 @@ export default function Notifications({ onVisited }: LogsProps) {
                         >
                             {showAll ? "Свернуть" : "Развернуть"}
                         </Button>
-
                         {!showAll && totalPages > 1 && (
                             <>
                                 <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
@@ -382,18 +280,18 @@ export default function Notifications({ onVisited }: LogsProps) {
                 </div>
             )}
 
-            <div className="space-y-3 text-base!">
+            <div className="space-y-3 text-base">
                 {paginatedLogs.map((log) => (
-                    <div key={log.id} className={`p-4 border rounded-lg`}>
+                    <div key={log.id} className="p-4 border rounded-lg">
                         <div className="flex justify-between items-center">
                             <div className="flex justify-between w-full gap-10 items-center">
                                 <div className="sm:flex grid items-center sm:justify-between sm:w-full">
                                     <h3 className="text-xs">{log.title}</h3>
-                                    <span className="text-sm">{new Date(log.created_at).toLocaleString()}</span>
+                                    <span className="text-sm">{formatDateTime(log.created_at)}</span>
                                 </div>
                                 <div>
-                                    <button onClick={() => handleDeleteLog(log.id)}>
-                                        <img src="/trash.png" className="icon w-5! items-center" alt="" />
+                                    <button onClick={() => deleteLog(log.id)}>
+                                        <img src="/trash.png" className="icon w-5 items-center" alt="" />
                                     </button>
                                 </div>
                             </div>
@@ -407,10 +305,12 @@ export default function Notifications({ onVisited }: LogsProps) {
                     </div>
                 ))}
 
-                {paginatedLogs.length === 0 && <p className="text-center py-10 text-muted-foreground">{selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}</p>}
+                {paginatedLogs.length === 0 && (
+                    <p className="text-center py-10 text-muted-foreground">
+                        {selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}
+                    </p>
+                )}
             </div>
-
-            
         </div>
     );
 }

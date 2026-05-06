@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { API_BASE_URL } from "@/components/api";
-import axios from "axios";
+import { authService } from "@/services/authService";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -18,10 +18,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             return;
         }
 
-        axios
-            .get(`${API_BASE_URL}/verifyToken`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
+        authService
+            .verifyToken()
             .then(() => setIsAuthenticated(true))
             .catch(() => {
                 localStorage.removeItem("token");
@@ -31,11 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }, []);
 
     if (isAuthenticated === null) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2"></div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (!isAuthenticated) {

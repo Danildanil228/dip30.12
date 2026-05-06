@@ -5,11 +5,10 @@ import { StatusChart } from "@/components/Dashboard/StatusChart";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { Package, Boxes, Clock, CheckCircle, RefreshCw } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useReports } from "@/hooks/useReports";
 
 interface MetricsData {
     total_materials: number;
@@ -29,20 +28,17 @@ export default function Dashboard() {
     const [metrics, setMetrics] = useState<MetricsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { getDashboardMetrics } = useReports();
 
     const fetchMetrics = async () => {
         try {
             setLoading(true);
             setError(null);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/dashboard/metrics`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    startDate: format(startDate, "yyyy-MM-dd"),
-                    endDate: format(endDate, "yyyy-MM-dd")
-                }
+            const data = await getDashboardMetrics({
+                startDate: format(startDate, "yyyy-MM-dd"),
+                endDate: format(endDate, "yyyy-MM-dd"),
             });
-            setMetrics(response.data);
+            setMetrics(data);
         } catch (error: any) {
             console.error("Ошибка загрузки метрик:", error);
             setError(error.response?.data?.error || "Ошибка загрузки");
@@ -88,7 +84,13 @@ export default function Dashboard() {
                     description={`${metrics?.pending_requests.incoming || 0} приход / ${metrics?.pending_requests.outgoing || 0} расход`}
                     icon={<Clock className="h-4 w-4" />}
                 />
-                <MetricCard title="Завершено за период" value={metrics?.completed_requests || 0} change={metrics?.completed_change} changeText="к прошлому периоду" icon={<CheckCircle className="h-4 w-4" />} />
+                <MetricCard
+                    title="Завершено за период"
+                    value={metrics?.completed_requests || 0}
+                    change={metrics?.completed_change}
+                    changeText="к прошлому периоду"
+                    icon={<CheckCircle className="h-4 w-4" />}
+                />
             </div>
 
             <MovementChart />

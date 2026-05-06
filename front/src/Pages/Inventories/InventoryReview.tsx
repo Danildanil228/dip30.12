@@ -5,75 +5,57 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ArrowLeft, CheckCircle, XCircle, Package, User, Calendar, FileText } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Inventory, InventoryItem } from '@/types/inventory.types';
+import { useInventories } from "@/hooks/useInventories";
+import { useUser } from "@/hooks/useUser";
+import type { InventoryItem } from "@/types/inventory.types";
 
 export default function InventoryReview() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [currentUser, setCurrentUser] = useState<any>(null);
-    const [inventory, setInventory] = useState<Inventory | null>(null);
+    const { user } = useUser();
+    const { currentInventory, inventoryResults, loading, fetchInventoryById, approveInventory, cancelInventory } = useInventories();
     const [items, setItems] = useState<InventoryItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState("");
     const [notesExpanded, setNotesExpanded] = useState(false);
     const [showApproveDialog, setShowApproveDialog] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-    useEffect(() => {
-        const userData = localStorage.getItem("user");
-        if (userData) {
-            setCurrentUser(JSON.parse(userData));
-        }
-    }, []);
-
     const isResponsible = () => {
-        if (!inventory || !currentUser) return false;
-        return inventory.responsible_person === currentUser.id;
+        if (!currentInventory || !user) return false;
+        return currentInventory.responsible_person === user.id;
     };
 
     const isAdminOrAccountant = () => {
-        if (!currentUser) return false;
-        return currentUser.role === "admin" || currentUser.role === "accountant";
+        if (!user) return false;
+        return user.role === "admin" || user.role === "accountant";
     };
 
     useEffect(() => {
-        if (currentUser !== null) {
-            fetchInventory();
+        if (id) {
+            fetchInventoryById(parseInt(id));
         }
-    }, [id, currentUser]);
+    }, [id]);
 
-    const fetchInventory = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/inventories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            setInventory(response.data.inventory);
-            setItems(response.data.results || []);
-
-            if (!isAdminOrAccountant()) {
-                setError(`Недостаточно прав для проверки инвентаризации. Ваша роль: ${currentUser?.role}`);
-                return;
-            }
-
-            if (response.data.inventory.status !== "completed") {
-                setError(`Эта инвентаризация не ожидает проверки. Текущий статус: ${response.data.inventory.status}`);
-                return;
-            }
-        } catch (error: any) {
-            console.error("Ошибка загрузки:", error);
-            setError(error.response?.data?.error || "Ошибка загрузки");
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (inventoryResults.length > 0) {
+            setItems(inventoryResults);
         }
-    };
+    }, [inventoryResults]);
+
+    useEffect(() => {
+        if (currentInventory && !isAdminOrAccountant()) {
+            setError(`Недостаточно прав для проверки инвентаризации. Ваша роль: ${user?.role}`);
+            return;
+        }
+
+        if (currentInventory && currentInventory.status !== "completed") {
+            setError(`Эта инвентаризация не ожидает проверки. Текущий статус: ${currentInventory.status}`);
+            return;
+        }
+    }, [currentInventory, user]);
 
     const handleApprove = async () => {
         setShowApproveDialog(false);
@@ -81,18 +63,9 @@ export default function InventoryReview() {
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
-            await axios.put(
-                `${API_BASE_URL}/inventories/${id}/approve`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
-
+            await approveInventory(parseInt(id!));
             navigate("/inventories");
         } catch (error: any) {
-            console.error("Ошибка подтверждения:", error);
             setError(error.response?.data?.error || "Ошибка подтверждения");
         } finally {
             setProcessing(false);
@@ -105,17 +78,9 @@ export default function InventoryReview() {
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
-            await axios.put(
-                `${API_BASE_URL}/inventories/${id}/cancel`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await cancelInventory(parseInt(id!));
             navigate("/inventories");
         } catch (error: any) {
-            console.error("Ошибка отмены:", error);
             setError(error.response?.data?.error || "Ошибка отмены");
         } finally {
             setProcessing(false);
@@ -143,7 +108,7 @@ export default function InventoryReview() {
         return <LoadingSpinner />;
     }
 
-    if (error || !inventory) {
+    if (error || !currentInventory) {
         return (
             <div className="text-center py-20">
                 <p className="text-red-500 mb-4 whitespace-pre-line">{error || "Инвентаризация не найдена"}</p>
@@ -167,8 +132,8 @@ export default function InventoryReview() {
             <Card className="mb-6">
                 <CardHeader>
                     <div className="sm:flex sm:justify-between grid gap-2 flex-wrap items-center">
-                        <p className="text-lg">{inventory.title}</p>
-                        {getStatusBadge(inventory.status)}
+                        <p className="text-lg">{currentInventory.title}</p>
+                        {getStatusBadge(currentInventory.status)}
                     </div>
                 </CardHeader>
                 <CardContent className="text-base">
@@ -176,36 +141,36 @@ export default function InventoryReview() {
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <Calendar className="h-4 w-4" />
                             <span>
-                                {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
+                                {format(new Date(currentInventory.start_date), "dd.MM.yyyy")} - {format(new Date(currentInventory.end_date), "dd.MM.yyyy")}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-base">
                             <User className={isResponsible() ? "h-4 w-4" : "text-muted-foreground h-4 w-4"} />
                             <span className={isResponsible() ? "underline" : "text-muted-foreground"}>
-                                Ответственный: {inventory.responsible_username}
+                                Ответственный: {currentInventory.responsible_username}
                                 {isResponsible() && " (Вы)"}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <User className="h-4 w-4" />
-                            <span>Создал: {inventory.created_by_username}</span>
+                            <span>Создал: {currentInventory.created_by_username}</span>
                         </div>
-                        {inventory.completed_at && (
+                        {currentInventory.completed_at && (
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Calendar className="h-4 w-4" />
-                                <span>Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}</span>
+                                <span>Завершена: {format(new Date(currentInventory.completed_at), "dd.MM.yyyy HH:mm")}</span>
                             </div>
                         )}
                     </div>
 
-                    {inventory.description && (
+                    {currentInventory.description && (
                         <div className="mt-4 flex items-start gap-2">
                             <FileText className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-muted-foreground">Примечания</div>
                                 <div className="mt-1">
-                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{inventory.description}</div>
-                                    {inventory.description.length > 100 && (
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{currentInventory.description}</div>
+                                    {currentInventory.description.length > 100 && (
                                         <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
                                             {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
@@ -215,7 +180,7 @@ export default function InventoryReview() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 ">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                         <div className="text-center p-3 border rounded">
                             <div className="text-2xl font-bold">{stats.total}</div>
                             <div className="text-sm text-muted-foreground">Всего</div>
@@ -233,6 +198,7 @@ export default function InventoryReview() {
                             <div className="text-sm text-muted-foreground">Недостача</div>
                         </div>
                     </div>
+
                     <div className="grid gap-3 mt-3 sm:flex sm:justify-end">
                         <Button onClick={() => setShowApproveDialog(true)} disabled={processing}>
                             <CheckCircle className="mr-2 h-4 w-4" />
@@ -315,7 +281,7 @@ export default function InventoryReview() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Подтвердить инвентаризацию?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Вы уверены, что хотите подтвердить инвентаризацию "{inventory.title}"?
+                            Вы уверены, что хотите подтвердить инвентаризацию "{currentInventory.title}"?
                             <br />
                             Остатки на складе будут обновлены согласно результатам.
                         </AlertDialogDescription>
@@ -332,7 +298,7 @@ export default function InventoryReview() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Отменить инвентаризацию?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Вы уверены, что хотите отменить инвентаризацию "{inventory.title}"?
+                            Вы уверены, что хотите отменить инвентаризацию "{currentInventory.title}"?
                             <br />
                             Все результаты будут отклонены.
                         </AlertDialogDescription>

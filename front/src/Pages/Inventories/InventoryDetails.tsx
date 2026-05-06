@@ -4,66 +4,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, User, Calendar, FileText, CheckCircle } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Inventory, InventoryItem } from "@/types/inventory.types";
+import { useInventories } from "@/hooks/useInventories";
+import { useUser } from "@/hooks/useUser";
+import type { InventoryItem } from "@/types/inventory.types";
 
 export default function InventoryDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [currentUser, setCurrentUser] = useState<any>(null);
-    const [inventory, setInventory] = useState<Inventory | null>(null);
+    const { user } = useUser();
+    const { currentInventory, inventoryResults, loading, fetchInventoryById } = useInventories();
     const [items, setItems] = useState<InventoryItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [notesExpanded, setNotesExpanded] = useState(false);
 
-    useEffect(() => {
-        const userData = localStorage.getItem("user");
-        if (userData) {
-            setCurrentUser(JSON.parse(userData));
-        }
-    }, []);
-
     const isAdminOrAccountant = () => {
-        if (!currentUser) return false;
-        return currentUser.role === "admin" || currentUser.role === "accountant";
+        if (!user) return false;
+        return user.role === "admin" || user.role === "accountant";
     };
 
     const isResponsible = () => {
-        if (!inventory || !currentUser) return false;
-        return inventory.responsible_person === currentUser.id;
+        if (!currentInventory || !user) return false;
+        return currentInventory.responsible_person === user.id;
     };
 
     const canReview = () => {
-        return isAdminOrAccountant() && inventory?.status === "completed";
+        return isAdminOrAccountant() && currentInventory?.status === "completed";
     };
 
     useEffect(() => {
-        if (currentUser !== null) {
-            fetchInventory();
+        if (id) {
+            fetchInventoryById(parseInt(id));
         }
-    }, [id, currentUser]);
+    }, [id]);
 
-    const fetchInventory = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/inventories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            setInventory(response.data.inventory);
-            setItems(response.data.results || []);
-        } catch (error: any) {
-            console.error("Ошибка загрузки:", error);
-            setError(error.response?.data?.error || "Ошибка загрузки");
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (inventoryResults.length > 0) {
+            setItems(inventoryResults);
         }
-    };
+    }, [inventoryResults]);
 
     const handleReview = () => {
         navigate(`/inventories/${id}/review`);
@@ -94,7 +74,7 @@ export default function InventoryDetails() {
         return <LoadingSpinner />;
     }
 
-    if (!inventory || error) {
+    if (!currentInventory || error) {
         return (
             <div className="text-center py-20">
                 <p className="text-gray-500">{error || "Инвентаризация не найдена"}</p>
@@ -117,8 +97,8 @@ export default function InventoryDetails() {
                 <CardHeader>
                     <div className="flex flex-wrap justify-between items-start gap-4">
                         <div>
-                            <CardTitle className="text-2xl mb-2">{inventory.title}</CardTitle>
-                            <div className="flex flex-wrap gap-2">{getStatusBadge(inventory.status)}</div>
+                            <CardTitle className="text-2xl mb-2">{currentInventory.title}</CardTitle>
+                            <div className="flex flex-wrap gap-2">{getStatusBadge(currentInventory.status)}</div>
                         </div>
                         {canReview() && (
                             <Button onClick={handleReview}>
@@ -133,48 +113,48 @@ export default function InventoryDetails() {
                         <div className="flex items-center gap-2 text-gray-600">
                             <Calendar className="h-4 w-4" />
                             <span className="text-base">
-                                {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
+                                {format(new Date(currentInventory.start_date), "dd.MM.yyyy")} - {format(new Date(currentInventory.end_date), "dd.MM.yyyy")}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-base">
                             <User className={isResponsible() ? "h-4 w-4" : "text-gray-600 h-4 w-4"} />
                             <span className={isResponsible() ? "underline" : "text-gray-600"}>
-                                Ответственный: {inventory.responsible_username}
+                                Ответственный: {currentInventory.responsible_username}
                                 {isResponsible() && " (Вы)"}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600 text-base">
-                            <User className="h-4 w-4 " />
-                            <span>Создал: {inventory.created_by_username}</span>
+                            <User className="h-4 w-4" />
+                            <span>Создал: {currentInventory.created_by_username}</span>
                         </div>
-                        {inventory.approved_by_username && (
+                        {currentInventory.approved_by_username && (
                             <div className="flex items-center gap-2 text-gray-600">
                                 <User className="h-4 w-4" />
-                                <span>Утвердил: {inventory.approved_by_username}</span>
+                                <span>Утвердил: {currentInventory.approved_by_username}</span>
                             </div>
                         )}
-                        {inventory.completed_at && (
+                        {currentInventory.completed_at && (
                             <div className="flex items-center gap-2 text-gray-600">
                                 <Calendar className="h-4 w-4" />
-                                <span>Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}</span>
+                                <span>Завершена: {format(new Date(currentInventory.completed_at), "dd.MM.yyyy HH:mm")}</span>
                             </div>
                         )}
-                        {inventory.approved_at && (
+                        {currentInventory.approved_at && (
                             <div className="flex items-center gap-2 text-gray-600">
                                 <Calendar className="h-4 w-4" />
-                                <span>Утверждена: {format(new Date(inventory.approved_at), "dd.MM.yyyy HH:mm")}</span>
+                                <span>Утверждена: {format(new Date(currentInventory.approved_at), "dd.MM.yyyy HH:mm")}</span>
                             </div>
                         )}
                     </div>
 
-                    {inventory.description && (
+                    {currentInventory.description && (
                         <div className="mt-4 flex items-start gap-2">
                             <FileText className="h-5 w-5 text-gray-600 mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-gray-600">Примечания</div>
                                 <div className="mt-1">
-                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{inventory.description}</div>
-                                    {inventory.description.length > 100 && (
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{currentInventory.description}</div>
+                                    {currentInventory.description.length > 100 && (
                                         <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
                                             {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
@@ -185,6 +165,7 @@ export default function InventoryDetails() {
                     )}
                 </CardContent>
             </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">

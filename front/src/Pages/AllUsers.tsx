@@ -1,74 +1,54 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowUpDown } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AddUserDialog from "@/components/Dialog/AddUserDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { DataTable } from "@/components/ui/DataTable";
+import { useUsers } from "@/hooks/useUsers";
+import { useUser } from "@/hooks/useUser";
 import type { User } from "@/types/user.types";
 import type { ColumnDef } from "@tanstack/react-table";
 
+const formatDate = (value: unknown): string => {
+    if (!value) return "";
+    try {
+        const date = new Date(value as string);
+        if (isNaN(date.getTime())) return "";
+        return date.toLocaleDateString("ru-RU");
+    } catch {
+        return "";
+    }
+};
+
 export default function AllUsers() {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUsers(response.data.users);
-        } catch (error: unknown) {
-            console.error("Ошибка загрузки пользователей:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+    const { users, loading, deleteUser } = useUsers();
+    const { user: currentUser } = useUser();
 
     const handleDeleteUser = async (id: number) => {
-        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-        if (currentUser.id === id) {
+        if (currentUser?.id === id) {
             alert("Вы не можете удалить свой собственный аккаунт!");
             return;
         }
         try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/users/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUsers(users.filter((user) => user.id !== id));
-        } catch (error: unknown) {
-            console.error("Ошибка удаления пользователя:", error);
+            await deleteUser(id);
+        } catch (error) {
             alert("Не удалось удалить пользователя");
         }
     };
 
     const handleDeleteSelected = async (selectedIds: number[]) => {
-        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-        if (selectedIds.includes(currentUser.id)) {
+        if (currentUser && selectedIds.includes(currentUser.id)) {
             alert("Вы не можете удалить свой собственный аккаунт!");
             return;
         }
         try {
-            const token = localStorage.getItem("token");
             for (const id of selectedIds) {
-                await axios.delete(`${API_BASE_URL}/users/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await deleteUser(id);
             }
-            setUsers(users.filter((user) => !selectedIds.includes(user.id)));
-        } catch (error: unknown) {
-            console.error("Ошибка удаления пользователей:", error);
+        } catch (error) {
             alert("Не удалось удалить пользователей");
         }
     };
@@ -78,15 +58,19 @@ export default function AllUsers() {
             {
                 id: "select",
                 header: ({ table }) => (
-                    <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
+                    <Checkbox
+                        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                        aria-label="Select all"
+                    />
                 ),
                 cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
                 enableSorting: false,
-                enableHiding: false
+                enableHiding: false,
             },
             {
                 accessorKey: "id",
-                header: "ID"
+                header: "ID",
             },
             {
                 accessorKey: "username",
@@ -95,15 +79,15 @@ export default function AllUsers() {
                         Логин
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
-                )
+                ),
             },
             {
                 accessorKey: "name",
-                header: "Имя"
+                header: "Имя",
             },
             {
                 accessorKey: "secondname",
-                header: "Фамилия"
+                header: "Фамилия",
             },
             {
                 accessorKey: "role",
@@ -113,7 +97,7 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>
+                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>,
             },
             {
                 accessorKey: "created_at",
@@ -123,15 +107,14 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div>{new Date(row.original.created_at || "").toLocaleString("ru-RU")}</div>
+                cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
             },
             {
                 accessorKey: "actions",
                 header: "Функции",
                 cell: ({ row }) => {
                     const user = row.original;
-                    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                    if (user.id === currentUser.id) {
+                    if (user.id === currentUser?.id) {
                         return <span className="text-gray-400">Вы</span>;
                     }
                     return (
@@ -155,10 +138,10 @@ export default function AllUsers() {
                             </AlertDialog>
                         </div>
                     );
-                }
-            }
+                },
+            },
         ],
-        []
+        [currentUser],
     );
 
     return (
@@ -166,7 +149,7 @@ export default function AllUsers() {
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Все пользователи</h1>
-                <AddUserDialog onUserCreated={fetchUsers} />
+                <AddUserDialog onUserCreated={() => window.location.reload()} />
             </div>
 
             <DataTable
@@ -177,22 +160,7 @@ export default function AllUsers() {
                 onDeleteSelected={handleDeleteSelected}
                 exportFilename="users"
                 exportTitle="Пользователи"
-                exportColumns={[
-                    { accessorKey: "id", header: "ID" },
-                    { accessorKey: "username", header: "Логин" },
-                    { accessorKey: "name", header: "Имя" },
-                    { accessorKey: "secondname", header: "Фамилия" },
-                    {
-                        accessorKey: "role",
-                        header: "Роль",
-                        format: (value) => (value === "admin" ? "Администратор" : value === "accountant" ? "Бухгалтер" : "Кладовщик")
-                    },
-                    {
-                        accessorKey: "created_at",
-                        header: "Дата создания",
-                        format: (value) => new Date(value as string).toLocaleDateString()
-                    }
-                ]}
+                skipExportColumns={["actions"]}
             />
         </section>
     );
