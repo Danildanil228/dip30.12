@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
+import { userService } from "@/services/userService";
 
 interface AddUserDialogProps {
     onUserCreated?: () => void;
@@ -21,10 +20,7 @@ interface FieldErrors {
     password?: string;
 }
 
-export default function AddUserDialog({
-    onUserCreated,
-    triggerButton
-}: AddUserDialogProps) {
+export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserDialogProps) {
     const [open, setOpen] = useState(false);
     const [name, setName] = useState("");
     const [secondname, setSecondname] = useState("");
@@ -43,54 +39,32 @@ export default function AddUserDialog({
     });
 
     const validateName = (value: string): string => {
-        if (!value.trim()) {
-            return "Имя обязательно";
-        }
+        if (!value.trim()) return "Имя обязательно";
         const lettersRegex = /^[А-Яа-яЁё]+$/;
-        if (!lettersRegex.test(value)) {
-            return "Имя должно содержать только буквы";
-        }
-        if (value.length < 2) {
-            return "Имя должно содержать минимум 2 символа";
-        }
+        if (!lettersRegex.test(value)) return "Имя должно содержать только буквы";
+        if (value.length < 2) return "Имя должно содержать минимум 2 символа";
         return "";
     };
 
     const validateSecondname = (value: string): string => {
-        if (!value.trim()) {
-            return "Фамилия обязательна";
-        }
+        if (!value.trim()) return "Фамилия обязательна";
         const lettersRegex = /^[А-Яа-яЁё]+$/;
-        if (!lettersRegex.test(value)) {
-            return "Фамилия должна содержать только буквы";
-        }
-        if (value.length < 3) {
-            return "Фамилия должна содержать минимум 3 символа";
-        }
+        if (!lettersRegex.test(value)) return "Фамилия должна содержать только буквы";
+        if (value.length < 3) return "Фамилия должна содержать минимум 3 символа";
         return "";
     };
 
     const validateUsername = (value: string): string => {
-        if (!value.trim()) {
-            return "Логин обязателен";
-        }
+        if (!value.trim()) return "Логин обязателен";
         const latinRegex = /^[A-Za-z0-9]+$/;
-        if (!latinRegex.test(value)) {
-            return "Логин может содержать только латинские буквы и цифры";
-        }
-        if (value.length < 5) {
-            return "Логин должен содержать минимум 5 символов";
-        }
+        if (!latinRegex.test(value)) return "Логин может содержать только латинские буквы и цифры";
+        if (value.length < 5) return "Логин должен содержать минимум 5 символов";
         return "";
     };
 
     const validatePassword = (value: string): string => {
-        if (!value) {
-            return "Пароль обязателен";
-        }
-        if (value.length < 6) {
-            return "Пароль должен быть не менее 6 символов";
-        }
+        if (!value) return "Пароль обязателен";
+        if (value.length < 6) return "Пароль должен быть не менее 6 символов";
         return "";
     };
 
@@ -190,13 +164,8 @@ export default function AddUserDialog({
 
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE_URL}/createUser`, {
+            await userService.createUser({
                 username, password, name, secondname, role
-            }, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
             });
 
             setSuccess(`Пользователь ${username} создан`);
@@ -387,11 +356,7 @@ export default function AddUserDialog({
 
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={loading} className="text-base">Отмена</AlertDialogCancel>
-                        <Button
-                            type="submit"
-                            className="text-base"
-                            disabled={loading || !!success}
-                        >
+                        <Button type="submit" className="text-base" disabled={loading || !!success}>
                             {loading ? "Создание..." : "Создать пользователя"}
                         </Button>
                     </AlertDialogFooter>

@@ -6,9 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
+import { materialService } from "@/services/materialService";
 
 interface Category {
     id: number;
@@ -45,11 +44,8 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
     const fetchCategories = async () => {
         try {
             setLoadingCategories(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCategories(response.data.categories || []);
+            const categoriesData = await materialService.getCategories();
+            setCategories(categoriesData);
         } catch (error) {
             console.error("Ошибка загрузки категорий:", error);
         } finally {
@@ -96,24 +92,16 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                 return;
             }
 
-            const token = localStorage.getItem("token");
+            const categoryIdToSend = categoryId === "no-category" ? null : parseInt(categoryId);
 
-            const categoryIdToSend = categoryId === "no-category" ? null : categoryId;
-
-            const response = await axios.post(
-                `${API_BASE_URL}/materials`,
-                {
-                    name: name.trim(),
-                    code: code.trim(),
-                    description: description.trim() || null,
-                    unit,
-                    quantity: quantityNum,
-                    category_id: categoryIdToSend ? parseInt(categoryIdToSend) : null
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await materialService.createMaterial({
+                name: name.trim(),
+                code: code.trim(),
+                description: description.trim() || null,
+                unit,
+                quantity: quantityNum,
+                category_id: categoryIdToSend,
+            });
 
             setName("");
             setCode("");
@@ -163,7 +151,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                                 <CapitalizedInput id="material-name" placeholder="Например: Цемент М500" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} required />
                             </div>
 
-                            <div className="grid gap-">
+                            <div className="grid gap-2">
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="material-code">Код</Label>
                                     <Button type="button" variant="ghost" size="sm" onClick={generateMaterialCode} disabled={!name.trim() || loading}>

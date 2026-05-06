@@ -10,7 +10,6 @@ import { useState, useEffect } from "react";
 export default function Header() {
     const { user, isAdmin } = useUser();
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-
     const [updateKey, setUpdateKey] = useState(0);
 
     useEffect(() => {
@@ -26,6 +25,12 @@ export default function Header() {
 
     if (!user) return null;
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+    };
+
     return (
         <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
             <Link to="/profile">{user.role === "admin" ? "Администратор" : user.role === "storekeeper" ? "Работник склада" : user.role === "accountant" ? "Бухгалтер" : "Неизвестная роль"}</Link>
@@ -33,11 +38,11 @@ export default function Header() {
                 {user.name} {user.secondname}
             </Link>
 
-            <div className="items-center flex gap-2 ">
+            <div className="items-center flex gap-2">
                 <DarkModeButtonToggle />
 
                 <DropdownMenu>
-                    <DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="px-3">
                             <img src="/setting.png" alt="" className="w-5 icon" />
                         </Button>
@@ -46,30 +51,29 @@ export default function Header() {
                         <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {isAdmin && (
-                            <DropdownMenuItem>
+                            <DropdownMenuItem asChild>
                                 <Link to="/backups">Бэкапы</Link>
                             </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                             <Link to="/profile">Профиль</Link>
                         </DropdownMenuItem>
                         {isAdmin && (
-                            <DropdownMenuItem className="lg:hidden">
+                            <DropdownMenuItem asChild className="lg:hidden">
                                 <Link to="/allusers">Все пользователи</Link>
                             </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                             <Link to="/inventories">Инвентаризация</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                             <Link to="/dashboard">Дашборд</Link>
                         </DropdownMenuItem>
                         {user?.role !== "storekeeper" && (
-                            <DropdownMenuItem>
+                            <DropdownMenuItem asChild>
                                 <Link to="/reports">Отчеты</Link>
                             </DropdownMenuItem>
                         )}
-
                         <DropdownMenuItem
                             className="cursor-pointer"
                             onSelect={(e) => {
@@ -89,15 +93,7 @@ export default function Header() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Отмена</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => {
-                                    localStorage.removeItem("token");
-                                    localStorage.removeItem("user");
-                                    window.location.href = "/login";
-                                }}
-                            >
-                                Выйти
-                            </AlertDialogAction>
+                            <AlertDialogAction onClick={handleLogout}>Выйти</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

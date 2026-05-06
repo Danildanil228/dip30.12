@@ -7,9 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Package, AlertCircle } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { useUser } from "@/hooks/useUser";
+import { requestService } from "@/services/requestService";
 import SelectMaterialsDialog from "./SelectMaterialsDialog";
 import { CapitalizedInput } from "../CapitalizedInput";
 
@@ -54,22 +53,19 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
             const payload = {
                 title: title.trim(),
                 request_type: requestType,
                 notes: notes.trim() || null,
                 items: selectedItems.map((item) => ({
                     material_id: item.material_id,
-                    quantity: item.quantity
+                    quantity: item.quantity,
                 })),
                 is_public: isPublic,
-                is_approved: autoApprove && isAdmin
+                is_approved: autoApprove && isAdmin,
             };
 
-            await axios.post(`${API_BASE_URL}/requests`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await requestService.createRequest(payload);
 
             setTitle("");
             setRequestType("incoming");

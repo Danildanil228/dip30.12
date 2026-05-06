@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format, subDays, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { useReports } from "@/hooks/useReports";
 
 interface MovementData {
     date: string;
@@ -18,7 +17,7 @@ const quickRanges = [
     { label: "7д", days: 7 },
     { label: "14д", days: 14 },
     { label: "30д", days: 30 },
-    { label: "90д", days: 90 }
+    { label: "90д", days: 90 },
 ];
 
 export function MovementChart() {
@@ -27,20 +26,17 @@ export function MovementChart() {
     const [data, setData] = useState<MovementData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { getDashboardMovement } = useReports();
 
     const fetchData = async () => {
         try {
             setLoading(true);
             setError(null);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/dashboard/movement`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    startDate: format(startDate, "yyyy-MM-dd"),
-                    endDate: format(endDate, "yyyy-MM-dd")
-                }
+            const result = await getDashboardMovement({
+                startDate: format(startDate, "yyyy-MM-dd"),
+                endDate: format(endDate, "yyyy-MM-dd"),
             });
-            setData(response.data.data);
+            setData(result.data);
         } catch (error: any) {
             console.error("Ошибка загрузки данных движения:", error);
             setError(error.response?.data?.error || "Ошибка загрузки");

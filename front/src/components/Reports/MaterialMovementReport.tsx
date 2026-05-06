@@ -2,23 +2,13 @@ import { useState, useEffect } from "react";
 import { ReportFilters } from "./ReportFilters";
 import { ReportTable } from "./ReportTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
-import type { MovementItem } from '@/types/report.types';
-
-interface Category {
-    id: number;
-    name: string;
-}
-
-interface Material {
-    id: number;
-    name: string;
-    code: string;
-}
+import { useMaterials } from "@/hooks/useMaterials";
+import { useReports } from "@/hooks/useReports";
+import { materialService } from "@/services/materialService";
+import type { MovementItem } from "@/types/report.types";
 
 export function MaterialMovementReport() {
     const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 1));
@@ -30,66 +20,66 @@ export function MaterialMovementReport() {
     const [summary, setSummary] = useState({ incoming: 0, outgoing: 0, turnover: 0 });
     const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
     const [materials, setMaterials] = useState<{ value: string; label: string }[]>([]);
-    const [loading, setLoading] = useState(false);
     const [filterLoading, setFilterLoading] = useState(false);
+
+    const { categories: allCategories, fetchCategories } = useMaterials();
+    const { getMaterialMovementReport, loading } = useReports();
 
     const types = [
         { value: "incoming", label: "Приход" },
-        { value: "outgoing", label: "Расход" }
+        { value: "outgoing", label: "Расход" },
     ];
 
-    const fetchFilters = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const categoriesRes = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        if (allCategories.length > 0) {
             setCategories(
-                categoriesRes.data.categories.map((c: Category) => ({
+                allCategories.map((c) => ({
                     value: c.id.toString(),
-                    label: c.name
-                }))
+                    label: c.name,
+                })),
             );
-
-            const materialsRes = await axios.get(`${API_BASE_URL}/reports/materials-list`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setMaterials(
-                materialsRes.data.materials.map((m: Material) => ({
-                    value: m.id.toString(),
-                    label: `${m.name} (${m.code})`
-                }))
-            );
-        } catch (error) {
-            console.error("Ошибка загрузки фильтров:", error);
         }
-    };
+    }, [allCategories]);
 
-    const fetchData = async () => {
+    const fetchMaterialsList = async () => {
         try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/reports/material-movement`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    startDate: format(startDate, "yyyy-MM-dd"),
-                    endDate: format(endDate, "yyyy-MM-dd"),
-                    categoryId,
-                    materialId,
-                    type
-                }
-            });
-            setData(response.data.data);
-            setSummary(response.data.summary);
+            const materialsData = await materialService.getMaterials();
+            setMaterials(
+                materialsData.materials.map((m) => ({
+                    value: m.id.toString(),
+                    label: `${m.name} (${m.code})`,
+                })),
+            );
         } catch (error) {
-            console.error("Ошибка загрузки данных:", error);
-        } finally {
-            setLoading(false);
+            console.error("Ошибка загрузки материалов:", error);
         }
     };
 
     useEffect(() => {
-        fetchFilters();
+        fetchMaterialsList();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const result = await getMaterialMovementReport({
+                startDate: format(startDate, "yyyy-MM-dd"),
+                endDate: format(endDate, "yyyy-MM-dd"),
+                categoryId,
+                materialId,
+                type,
+            });
+            setData(result.data);
+            setSummary(result.summary);
+        } catch (error) {
+            console.error("Ошибка загрузки данных:", error);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
     }, []);
 
@@ -117,9 +107,13 @@ export function MaterialMovementReport() {
         { key: "material_name", header: "Материал", width: "150px" },
         { key: "code", header: "Код", width: "100px" },
         { key: "category_name", header: "Категория", width: "120px" },
-        { key: "quantity", header: "Кол-во", width: "80px", format: (v: number) => v.toLocaleString() },
-        { key: "created_by_username", header: "Кто создал", width: "120px" }
+        { key: "quantity", header: "Кол-во", width: "80px", format: (v: number) => v?.toLocaleString() || "0" },
+        { key: "created_by_username", header: "Кто создал", width: "120px" },
     ];
+
+    if (loading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="space-y-4">
@@ -142,55 +136,50 @@ export function MaterialMovementReport() {
                 loading={loading || filterLoading}
             />
 
-            {loading ? (
-                <LoadingSpinner />
-            ) : (
-                <>
-                    <ExportButton
-                        data={data}
-                        columns={[
-                            { accessorKey: "date", header: "Дата", format: (v) => format(new Date(v), "dd.MM.yyyy") },
-                            { accessorKey: "request_title", header: "Заявка" },
-                            { accessorKey: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
-                            { accessorKey: "material_name", header: "Материал" },
-                            { accessorKey: "code", header: "Код" },
-                            { accessorKey: "category_name", header: "Категория" },
-                            { accessorKey: "quantity", header: "Кол-во", format: (v) => v?.toLocaleString() },
-                            { accessorKey: "created_by_username", header: "Кто создал" }
-                        ]}
-                        filename="material_movement"
-                        title="Отчет по движению материалов"
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-green-600">Приход</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{summary.incoming.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-red-600">Расход</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{summary.outgoing.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Оборот</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{summary.turnover.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                    </div>
+            <ExportButton
+                data={data}
+                columns={[
+                    { accessorKey: "date", header: "Дата", format: (v) => format(new Date(v), "dd.MM.yyyy") },
+                    { accessorKey: "request_title", header: "Заявка" },
+                    { accessorKey: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
+                    { accessorKey: "material_name", header: "Материал" },
+                    { accessorKey: "code", header: "Код" },
+                    { accessorKey: "category_name", header: "Категория" },
+                    { accessorKey: "quantity", header: "Кол-во", format: (v) => v?.toLocaleString() },
+                    { accessorKey: "created_by_username", header: "Кто создал" },
+                ]}
+                filename="material_movement"
+                title="Отчет по движению материалов"
+            />
 
-                    <ReportTable columns={columns} data={data} />
-                </>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-green-600">Приход</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.incoming.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-red-600">Расход</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.outgoing.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Оборот</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.turnover.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <ReportTable columns={columns} data={data} />
         </div>
     );
 }

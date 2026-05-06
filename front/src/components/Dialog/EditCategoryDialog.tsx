@@ -5,10 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { CapitalizedInput } from "../CapitalizedInput";
-import type { Category } from '@/types/material.types';
+import { materialService } from "@/services/materialService";
+import type { Category } from "@/types/material.types";
 
 interface EditCategoryDialogProps {
     categoryId: number;
@@ -23,7 +22,6 @@ export default function EditCategoryDialog({ categoryId, onCategoryUpdated, trig
     const [loading, setLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
 
@@ -36,13 +34,8 @@ export default function EditCategoryDialog({ categoryId, onCategoryUpdated, trig
     const fetchCategory = async () => {
         try {
             setLoadingData(true);
-            const token = localStorage.getItem("token");
-
-            const response = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const categoryData = response.data.categories.find((cat: Category) => cat.id === categoryId);
+            const categoriesData = await materialService.getCategories();
+            const categoryData = categoriesData.find((cat: Category) => cat.id === categoryId);
 
             if (categoryData) {
                 setCategory(categoryData);
@@ -71,18 +64,10 @@ export default function EditCategoryDialog({ categoryId, onCategoryUpdated, trig
                 return;
             }
 
-            const token = localStorage.getItem("token");
-
-            await axios.put(
-                `${API_BASE_URL}/categories/${categoryId}`,
-                {
-                    name: name.trim(),
-                    description: description.trim() || null
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await materialService.updateCategory(categoryId, {
+                name: name.trim(),
+                description: description.trim() || null,
+            });
 
             setOpen(false);
 
@@ -129,7 +114,14 @@ export default function EditCategoryDialog({ categoryId, onCategoryUpdated, trig
 
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-category-description">Описание</Label>
-                                <Textarea id="edit-category-description" placeholder="Описание категории..." value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} rows={3} />
+                                <Textarea
+                                    id="edit-category-description"
+                                    placeholder="Описание категории..."
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    disabled={loading}
+                                    rows={3}
+                                />
                             </div>
 
                             {error && <div className="text-red-500 text-sm">{error}</div>}

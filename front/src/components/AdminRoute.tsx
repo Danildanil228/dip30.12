@@ -9,9 +9,11 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     const { isAdmin, loading } = useUser();
+
     if (loading) {
         return <LoadingSpinner />;
     }
+
     if (!isAdmin) {
         return <Navigate to="/main" replace />;
     }

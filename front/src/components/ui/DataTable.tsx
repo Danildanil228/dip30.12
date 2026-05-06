@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState } from "@tanstack/react-table";
+import {
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+    type ColumnDef,
+    type ColumnFiltersState,
+    type SortingState,
+    type VisibilityState,
+} from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,6 +31,7 @@ interface DataTableProps<TData> {
     exportTitle?: string;
     exportColumns?: Array<{ accessorKey: string; header: string; format?: (value: unknown) => string }>;
     showPagination?: boolean;
+    skipExportColumns?: string[];
 }
 
 export function DataTable<TData extends { id: number }>({
@@ -35,7 +47,8 @@ export function DataTable<TData extends { id: number }>({
     exportFilename = "export",
     exportTitle = "Данные",
     exportColumns,
-    showPagination = true
+    showPagination = true,
+    skipExportColumns = [],
 }: DataTableProps<TData>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -64,8 +77,8 @@ export function DataTable<TData extends { id: number }>({
             columnVisibility,
             rowSelection,
             pagination,
-            globalFilter
-        }
+            globalFilter,
+        },
     });
 
     const handleToggleShowAll = () => {
@@ -88,44 +101,93 @@ export function DataTable<TData extends { id: number }>({
 
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
-    const getExportData = () => {
-        if (exportColumns) {
+    const formatDate = (value: unknown): string => {
+        if (!value) return "";
+        try {
+            const date = new Date(value as string);
+            if (!isNaN(date.getTime())) {
+                return date.toLocaleDateString("ru-RU");
+            }
+        } catch {
+            return "";
+        }
+        return "";
+    };
+
+    const formatFileSize = (bytes: unknown): string => {
+        if (!bytes || typeof bytes !== "number") return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    };
+
+    const prepareExportData = () => {
+        if (!data || data.length === 0) return [];
+
+        if (exportColumns && exportColumns.length > 0) {
             return data.map((item) => {
-                const row: Record<string, unknown> = {};
+                const row: Record<string, string> = {};
                 exportColumns.forEach((col) => {
                     let value = (item as Record<string, unknown>)[col.accessorKey];
                     if (col.format) {
                         value = col.format(value);
                     }
-                    row[col.header] = value;
+                    row[col.header] = String(value ?? "");
                 });
                 return row;
             });
         }
-        return data;
+
+        return data.map((item) => {
+            const row: Record<string, string> = {};
+            columns.forEach((col) => {
+                if (col.id === "select" || col.id === "actions") return;
+                if (skipExportColumns.includes(col.id as string)) return;
+                if ("accessorKey" in col && typeof col.accessorKey === "string") {
+                    let value = (item as Record<string, unknown>)[col.accessorKey];
+                    const header = typeof col.header === "string" ? col.header : col.accessorKey;
+
+                    if (col.accessorKey === "created_at" || col.accessorKey === "updated_at") {
+                        value = formatDate(value);
+                    }
+                    if (col.accessorKey === "file_size") {
+                        value = formatFileSize(value);
+                    }
+
+                    row[header] = String(value ?? "");
+                }
+            });
+            return row;
+        });
     };
 
-    const getExportColumns = () => {
-        if (exportColumns) {
+    const prepareExportColumns = () => {
+        if (exportColumns && exportColumns.length > 0) {
             return exportColumns;
         }
-        return columns
-            .filter((col) => {
-                if (col.id === "select" || col.id === "actions") return false;
-                return "accessorKey" in col && typeof col.accessorKey === "string";
-            })
-            .map((col) => {
-                const colDef = col as { accessorKey: string; header: unknown };
-                return {
-                    accessorKey: colDef.accessorKey,
-                    header: typeof colDef.header === "string" ? colDef.header : ""
-                };
-            });
+
+        const result: Array<{ accessorKey: string; header: string; format?: (value: unknown) => string }> = [];
+        columns.forEach((col) => {
+            if (col.id === "select" || col.id === "actions") return;
+            if (skipExportColumns.includes(col.id as string)) return;
+            if ("accessorKey" in col && typeof col.accessorKey === "string") {
+                const header = typeof col.header === "string" ? col.header : col.accessorKey;
+                result.push({
+                    accessorKey: col.accessorKey,
+                    header: header,
+                });
+            }
+        });
+        return result;
     };
 
     if (loading) {
         return <LoadingSpinner />;
     }
+
+    const exportData = prepareExportData();
+    const exportColumnsList = prepareExportColumns();
 
     return (
         <div className="w-full">
@@ -142,7 +204,12 @@ export function DataTable<TData extends { id: number }>({
                 )}
 
                 <div className="ml-auto flex gap-2">
-                    {showExport && <ExportButton data={getExportData()} columns={getExportColumns()} filename={exportFilename} title={exportTitle} />}
+                    {showExport && exportData.length > 0 && <ExportButton data={exportData} columns={exportColumnsList} filename={exportFilename} title={exportTitle} />}
+                    {showExport && exportData.length === 0 && (
+                        <Button variant="outline" disabled>
+                            Нет данных для экспорта
+                        </Button>
+                    )}
                     <Button variant="outline" onClick={() => table.setGlobalFilter("")}>
                         Обновить
                     </Button>
@@ -163,7 +230,12 @@ export function DataTable<TData extends { id: number }>({
                     <TableBody>
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onRowClick?.(row.original)}>
+                                <TableRow
+                                    key={row.id}
+                                    data-state={row.getIsSelected() && "selected"}
+                                    className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                                    onClick={() => onRowClick?.(row.original)}
+                                >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                                     ))}
@@ -180,9 +252,9 @@ export function DataTable<TData extends { id: number }>({
                 </Table>
             </div>
 
-            {showPagination && (
+            {showPagination && data.length > 0 && (
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-muted-foreground">Всего: {table.getFilteredRowModel().rows.length}</div>
+                    <div className="text-sm text-muted-foreground">Всего: {table.getFilteredRowModel().rows.length} записей</div>
                     <div className="flex items-center space-x-2">
                         {data.length > 10 && (
                             <Button variant="outline" onClick={handleToggleShowAll} className="ml-2">

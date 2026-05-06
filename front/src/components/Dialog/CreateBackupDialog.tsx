@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { Loader2 } from "lucide-react";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { backupService } from "@/services/backupService";
 
 interface CreateBackupDialogProps {
     onBackupCreated?: () => void;
@@ -28,17 +27,8 @@ export default function CreateBackupDialog({ onBackupCreated, triggerButton }: C
             setSuccess(null);
             setLoading(true);
 
-            const token = localStorage.getItem("token");
-
-            const response = await axios.post(
-                `${API_BASE_URL}/backups`,
-                {
-                    description: description.trim() || null
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            const descriptionValue = description.trim() || undefined;
+            await backupService.createBackup(descriptionValue);
 
             setDescription("");
             setSuccess("Бэкап успешно создан!");
@@ -46,7 +36,6 @@ export default function CreateBackupDialog({ onBackupCreated, triggerButton }: C
             setTimeout(() => {
                 setOpen(false);
                 setSuccess(null);
-
                 if (onBackupCreated) {
                     onBackupCreated();
                 }
@@ -80,7 +69,14 @@ export default function CreateBackupDialog({ onBackupCreated, triggerButton }: C
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="backup-description">Описание (необязательно)</Label>
-                            <Textarea id="backup-description" placeholder="Например: 'Бэкап перед обновлением системы'" value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} rows={3} />
+                            <Textarea
+                                id="backup-description"
+                                placeholder="Например: 'Бэкап перед обновлением системы'"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                disabled={loading}
+                                rows={3}
+                            />
                             <p className="text-sm text-gray-500">Бэкап будет создан с текущим состоянием базы данных</p>
                         </div>
 

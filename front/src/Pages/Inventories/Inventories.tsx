@@ -6,22 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Search, Calendar, User, FileText, Eye, Play, Send, MoreHorizontal, Package, Edit } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
-import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import CreateInventoryDialog from "@/components/Dialog/CreateInventoryDialog";
 import EditInventoryDialog from "@/components/Dialog/EditInventoryDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { useInventories } from "@/hooks/useInventories";
+import { useUser } from "@/hooks/useUser";
 import type { Inventory } from "@/types/inventory.types";
 
 export default function Inventories() {
     const navigate = useNavigate();
     const { user, isAdmin } = useUser();
-    const [inventories, setInventories] = useState<Inventory[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { inventories, loading, startInventory, completeInventory, cancelInventory, deleteInventory, fetchInventories } = useInventories();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -40,35 +38,10 @@ export default function Inventories() {
         fetchInventories();
     }, []);
 
-    const fetchInventories = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/inventories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setInventories(response.data.inventories || []);
-            setCurrentPage(0);
-        } catch (error) {
-            console.error("Ошибка загрузки инвентаризаций:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleStart = async (id: number) => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.put(
-                `${API_BASE_URL}/inventories/${id}/start`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
-            fetchInventories();
+            await startInventory(id);
         } catch (error: any) {
-            console.error("Ошибка начала инвентаризации:", error);
             alert(error.response?.data?.error || "Ошибка");
         }
     };
@@ -76,18 +49,9 @@ export default function Inventories() {
     const handleComplete = async () => {
         if (!completeDialog.id) return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.put(
-                `${API_BASE_URL}/inventories/${completeDialog.id}/complete`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await completeInventory(completeDialog.id);
             setCompleteDialog({ open: false, id: null, title: "" });
-            fetchInventories();
         } catch (error: any) {
-            console.error("Ошибка завершения инвентаризации:", error);
             alert(error.response?.data?.error || "Ошибка");
         }
     };
@@ -95,18 +59,9 @@ export default function Inventories() {
     const handleCancel = async () => {
         if (!cancelDialog.id) return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.put(
-                `${API_BASE_URL}/inventories/${cancelDialog.id}/cancel`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await cancelInventory(cancelDialog.id);
             setCancelDialog({ open: false, id: null, title: "" });
-            fetchInventories();
         } catch (error: any) {
-            console.error("Ошибка отмены инвентаризации:", error);
             alert(error.response?.data?.error || "Ошибка");
         }
     };
@@ -114,14 +69,9 @@ export default function Inventories() {
     const handleDelete = async () => {
         if (!deleteDialog.id) return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`${API_BASE_URL}/inventories/${deleteDialog.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await deleteInventory(deleteDialog.id);
             setDeleteDialog({ open: false, id: null, title: "" });
-            fetchInventories();
         } catch (error: any) {
-            console.error("Ошибка удаления инвентаризации:", error);
             alert(error.response?.data?.error || "Ошибка");
         }
     };
@@ -326,40 +276,36 @@ export default function Inventories() {
                                                     <Eye className="mr-2 h-4 w-4" />
                                                     Просмотр
                                                 </DropdownMenuItem>
-
                                                 {isAdmin && (
                                                     <DropdownMenuItem onClick={() => handleEdit(inventory)}>
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Изменить
                                                     </DropdownMenuItem>
                                                 )}
-
                                                 {isResponsible(inventory) && inventory.status === "in_progress" && (
                                                     <DropdownMenuItem onClick={() => handleConduct(inventory.id)}>
                                                         <Package className="mr-2 h-4 w-4" />
                                                         Провести
                                                     </DropdownMenuItem>
                                                 )}
-
                                                 {isResponsible(inventory) && inventory.status === "draft" && (
                                                     <DropdownMenuItem onClick={() => handleStart(inventory.id)}>
                                                         <Play className="mr-2 h-4 w-4" />
                                                         Начать
                                                     </DropdownMenuItem>
                                                 )}
-
                                                 {isResponsible(inventory) && inventory.status === "in_progress" && (
                                                     <DropdownMenuItem onClick={() => setCompleteDialog({ open: true, id: inventory.id, title: inventory.title })}>
                                                         <Send className="mr-2 h-4 w-4" />
                                                         Завершить
                                                     </DropdownMenuItem>
                                                 )}
-
                                                 {isAdmin && (inventory.status === "draft" || inventory.status === "in_progress") && (
                                                     <DropdownMenuItem onClick={() => setCancelDialog({ open: true, id: inventory.id, title: inventory.title })}>Отменить</DropdownMenuItem>
                                                 )}
-
-                                                {isAdmin && inventory.status === "cancelled" && <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>}
+                                                {isAdmin && inventory.status === "cancelled" && (
+                                                    <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -382,7 +328,6 @@ export default function Inventories() {
                                             <span>Создал: {inventory.created_by_username || "-"}</span>
                                         </div>
                                     </div>
-
                                     {inventory.status === "in_progress" && (
                                         <div className="mt-3">
                                             <div className="flex justify-between text-sm mb-1">
@@ -396,7 +341,6 @@ export default function Inventories() {
                                             </div>
                                         </div>
                                     )}
-
                                     {inventory.completed_at && <div className="text-xs text-muted-foreground mt-2">Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}</div>}
                                     {inventory.approved_at && <div className="text-xs text-muted-foreground">Утверждена: {format(new Date(inventory.approved_at), "dd.MM.yyyy HH:mm")}</div>}
                                 </div>
@@ -407,7 +351,6 @@ export default function Inventories() {
             </div>
 
             <CreateInventoryDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onInventoryCreated={fetchInventories} />
-
             <EditInventoryDialog inventory={editingInventory} open={!!editingInventory} onOpenChange={(open) => !open && setEditingInventory(null)} onInventoryUpdated={handleEditSuccess} />
 
             <AlertDialog open={completeDialog.open} onOpenChange={(open) => setCompleteDialog((prev) => ({ ...prev, open }))}>

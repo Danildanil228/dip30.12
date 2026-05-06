@@ -7,72 +7,54 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Save, Send, Package, User, Calendar, AlertCircle, FileText } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format } from "date-fns";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Inventory, InventoryItem } from '@/types/inventory.types';
+import { useInventories } from "@/hooks/useInventories";
+import { useUser } from "@/hooks/useUser";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import type { InventoryItem } from "@/types/inventory.types";
 
 export default function InventoryConduct() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [currentUser, setCurrentUser] = useState<any>(null);
-    const [inventory, setInventory] = useState<Inventory | null>(null);
+    const { user } = useUser();
+    const { currentInventory, inventoryResults, loading, fetchInventoryById, saveResults, completeInventory } = useInventories();
     const [items, setItems] = useState<InventoryItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [notesExpanded, setNotesExpanded] = useState(false);
     const [showCompleteDialog, setShowCompleteDialog] = useState(false);
     const [uncheckedCount, setUncheckedCount] = useState(0);
 
-    useEffect(() => {
-        const userData = localStorage.getItem("user");
-        if (userData) {
-            setCurrentUser(JSON.parse(userData));
-        }
-    }, []);
-
     const isResponsible = () => {
-        if (!inventory || !currentUser) return false;
-        return inventory.responsible_person === currentUser.id;
+        if (!currentInventory || !user) return false;
+        return currentInventory.responsible_person === user.id;
     };
 
     useEffect(() => {
-        if (currentUser !== null) {
-            fetchInventory();
+        if (id) {
+            fetchInventoryById(parseInt(id));
         }
-    }, [id, currentUser]);
+    }, [id]);
 
-    const fetchInventory = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/inventories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            setInventory(response.data.inventory);
-            setItems(response.data.results || []);
-
-            if (response.data.inventory.responsible_person !== currentUser?.id) {
-                setError(`Вы не являетесь ответственным за эту инвентаризацию. 
-                    Ответственный: ${response.data.inventory.responsible_username} (ID: ${response.data.inventory.responsible_person})`);
-                return;
-            }
-
-            if (response.data.inventory.status !== "in_progress") {
-                setError(`Инвентаризация не в процессе. Текущий статус: ${response.data.inventory.status}`);
-                return;
-            }
-        } catch (error: any) {
-            console.error("Ошибка загрузки:", error);
-            setError(error.response?.data?.error || "Ошибка загрузки");
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (inventoryResults.length > 0) {
+            setItems(inventoryResults);
         }
-    };
+    }, [inventoryResults]);
+
+    useEffect(() => {
+        if (currentInventory && currentInventory.responsible_person !== user?.id) {
+            setError(`Вы не являетесь ответственным за эту инвентаризацию. 
+Ответственный: ${currentInventory.responsible_username} (ID: ${currentInventory.responsible_person})`);
+            return;
+        }
+
+        if (currentInventory && currentInventory.status !== "in_progress") {
+            setError(`Инвентаризация не в процессе. Текущий статус: ${currentInventory.status}`);
+            return;
+        }
+    }, [currentInventory, user]);
 
     const handleQuantityChange = (materialId: number, value: string) => {
         const numValue = value === "" ? null : parseInt(value);
@@ -93,22 +75,13 @@ export default function InventoryConduct() {
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
             const results = items.map((item) => ({
                 material_id: item.material_id,
                 actual_quantity: item.actual_quantity,
-                reason: item.reason
+                reason: item.reason,
             }));
-
-            await axios.put(
-                `${API_BASE_URL}/inventories/${id}/results`,
-                { results },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await saveResults(parseInt(id!), results);
         } catch (error: any) {
-            console.error("Ошибка сохранения:", error);
             setError(error.response?.data?.error || "Ошибка сохранения");
         } finally {
             setSaving(false);
@@ -127,29 +100,13 @@ export default function InventoryConduct() {
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
-
             const results = items.map((item) => ({
                 material_id: item.material_id,
                 actual_quantity: item.actual_quantity,
-                reason: item.reason
+                reason: item.reason,
             }));
-
-            await axios.put(
-                `${API_BASE_URL}/inventories/${id}/results`,
-                { results },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
-
-            await axios.put(
-                `${API_BASE_URL}/inventories/${id}/complete`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            await saveResults(parseInt(id!), results);
+            await completeInventory(parseInt(id!));
             navigate("/inventories");
         } catch (error: any) {
             console.error("Ошибка завершения:", error);
@@ -180,7 +137,7 @@ export default function InventoryConduct() {
         return <LoadingSpinner />;
     }
 
-    if (error && !inventory) {
+    if (error && !currentInventory) {
         return (
             <div className="text-center py-20">
                 <p className="text-red-500 mb-4 whitespace-pre-line">{error}</p>
@@ -192,7 +149,7 @@ export default function InventoryConduct() {
         );
     }
 
-    if (!inventory) {
+    if (!currentInventory) {
         return (
             <div className="text-center py-20">
                 <p className="text-muted-foreground">Инвентаризация не найдена</p>
@@ -208,7 +165,7 @@ export default function InventoryConduct() {
 
     return (
         <div>
-            <ScrollToTop/>
+            <ScrollToTop />
             <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
@@ -217,8 +174,8 @@ export default function InventoryConduct() {
             <Card className="mb-6">
                 <CardHeader>
                     <div className="flex justify-between items-center flex-wrap">
-                        <p className="text-lg">{inventory.title}</p>
-                        {getStatusBadge(inventory.status)}
+                        <p className="text-lg">{currentInventory.title}</p>
+                        {getStatusBadge(currentInventory.status)}
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -226,26 +183,26 @@ export default function InventoryConduct() {
                         <div className="flex items-center gap-2 text-muted-foreground text-base">
                             <Calendar className="h-4 w-4" />
                             <span>
-                                {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
+                                {format(new Date(currentInventory.start_date), "dd.MM.yyyy")} - {format(new Date(currentInventory.end_date), "dd.MM.yyyy")}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-base">
-                            <User className={isResponsible() ? "h-4 w-4" : " w-4 h-4 text-muted-foreground"} />
+                            <User className={isResponsible() ? "h-4 w-4" : "w-4 h-4 text-muted-foreground"} />
                             <span className={isResponsible() ? "underline" : "text-muted-foreground"}>
-                                Ответственный: {inventory.responsible_username}
+                                Ответственный: {currentInventory.responsible_username}
                                 {isResponsible() && " (Вы)"}
                             </span>
                         </div>
                     </div>
 
-                    {inventory.description && (
+                    {currentInventory.description && (
                         <div className="mt-4 flex items-start gap-2">
                             <FileText className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-sm text-muted-foreground">Примечания</div>
                                 <div className="mt-1">
-                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{inventory.description}</div>
-                                    {inventory.description.length > 100 && (
+                                    <div className={`text-sm rounded ${!notesExpanded ? "line-clamp-2" : ""}`}>{currentInventory.description}</div>
+                                    {currentInventory.description.length > 100 && (
                                         <button onClick={() => setNotesExpanded(!notesExpanded)} className="text-sm mt-1 underline">
                                             {notesExpanded ? "Свернуть" : "Развернуть"}
                                         </button>
@@ -262,7 +219,7 @@ export default function InventoryConduct() {
                         </div>
                     )}
 
-                    {inventory.status === "in_progress" && (
+                    {currentInventory.status === "in_progress" && (
                         <div className="mt-4">
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Прогресс</span>
@@ -277,11 +234,11 @@ export default function InventoryConduct() {
                     )}
 
                     <div className="sm:flex gap-3 mt-4 grid sm:justify-end">
-                        <Button onClick={handleSave} disabled={saving || inventory.status !== "in_progress" || !isResponsible()} variant="outline">
+                        <Button onClick={handleSave} disabled={saving || currentInventory.status !== "in_progress" || !isResponsible()} variant="outline">
                             <Save className="mr-2 h-4 w-4" />
                             Сохранить
                         </Button>
-                        <Button onClick={handleCompleteClick} disabled={saving || inventory.status !== "in_progress" || !isResponsible()}>
+                        <Button onClick={handleCompleteClick} disabled={saving || currentInventory.status !== "in_progress" || !isResponsible()}>
                             <Send className="mr-2 h-4 w-4" />
                             Завершить
                         </Button>
@@ -319,12 +276,14 @@ export default function InventoryConduct() {
                                             placeholder="Введите количество"
                                             value={item.actual_quantity === null ? "" : item.actual_quantity}
                                             onChange={(e) => handleQuantityChange(item.material_id, e.target.value)}
-                                            disabled={inventory.status !== "in_progress" || !isResponsible()}
+                                            disabled={currentInventory.status !== "in_progress" || !isResponsible()}
                                             className="mt-1"
                                         />
                                         {item.actual_quantity !== null && item.actual_quantity !== item.system_quantity && (
                                             <p className={`text-sm mt-1 ${item.actual_quantity > item.system_quantity ? "text-green-600" : "text-red-600"}`}>
-                                                {item.actual_quantity > item.system_quantity ? `+${item.actual_quantity - item.system_quantity} излишек` : `${item.actual_quantity - item.system_quantity} недостача`}
+                                                {item.actual_quantity > item.system_quantity
+                                                    ? `+${item.actual_quantity - item.system_quantity} излишек`
+                                                    : `${item.actual_quantity - item.system_quantity} недостача`}
                                             </p>
                                         )}
                                     </div>
@@ -334,7 +293,7 @@ export default function InventoryConduct() {
                                             placeholder="Укажите причину"
                                             value={item.reason || ""}
                                             onChange={(e) => handleReasonChange(item.material_id, e.target.value)}
-                                            disabled={inventory.status !== "in_progress" || !isResponsible() || item.actual_quantity === item.system_quantity}
+                                            disabled={currentInventory.status !== "in_progress" || !isResponsible() || item.actual_quantity === item.system_quantity}
                                             className="mt-1"
                                         />
                                     </div>

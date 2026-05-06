@@ -2,8 +2,7 @@ import { useState } from "react";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
+import { userService } from "@/services/userService";
 
 interface ChangePasswordDialogProps {
     open: boolean;
@@ -38,18 +37,11 @@ export default function ChangePasswordDialog({ open, onOpenChange, userId, isOwn
             }
 
             setLoading(true);
-            const token = localStorage.getItem("token");
-            const requestData: any = {
+
+            await userService.changePassword(userId, {
+                currentPassword: !isAdmin || isOwnProfile ? currentPassword : undefined,
                 newPassword: newPassword,
-                isAdminChange: isAdmin && !isOwnProfile
-            };
-
-            if (!isAdmin || isOwnProfile) {
-                requestData.currentPassword = currentPassword;
-            }
-
-            await axios.put(`${API_BASE_URL}/users/${userId}/password`, requestData, {
-                headers: { Authorization: `Bearer ${token}` }
+                isAdminChange: isAdmin && !isOwnProfile,
             });
 
             setPasswordSuccess("Пароль успешно изменен");
@@ -78,7 +70,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, userId, isOwn
                         {(!isAdmin || isOwnProfile) && (
                             <div className="grid gap-2">
                                 <label className="text-sm font-medium">Текущий пароль</label>
-                                <Input type="password" placeholder="Текущий пароль" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required={!isAdmin || isOwnProfile} disabled={loading} />
+                                <Input type="password" placeholder="Текущий пароль" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required disabled={loading} />
                             </div>
                         )}
 
@@ -91,7 +83,14 @@ export default function ChangePasswordDialog({ open, onOpenChange, userId, isOwn
                         {(!isAdmin || isOwnProfile) && (
                             <div className="grid gap-2">
                                 <label className="text-sm font-medium">Подтвердите новый пароль</label>
-                                <Input type="password" placeholder="Подтвердите новый пароль" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required={!isAdmin || isOwnProfile} disabled={loading} />
+                                <Input
+                                    type="password"
+                                    placeholder="Подтвердите новый пароль"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                    disabled={loading}
+                                />
                             </div>
                         )}
 

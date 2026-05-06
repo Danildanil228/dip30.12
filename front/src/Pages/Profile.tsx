@@ -1,50 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User, Mail, Phone, Calendar as CalendarIcon, Clock } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import EditProfileDialog from "@/components/Dialog/EditProfileDialog";
 import ChangePasswordDialog from "@/components/Dialog/ChangePasswordDialog";
-import type { UserProfile } from '@/types/user.types';
+import { useUser } from "@/hooks/useUser";
+import { userService } from "@/services/userService";
+import type { UserProfile } from "@/types/user.types";
+
+const formatDate = (value: unknown): string => {
+    if (!value) return "";
+    try {
+        const date = new Date(value as string);
+        if (isNaN(date.getTime())) return "";
+        return date.toLocaleDateString("ru-RU");
+    } catch {
+        return "";
+    }
+};
+
+const formatDateTime = (value: unknown): string => {
+    if (!value) return "";
+    try {
+        const date = new Date(value as string);
+        if (isNaN(date.getTime())) return "";
+        return date.toLocaleDateString("ru-RU") + " " + date.toLocaleTimeString("ru-RU");
+    } catch {
+        return "";
+    }
+};
 
 export default function Profile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-    const isAdmin = currentUser.role === "admin";
-    const isOwnProfile = !id || parseInt(id) === currentUser.id;
-    const targetUserId = id ? parseInt(id) : currentUser.id;
+    const { user: currentUser, loading: userLoading, isAdmin: userIsAdmin } = useUser();
+    const isAdmin = userIsAdmin === true;
+    const isOwnProfile = !id || (currentUser && parseInt(id) === currentUser.id);
+    const targetUserId = id ? parseInt(id) : currentUser?.id;
 
     const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [editOpen, setEditOpen] = useState(false);
     const [passwordOpen, setPasswordOpen] = useState(false);
 
-    useEffect(() => {
-        fetchUserProfile();
-    }, [id]);
+    const fetchUserProfile = useCallback(async () => {
+        if (!targetUserId) {
+            setLoading(false);
+            return;
+        }
 
-    const fetchUserProfile = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/users/${targetUserId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (isOwnProfile) {
-                const updatedUser = {
-                    ...currentUser,
-                    ...response.data.user
-                };
-                localStorage.setItem("user", JSON.stringify(updatedUser));
-                window.dispatchEvent(new Event("profile-updated")); // ← добавить
-            }
-            setUser(response.data.user);
+            const userData = await userService.getUserById(targetUserId);
+            setUser(userData);
         } catch (error: any) {
             console.error("Ошибка загрузки профиля:", error);
             if (error.response?.status === 404) {
@@ -53,23 +65,38 @@ export default function Profile() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [targetUserId, navigate]);
+
+    useEffect(() => {
+        if (!userLoading) {
+            fetchUserProfile();
+        }
+    }, [userLoading, fetchUserProfile]);
 
     const getRoleBadge = (role: string) => {
         switch (role) {
             case "admin":
-                return <Badge variant="outline">Администратор</Badge>;
+                return <Badge>Администратор</Badge>;
             case "accountant":
-                return <Badge variant="outline">Бухгалтер</Badge>;
+                return <Badge>Бухгалтер</Badge>;
             case "storekeeper":
-                return <Badge variant="outline">Кладовщик</Badge>;
+                return <Badge>Кладовщик</Badge>;
             default:
-                return <Badge variant="outline">{role}</Badge>;
+                return <Badge>{role}</Badge>;
         }
     };
 
-    if (loading) {
+    if (userLoading || loading) {
         return <LoadingSpinner />;
+    }
+
+    if (!currentUser) {
+        return (
+            <div className="text-center py-20">
+                <h1 className="text-2xl mb-4">Не авторизован</h1>
+                <Button onClick={() => navigate("/login")}>Войти</Button>
+            </div>
+        );
     }
 
     if (!user) {
@@ -116,7 +143,7 @@ export default function Profile() {
                         <div className="flex items-start gap-3">
                             <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                             <div>
-                                <p className="text-sm text-muted-foreground">Пользователь</p>
+                                <p className="text-sm text-muted-foreground">Имя</p>
                                 <p className="text-base">
                                     {user.name} {user.secondname}
                                 </p>
@@ -140,7 +167,7 @@ export default function Profile() {
                             <CalendarIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
                             <div>
                                 <p className="text-sm text-muted-foreground">Дата рождения</p>
-                                <p className="text-base">{user.birthday ? new Date(user.birthday).toLocaleDateString("ru-RU") : "Не указана"}</p>
+                                <p className="text-base">{user.birthday ? formatDate(user.birthday) : "Не указана"}</p>
                             </div>
                         </div>
                     </div>
@@ -157,11 +184,11 @@ export default function Profile() {
                 <CardContent className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-muted-foreground text-sm">Аккаунт создан</span>
-                        <span className="text-base">{new Date(user.created_at).toLocaleString("ru-RU")}</span>
+                        <span className="text-base">{formatDateTime(user.created_at)}</span>
                     </div>
                     <div className="flex justify-between items-center py-2">
                         <span className="text-muted-foreground text-sm">Последнее обновление</span>
-                        <span className="text-base">{new Date(user.updated_at).toLocaleString("ru-RU")}</span>
+                        <span className="text-base">{formatDateTime(user.updated_at)}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -178,9 +205,16 @@ export default function Profile() {
                 </Button>
             </div>
 
-            <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} user={user} isOwnProfile={isOwnProfile} isAdmin={isAdmin} onProfileUpdated={fetchUserProfile} />
+            <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} user={user} isOwnProfile={isOwnProfile || false} isAdmin={isAdmin} onProfileUpdated={fetchUserProfile} />
 
-            <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} userId={targetUserId} isOwnProfile={isOwnProfile} isAdmin={isAdmin} onPasswordChanged={fetchUserProfile} />
+            <ChangePasswordDialog
+                open={passwordOpen}
+                onOpenChange={setPasswordOpen}
+                userId={targetUserId!}
+                isOwnProfile={isOwnProfile || false}
+                isAdmin={isAdmin}
+                onPasswordChanged={fetchUserProfile}
+            />
         </div>
     );
 }

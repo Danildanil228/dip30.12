@@ -1,34 +1,43 @@
-import apiClient from './api';
-import type { MovementItem, TurnoverItem, UserActivity } from '@/types/report.types';
+import apiClient from "./api";
+import type { MovementItem, TurnoverItem, UserActivity } from "@/types/report.types";
 
 export const reportService = {
     async getDashboardMetrics(params: { startDate: string; endDate: string }): Promise<any> {
-        const response = await apiClient.get('/dashboard/metrics', { params });
+        const response = await apiClient.get("/dashboard/metrics", { params });
         return response.data;
     },
 
     async getDashboardMovement(params: { startDate: string; endDate: string }): Promise<any> {
-        const response = await apiClient.get('/dashboard/movement', { params });
+        const response = await apiClient.get("/dashboard/movement", { params });
         return response.data;
     },
 
     async getMaterialMovementReport(params: any): Promise<{ data: MovementItem[]; summary: any }> {
-        const response = await apiClient.get('/reports/material-movement', { params });
+        const response = await apiClient.get("/reports/material-movement", { params });
         return response.data;
     },
 
     async getRequestsReport(params: any): Promise<any> {
-        const response = await apiClient.get('/reports/requests', { params });
+        const response = await apiClient.get("/reports/requests", { params });
         return response.data;
     },
 
     async getTurnoverBalanceReport(params: any): Promise<{ data: TurnoverItem[]; summary: any }> {
-        const response = await apiClient.get('/reports/turnover-balance', { params });
+        const response = await apiClient.get("/reports/turnover-balance", { params });
         return response.data;
     },
 
     async getUserActivityReport(params: any): Promise<{ data: UserActivity[] }> {
-        const response = await apiClient.get('/reports/user-activity', { params });
+        const response = await apiClient.get("/reports/user-activity", { params });
+        return response.data;
+    },
+    async getInventoryStatus(params: { startDate: string; endDate: string }): Promise<{ data: Array<{ name: string; count: number; color: string }>; total: number }> {
+        const response = await apiClient.get("/dashboard/inventory-status", { params });
+        return response.data;
+    },
+
+    async getRequestsStatus(params: { startDate: string; endDate: string }): Promise<{ data: Array<{ name: string; count: number; color: string }>; total: number }> {
+        const response = await apiClient.get("/dashboard/requests-status", { params });
         return response.data;
     },
 };

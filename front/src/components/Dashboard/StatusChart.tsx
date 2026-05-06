@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { reportService } from "@/services/reportService";
 
 interface StatusData {
     name: string;
@@ -29,18 +28,21 @@ export function StatusChart() {
         try {
             setLoading(true);
             setError(null);
-            const token = localStorage.getItem("token");
-            const endpoint = entityType === "inventories" ? `${API_BASE_URL}/dashboard/inventory-status` : `${API_BASE_URL}/dashboard/requests-status`;
 
-            const response = await axios.get(endpoint, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    startDate: format(startDate, "yyyy-MM-dd"),
-                    endDate: format(endDate, "yyyy-MM-dd")
-                }
-            });
-            setData(response.data.data);
-            setTotal(response.data.total);
+            const params = {
+                startDate: format(startDate, "yyyy-MM-dd"),
+                endDate: format(endDate, "yyyy-MM-dd"),
+            };
+
+            let response;
+            if (entityType === "inventories") {
+                response = await reportService.getInventoryStatus(params);
+            } else {
+                response = await reportService.getRequestsStatus(params);
+            }
+
+            setData(response.data);
+            setTotal(response.total);
         } catch (error: any) {
             console.error("Ошибка загрузки статусов:", error);
             setError(error.response?.data?.error || "Ошибка загрузки");
@@ -86,6 +88,30 @@ export function StatusChart() {
         );
     };
 
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Статус {getEntityLabel()}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center items-center h-80">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (error) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Статус {getEntityLabel()}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center items-center h-80 text-red-500">{error}</CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -105,14 +131,8 @@ export function StatusChart() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="">
-                {loading ? (
-                    <div className="flex justify-center items-center h-80">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                    </div>
-                ) : error ? (
-                    <div className="flex justify-center items-center h-80 text-red-500">{error}</div>
-                ) : data.length === 0 ? (
+            <CardContent>
+                {data.length === 0 ? (
                     <div className="flex justify-center items-center h-80 text-muted-foreground">Нет данных за выбранный период</div>
                 ) : (
                     <>

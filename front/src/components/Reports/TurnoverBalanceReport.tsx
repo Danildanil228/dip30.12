@@ -2,17 +2,12 @@ import { useState, useEffect } from "react";
 import { ReportFilters } from "./ReportFilters";
 import { ReportTable } from "./ReportTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import axios from "axios";
-import { API_BASE_URL } from "@/components/api";
 import { format, subMonths } from "date-fns";
 import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
-import type { TurnoverItem } from '@/types/report.types';
-
-interface Category {
-    id: number;
-    name: string;
-}
+import { useMaterials } from "@/hooks/useMaterials";
+import { useReports } from "@/hooks/useReports";
+import type { TurnoverItem } from "@/types/report.types";
 
 export function TurnoverBalanceReport() {
     const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 1));
@@ -23,51 +18,43 @@ export function TurnoverBalanceReport() {
         total_opening: 0,
         total_incoming: 0,
         total_outgoing: 0,
-        total_closing: 0
+        total_closing: 0,
     });
     const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
-    const [loading, setLoading] = useState(false);
 
-    const fetchFilters = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const categoriesRes = await axios.get(`${API_BASE_URL}/categories`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+    const { categories: allCategories, fetchCategories } = useMaterials();
+    const { getTurnoverBalanceReport, loading } = useReports();
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        if (allCategories.length > 0) {
             setCategories(
-                categoriesRes.data.categories.map((c: Category) => ({
+                allCategories.map((c) => ({
                     value: c.id.toString(),
-                    label: c.name
-                }))
+                    label: c.name,
+                })),
             );
-        } catch (error) {
-            console.error("Ошибка загрузки фильтров:", error);
         }
-    };
+    }, [allCategories]);
 
     const fetchData = async () => {
         try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/reports/turnover-balance`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    startDate: format(startDate, "yyyy-MM-dd"),
-                    endDate: format(endDate, "yyyy-MM-dd"),
-                    categoryId
-                }
+            const result = await getTurnoverBalanceReport({
+                startDate: format(startDate, "yyyy-MM-dd"),
+                endDate: format(endDate, "yyyy-MM-dd"),
+                categoryId,
             });
-            setData(response.data.data);
-            setSummary(response.data.summary);
+            setData(result.data);
+            setSummary(result.summary);
         } catch (error) {
             console.error("Ошибка загрузки данных:", error);
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchFilters();
         fetchData();
     }, []);
 
@@ -98,31 +85,15 @@ export function TurnoverBalanceReport() {
         { key: "code", header: "Код", width: "100px" },
         { key: "unit", header: "Ед.", width: "60px" },
         { key: "category_name", header: "Категория", width: "150px" },
-        {
-            key: "opening_balance",
-            header: "Нач. остаток",
-            width: "100px",
-            format: (v: number) => formatNumber(v)
-        },
-        {
-            key: "incoming",
-            header: "Приход",
-            width: "100px",
-            format: (v: number) => formatNumber(v)
-        },
-        {
-            key: "outgoing",
-            header: "Расход",
-            width: "100px",
-            format: (v: number) => formatNumber(v)
-        },
-        {
-            key: "closing_balance",
-            header: "Кон. остаток",
-            width: "100px",
-            format: (v: number, row: any) => <span className={getBalanceClass(v)}>{formatNumber(v)}</span>
-        }
+        { key: "opening_balance", header: "Нач. остаток", width: "100px", format: (v: number) => formatNumber(v) },
+        { key: "incoming", header: "Приход", width: "100px", format: (v: number) => formatNumber(v) },
+        { key: "outgoing", header: "Расход", width: "100px", format: (v: number) => formatNumber(v) },
+        { key: "closing_balance", header: "Кон. остаток", width: "100px", format: (v: number, row: any) => <span className={getBalanceClass(v)}>{formatNumber(v)}</span> },
     ];
+
+    if (loading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="space-y-4">
@@ -139,63 +110,58 @@ export function TurnoverBalanceReport() {
                 loading={loading}
             />
 
-            {loading ? (
-                <LoadingSpinner />
-            ) : (
-                <>
-                    <ExportButton
-                        data={data}
-                        columns={[
-                            { accessorKey: "name", header: "Материал" },
-                            { accessorKey: "code", header: "Код" },
-                            { accessorKey: "unit", header: "Ед." },
-                            { accessorKey: "category_name", header: "Категория" },
-                            { accessorKey: "opening_balance", header: "Нач. остаток", format: (v) => v?.toLocaleString() },
-                            { accessorKey: "incoming", header: "Приход", format: (v) => v?.toLocaleString() },
-                            { accessorKey: "outgoing", header: "Расход", format: (v) => v?.toLocaleString() },
-                            { accessorKey: "closing_balance", header: "Кон. остаток", format: (v) => v?.toLocaleString() }
-                        ]}
-                        filename="turnover_balance"
-                        title="Оборотно-сальдовая ведомость"
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Остаток на начало</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{summary.total_opening.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-green-600">Приход</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-green-600">+{summary.total_incoming.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-red-600">Расход</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-red-600">-{summary.total_outgoing.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Остаток на конец</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className={`text-2xl font-bold ${getBalanceClass(summary.total_closing)}`}>{summary.total_closing.toLocaleString()} ед.</div>
-                            </CardContent>
-                        </Card>
-                    </div>
+            <ExportButton
+                data={data}
+                columns={[
+                    { accessorKey: "name", header: "Материал" },
+                    { accessorKey: "code", header: "Код" },
+                    { accessorKey: "unit", header: "Ед." },
+                    { accessorKey: "category_name", header: "Категория" },
+                    { accessorKey: "opening_balance", header: "Нач. остаток", format: (v) => v?.toLocaleString() },
+                    { accessorKey: "incoming", header: "Приход", format: (v) => v?.toLocaleString() },
+                    { accessorKey: "outgoing", header: "Расход", format: (v) => v?.toLocaleString() },
+                    { accessorKey: "closing_balance", header: "Кон. остаток", format: (v) => v?.toLocaleString() },
+                ]}
+                filename="turnover_balance"
+                title="Оборотно-сальдовая ведомость"
+            />
 
-                    <ReportTable columns={columns} data={data} itemsPerPage={15} />
-                </>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Остаток на начало</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.total_opening.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-green-600">Приход</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-green-600">+{summary.total_incoming.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-red-600">Расход</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-red-600">-{summary.total_outgoing.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Остаток на конец</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${getBalanceClass(summary.total_closing)}`}>{summary.total_closing.toLocaleString()} ед.</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <ReportTable columns={columns} data={data} itemsPerPage={15} />
         </div>
     );
 }
