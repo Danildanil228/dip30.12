@@ -4,7 +4,7 @@ require("dotenv").config();
 const requiredEnvVars = ['DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT', 'DB_NAME'];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
-    console.error(`КРИТИЧЕСКАЯ ОШИБКА: Переменная окружения ${envVar} не установлена!`);
+    console.error(`Установите переменные окружения в файле "back/.env" ${envVar}, если файла нет, создайте по примеру back/.env.exmaple`);
     process.exit(1);
   }
 }

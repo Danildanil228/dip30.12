@@ -13,7 +13,7 @@ const os = require("os");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    console.error("КРИТИЧЕСКАЯ ОШИБКА: JWT_SECRET не установлен в переменных окружения!");
+    console.error('JWT_SECRET не установлен в переменных окружения в файле "back/.env"');
     process.exit(1);
 }
 
