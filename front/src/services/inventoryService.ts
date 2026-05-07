@@ -1,9 +1,9 @@
-import apiClient from './api';
-import type { Inventory, InventoryItem } from '@/types/inventory.types';
+import apiClient from "./api";
+import type { Inventory, InventoryItem } from "@/types/inventory.types";
 
 export const inventoryService = {
     async getInventories(): Promise<Inventory[]> {
-        const response = await apiClient.get('/inventories');
+        const response = await apiClient.get("/inventories");
         return response.data.inventories;
     },
 
@@ -13,7 +13,7 @@ export const inventoryService = {
     },
 
     async createInventory(inventoryData: any): Promise<Inventory> {
-        const response = await apiClient.post('/inventories', inventoryData);
+        const response = await apiClient.post("/inventories", inventoryData);
         return response.data.inventory;
     },
 
@@ -44,5 +44,5 @@ export const inventoryService = {
 
     async deleteInventory(inventoryId: number): Promise<void> {
         await apiClient.delete(`/inventories/${inventoryId}`);
-    },
+    }
 };

@@ -34,6 +34,14 @@ const processQueue = (error: any, token: string | null = null) => {
     failedQueue = [];
 };
 
+const clearSessionAndRedirect = () => {
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("user");
+    if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+    }
+};
+
 apiClient.interceptors.request.use(
     (config) => {
         const accessToken = sessionStorage.getItem("accessToken");
@@ -49,6 +57,12 @@ apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        const errorMessage = error.response?.data?.error;
+        if (error.response?.status === 401 && (errorMessage === "Пользователь не найден в системе" || errorMessage === "User not found" || errorMessage === "Пользователь не найден")) {
+            clearSessionAndRedirect();
+            return Promise.reject(error);
+        }
 
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {
@@ -78,13 +92,7 @@ apiClient.interceptors.response.use(
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
-                sessionStorage.removeItem("accessToken");
-                sessionStorage.removeItem("user");
-
-                if (window.location.pathname !== "/login") {
-                    window.location.href = "/login";
-                }
-
+                clearSessionAndRedirect();
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

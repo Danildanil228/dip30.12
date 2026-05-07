@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { User } from "@/types/user.types";
+import { authService } from "@/services/authService";
 
 export const useUser = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -12,6 +13,7 @@ export const useUser = () => {
                 setUser(JSON.parse(userData));
             } catch (error) {
                 console.error("Ошибка при парсинге user из sessionStorage:", error);
+                authService.clearSession();
             }
         }
         setLoading(false);

@@ -21,16 +21,13 @@ if (!fs.existsSync(BACKUP_DIR)) {
 }
 
 const checkUserInDB = async (userId) => {
-    const result = await pool.query(
-        'SELECT id, username, role, name, secondname FROM users WHERE id = $1',
-        [userId]
-    );
+    const result = await pool.query("SELECT id, username, role, name, secondname FROM users WHERE id = $1", [userId]);
     return result.rows[0] || null;
 };
 
 const authenticateAndCheckDB = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
         return res.status(401).json({ error: "Требуется авторизация" });
@@ -38,20 +35,20 @@ const authenticateAndCheckDB = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
-        
+
         const dbUser = await checkUserInDB(decoded.id);
         if (!dbUser) {
             return res.status(401).json({ error: "Пользователь не найден в системе" });
         }
-        
+
         if (dbUser.role !== decoded.role) {
             console.log(`Роль пользователя ${dbUser.username} изменилась с ${decoded.role} на ${dbUser.role}`);
         }
-        
+
         req.user = dbUser;
         next();
     } catch (error) {
-        if (error.name === 'TokenExpiredError') {
+        if (error.name === "TokenExpiredError") {
             return res.status(401).json({ error: "Token expired" });
         }
         return res.status(403).json({ error: "Недействительный токен" });
@@ -80,9 +77,9 @@ router.get("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
                 const fileExists = await fs.pathExists(backup.filepath);
                 return {
                     ...backup,
-                    file_exists: fileExists,
+                    file_exists: fileExists
                 };
-            }),
+            })
         );
 
         res.json({ backups: backupsWithFileCheck });
@@ -106,7 +103,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
             port: process.env.DB_PORT,
             database: process.env.DB_NAME,
             user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
+            password: process.env.DB_PASSWORD
         };
 
         if (!dbConfig.user || !dbConfig.password) {
@@ -145,7 +142,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
                 `INSERT INTO backups (filename, filepath, file_size, created_by, description) 
                  VALUES ($1, $2, $3, $4, $5) 
                  RETURNING id, filename, file_size, created_at, description`,
-                [filename, filepath, fileSize, req.user.id, description || null],
+                [filename, filepath, fileSize, req.user.id, description || null]
             );
 
             const backup = result.rows[0];
@@ -171,7 +168,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 
             res.json({
                 message: "Бэкап успешно создан",
-                backup: backup,
+                backup: backup
             });
         } catch (dumpError) {
             console.error("Ошибка при создании бэкапа:", dumpError);
@@ -186,7 +183,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 
             res.status(500).json({
                 error: errorMessage,
-                details: dumpError.message,
+                details: dumpError.message
             });
         }
     } catch (error) {
@@ -247,7 +244,7 @@ router.delete("/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 
         res.json({
             message: "Бэкап удален",
-            deletedBackup: { id: backupId, filename: backup.filename },
+            deletedBackup: { id: backupId, filename: backup.filename }
         });
     } catch (error) {
         console.error("Ошибка при удалении бэкапа:", error);

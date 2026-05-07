@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const { ACCESS_TOKEN_SECRET } = require("../utils/tokens");
 
-// Базовая аутентификация - проверяет только токен
 const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(" ")[1];
@@ -23,7 +22,6 @@ const authenticate = (req, res, next) => {
     }
 };
 
-// Проверяет актуальность пользователя в БД и обновляет req.user
 const checkUserInDB = async (req, res, next) => {
     try {
         if (!req.userFromToken) {
@@ -38,7 +36,6 @@ const checkUserInDB = async (req, res, next) => {
 
         const dbUser = result.rows[0];
 
-        // Проверяем, не изменилась ли роль
         if (dbUser.role !== req.userFromToken.role) {
             console.log(`Роль пользователя ${dbUser.username} изменилась с ${req.userFromToken.role} на ${dbUser.role}`);
         }
@@ -51,10 +48,8 @@ const checkUserInDB = async (req, res, next) => {
     }
 };
 
-// Комбинированная проверка: токен + актуальные данные из БД
 const authenticateAndCheckDB = [authenticate, checkUserInDB];
 
-// Проверка на админа с актуальной ролью из БД
 const checkAdmin = async (req, res, next) => {
     if (req.user && req.user.role === "admin") {
         next();
@@ -63,7 +58,6 @@ const checkAdmin = async (req, res, next) => {
     }
 };
 
-// Проверка на админа или бухгалтера
 const checkAdminOrAccountant = async (req, res, next) => {
     if (req.user && (req.user.role === "admin" || req.user.role === "accountant")) {
         next();

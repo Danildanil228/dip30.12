@@ -36,7 +36,11 @@ export const authService = {
                 sessionStorage.setItem("user", JSON.stringify(response.data.user));
             }
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
+            if (error.response?.data?.error === "Пользователь не найден в системе" || error.response?.data?.error === "User not found") {
+                sessionStorage.removeItem("accessToken");
+                sessionStorage.removeItem("user");
+            }
             return { valid: false };
         }
     },
@@ -50,5 +54,10 @@ export const authService = {
             sessionStorage.removeItem("accessToken");
             sessionStorage.removeItem("user");
         }
+    },
+
+    clearSession(): void {
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("user");
     }
 };
