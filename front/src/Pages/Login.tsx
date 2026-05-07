@@ -23,40 +23,40 @@ export default function Login() {
             const data = await authService.countUsers();
             setIsFirst(!data.hasUsers);
         } catch (error) {
+            console.error("Ошибка проверки первого запуска:", error);
             setError("Не удалось подключиться к серверу");
+            setIsFirst(false);
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+
         setError(null);
 
         if (isFirst) {
             if (!username.trim() || !password.trim() || !confirmPassword.trim()) {
                 setError("Заполните все поля");
-                setLoading(false);
                 return;
             }
 
             if (password !== confirmPassword) {
                 setError("Пароли не совпадают");
-                setLoading(false);
                 return;
             }
 
             if (password.length < 6) {
                 setError("Пароль должен быть не менее 6 символов");
-                setLoading(false);
                 return;
             }
         } else {
             if (!username.trim() || !password.trim()) {
                 setError("Заполните все поля");
-                setLoading(false);
                 return;
             }
         }
+
+        setLoading(true);
 
         try {
             let response;
@@ -70,7 +70,11 @@ export default function Login() {
             localStorage.setItem("user", JSON.stringify(response.user));
             navigate("/main");
         } catch (error: any) {
-            setError(error.response?.data?.error || "Ошибка");
+            console.error("Ошибка авторизации:", error);
+            const errorMessage = error.response?.data?.error || "Ошибка";
+            setError(errorMessage);
+            setPassword("");
+            setConfirmPassword("");
         } finally {
             setLoading(false);
         }
@@ -127,7 +131,7 @@ export default function Login() {
                         </button>
                         <DarkModeButtonToggle />
                     </div>
-                    {error && <p className="">{error}</p>}
+                    {error && <p className="text-red-500 text-base">{error}</p>}
                 </div>
             </form>
         </section>

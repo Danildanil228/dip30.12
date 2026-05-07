@@ -12,9 +12,9 @@ export const API_BASE_URL = getApiBaseUrl();
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     },
-    withCredentials: true
+    withCredentials: true,
 });
 
 let isRefreshing = false;
@@ -37,7 +37,7 @@ const processQueue = (error: any, token: string | null = null) => {
 const clearSessionAndRedirect = () => {
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("user");
-    if (window.location.pathname !== "/login") {
+    if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
         window.location.href = "/login";
     }
 };
@@ -50,7 +50,7 @@ apiClient.interceptors.request.use(
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
 );
 
 apiClient.interceptors.response.use(
@@ -58,13 +58,15 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
+        const isAuthEndpoint = originalRequest.url === "/login" || originalRequest.url === "/registerFirst" || originalRequest.url === "/refresh";
+
         const errorMessage = error.response?.data?.error;
-        if (error.response?.status === 401 && (errorMessage === "Пользователь не найден в системе" || errorMessage === "User not found" || errorMessage === "Пользователь не найден")) {
+        if (error.response?.status === 401 && (errorMessage === "Пользователь не найден в системе" || errorMessage === "User not found")) {
             clearSessionAndRedirect();
             return Promise.reject(error);
         }
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
@@ -100,7 +102,7 @@ apiClient.interceptors.response.use(
         }
 
         return Promise.reject(error);
-    }
+    },
 );
 
 export default apiClient;
