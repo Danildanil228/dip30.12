@@ -2282,8 +2282,4 @@ app.get("/test", (req, res) => {
 // ============= ЗАПУСК =============
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
-    console.log(`Режим: ${process.env.NODE_ENV || "development"}`);
-    console.log(`Access token expires in: 15 minutes`);
-    console.log(`Refresh token expires in: 7 days`);
-    console.log(`Каждый запрос проверяет актуальную роль в БД`);
 });
