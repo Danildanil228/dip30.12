@@ -12,7 +12,7 @@ interface Section {
 
 export default function Main() {
     const { user, isAdmin } = useUser();
-    const [hideInstructions, setHideInstructions] = useState(false);
+    const [_hideInstructions, setHideInstructions] = useState(false);
 
     const allSections = useMemo<Section[]>(() => {
         const base: Section[] = [

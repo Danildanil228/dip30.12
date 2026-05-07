@@ -28,7 +28,7 @@ export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserD
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [_error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [touched, setTouched] = useState({

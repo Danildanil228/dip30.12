@@ -10,10 +10,10 @@ export const CapitalizedInput = React.forwardRef<HTMLInputElement, CapitalizedIn
     const internalRef = useRef<HTMLInputElement>(null);
     const inputRef = (ref || internalRef) as React.RefObject<HTMLInputElement>;
 
-    const capitalizeFirst = (str: string) => {
-        if (!str) return "";
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    };
+    // const capitalizeFirst = (str: string) => {
+    //     if (!str) return "";
+    //     return str.charAt(0).toUpperCase() + str.slice(1);
+    // };
 
     const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {

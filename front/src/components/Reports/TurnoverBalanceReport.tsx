@@ -88,7 +88,7 @@ export function TurnoverBalanceReport() {
         { key: "opening_balance", header: "Нач. остаток", width: "100px", format: (v: number) => formatNumber(v) },
         { key: "incoming", header: "Приход", width: "100px", format: (v: number) => formatNumber(v) },
         { key: "outgoing", header: "Расход", width: "100px", format: (v: number) => formatNumber(v) },
-        { key: "closing_balance", header: "Кон. остаток", width: "100px", format: (v: number, row: any) => <span className={getBalanceClass(v)}>{formatNumber(v)}</span> },
+        { key: "closing_balance", header: "Кон. остаток", width: "100px", format: (v: number, _row: any) => <span className={getBalanceClass(v)}>{formatNumber(v)}</span> },
     ];
 
     if (loading) {

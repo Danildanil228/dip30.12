@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,7 +27,7 @@ interface CreateRequestDialogProps {
 }
 
 export default function CreateRequestDialog({ open, onOpenChange, onRequestCreated }: CreateRequestDialogProps) {
-    const { user, isAdmin } = useUser();
+    const { isAdmin } = useUser();
     const [title, setTitle] = useState("");
     const [requestType, setRequestType] = useState<"incoming" | "outgoing">("incoming");
     const [notes, setNotes] = useState("");

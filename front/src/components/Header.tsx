@@ -11,7 +11,7 @@ import { authService } from "@/services/authService";
 export default function Header() {
     const { user, isAdmin } = useUser();
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-    const [updateKey, setUpdateKey] = useState(0);
+    const [_updateKey, setUpdateKey] = useState(0);
 
     useEffect(() => {
         const handleProfileUpdate = () => {

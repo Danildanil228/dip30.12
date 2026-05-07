@@ -84,9 +84,9 @@ export default function Inventories() {
         navigate(`/inventories/${id}/conduct`);
     };
 
-    const handleReview = (id: number) => {
-        navigate(`/inventories/${id}/review`);
-    };
+    // const handleReview = (id: number) => {
+    //     navigate(`/inventories/${id}/review`);
+    // };
 
     const handleEdit = (inventory: Inventory) => {
         setEditingInventory(inventory);
