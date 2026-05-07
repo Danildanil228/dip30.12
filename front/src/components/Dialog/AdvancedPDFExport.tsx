@@ -54,7 +54,7 @@ export default function AdvancedPDFExport({ data, columns, filename, title, subt
             yPos += 8;
 
             pdf.setFontSize(10);
-            data.forEach((item, rowIndex) => {
+            data.forEach((item, _rowIndex) => {
                 if (yPos > pdf.internal.pageSize.getHeight() - 20) {
                     pdf.addPage();
                     yPos = margin;

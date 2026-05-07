@@ -91,7 +91,7 @@ export function UserActivityReport() {
             key: "name",
             header: "Пользователь",
             width: "180px",
-            format: (v: string, row: any) => (
+            format: (_v: string, row: any) => (
                 <div>
                     <div className="font-medium">
                         {row.name} {row.secondname}

@@ -156,7 +156,7 @@ export default function Backups() {
         },
     ];
 
-    const totalSize = backups.reduce((sum, b) => sum + (typeof b.file_size === "number" ? b.file_size : 0), 0);
+    // const totalSize = backups.reduce((sum, b) => sum + (typeof b.file_size === "number" ? b.file_size : 0), 0);
 
     return (
         <section className="mx-auto">

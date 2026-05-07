@@ -5,11 +5,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
-import ExportButton from "@/components/ExportButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useNotifications } from "@/hooks/useNotifications";
-import type { Log } from '@/types/common.types';
 
 interface NotificationsProps {
     onVisited?: () => void;

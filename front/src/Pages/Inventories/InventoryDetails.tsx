@@ -16,7 +16,7 @@ export default function InventoryDetails() {
     const { user } = useUser();
     const { currentInventory, inventoryResults, loading, fetchInventoryById } = useInventories();
     const [items, setItems] = useState<InventoryItem[]>([]);
-    const [error, setError] = useState("");
+    const [error] = useState("");
     const [notesExpanded, setNotesExpanded] = useState(false);
 
     const isAdminOrAccountant = () => {
