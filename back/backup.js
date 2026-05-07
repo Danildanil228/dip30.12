@@ -44,7 +44,7 @@ const checkAdmin = (req, res, next) => {
     }
 };
 
-//бэкапы
+// Получение списка бэкапов
 router.get("/", checkAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -59,9 +59,9 @@ router.get("/", checkAdmin, async (req, res) => {
                 const fileExists = await fs.pathExists(backup.filepath);
                 return {
                     ...backup,
-                    file_exists: fileExists
+                    file_exists: fileExists,
                 };
-            })
+            }),
         );
 
         res.json({ backups: backupsWithFileCheck });
@@ -71,14 +71,14 @@ router.get("/", checkAdmin, async (req, res) => {
     }
 });
 
-// create backup
+// Создание бэкапа в формате .backup (custom format)
 router.post("/", checkAdmin, async (req, res) => {
     try {
         const { description } = req.body;
         const isWindows = os.platform() === "win32";
 
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const filename = `backup_${timestamp}.sql`;
+        const filename = `backup_${timestamp}.backup`;
         const filepath = path.join(BACKUP_DIR, filename);
 
         const dbConfig = {
@@ -86,7 +86,7 @@ router.post("/", checkAdmin, async (req, res) => {
             port: process.env.DB_PORT,
             database: process.env.DB_NAME,
             user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD
+            password: process.env.DB_PASSWORD,
         };
 
         if (!dbConfig.user || !dbConfig.password) {
@@ -101,11 +101,13 @@ router.post("/", checkAdmin, async (req, res) => {
                 pgDumpPath = windowsPath;
                 console.log("Found pg_dump at:", pgDumpPath);
             } else {
-                console.log("pg_dump not found in standard locations or env var is not set/invalid.");
+                console.log("pg_dump not found in standard locations");
             }
         }
 
-        const dumpCommand = `"${pgDumpPath}" -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.user} -d ${dbConfig.database} -f "${filepath}"`;
+        // Формат -Fc (custom format) для совместимости с pg_restore и pgAdmin4
+        // -Fc создает сжатый файл .backup который можно восстановить через pg_restore или pgAdmin4
+        const dumpCommand = `"${pgDumpPath}" -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.user} -d ${dbConfig.database} -Fc -f "${filepath}"`;
 
         console.log("Executing command:", dumpCommand);
 
@@ -125,11 +127,12 @@ router.post("/", checkAdmin, async (req, res) => {
                 `INSERT INTO backups (filename, filepath, file_size, created_by, description) 
                  VALUES ($1, $2, $3, $4, $5) 
                  RETURNING id, filename, file_size, created_at, description`,
-                [filename, filepath, fileSize, req.user.id, description || null]
+                [filename, filepath, fileSize, req.user.id, description || null],
             );
 
             const backup = result.rows[0];
             await Logger.backupCreated(req.user.id, req.user.username, filename);
+
             const countResult = await pool.query("SELECT COUNT(*) FROM backups");
             const backupCount = parseInt(countResult.rows[0].count);
 
@@ -150,7 +153,7 @@ router.post("/", checkAdmin, async (req, res) => {
 
             res.json({
                 message: "Бэкап успешно создан",
-                backup: backup
+                backup: backup,
             });
         } catch (dumpError) {
             console.error("Ошибка при создании бэкапа:", dumpError);
@@ -165,7 +168,7 @@ router.post("/", checkAdmin, async (req, res) => {
 
             res.status(500).json({
                 error: errorMessage,
-                details: dumpError.message
+                details: dumpError.message,
             });
         }
     } catch (error) {
@@ -228,7 +231,7 @@ router.delete("/:id", checkAdmin, async (req, res) => {
 
         res.json({
             message: "Бэкап удален",
-            deletedBackup: { id: backupId, filename: backup.filename }
+            deletedBackup: { id: backupId, filename: backup.filename },
         });
     } catch (error) {
         console.error("Ошибка при удалении бэкапа:", error);
