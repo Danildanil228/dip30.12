@@ -26,11 +26,14 @@ export default function RequestDetails() {
     const canApprove = (isAdmin || isAccountant) && currentRequest?.status === "pending";
     const [notesExpanded, setNotesExpanded] = useState(false);
 
+    const { loading: userLoading } = useUser();
+
     useEffect(() => {
-        if (id) {
+        
+        if (!userLoading && id) {
             fetchRequestById(parseInt(id));
         }
-    }, [id, fetchRequestById]);
+    }, [id, fetchRequestById, userLoading]);
 
     const handleApprove = async () => {
         setProcessing(true);
@@ -266,14 +269,7 @@ export default function RequestDetails() {
                     </AlertDialogHeader>
                     <div className="py-4">
                         <Label htmlFor="rejection-reason">Причина отклонения *</Label>
-                        <Textarea
-                            id="rejection-reason"
-                            placeholder="Укажите причину отклонения заявки..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            rows={4}
-                            className="mt-2"
-                        />
+                        <Textarea id="rejection-reason" placeholder="Укажите причину отклонения заявки..." value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={4} className="mt-2" />
                     </div>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={processing}>Отмена</AlertDialogCancel>
