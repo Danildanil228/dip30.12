@@ -11,9 +11,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const accessToken = sessionStorage.getItem("accessToken");
 
-        if (!token) {
+        if (!accessToken) {
             setIsAuthenticated(false);
             return;
         }
@@ -22,8 +22,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             .verifyToken()
             .then(() => setIsAuthenticated(true))
             .catch(() => {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
+                sessionStorage.removeItem("accessToken");
+                sessionStorage.removeItem("user");
                 setIsAuthenticated(false);
             });
     }, []);

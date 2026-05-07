@@ -6,12 +6,12 @@ export const useUser = () => {
     const [loading, setLoading] = useState(true);
 
     const loadUser = useCallback(() => {
-        const userData = localStorage.getItem("user");
+        const userData = sessionStorage.getItem("user");
         if (userData) {
             try {
                 setUser(JSON.parse(userData));
             } catch (error) {
-                console.error("Ошибка при парсинге user из localStorage:", error);
+                console.error("Ошибка при парсинге user из sessionStorage:", error);
             }
         }
         setLoading(false);
@@ -21,12 +21,12 @@ export const useUser = () => {
         (updatedUser: Partial<User>) => {
             if (user) {
                 const newUser = { ...user, ...updatedUser };
-                localStorage.setItem("user", JSON.stringify(newUser));
+                sessionStorage.setItem("user", JSON.stringify(newUser));
                 setUser(newUser);
                 window.dispatchEvent(new Event("profile-updated"));
             }
         },
-        [user],
+        [user]
     );
 
     useEffect(() => {
@@ -52,6 +52,6 @@ export const useUser = () => {
         isAccountant,
         isStorekeeper,
         updateCurrentUser,
-        loadUser,
+        loadUser
     };
 };

@@ -6,16 +6,12 @@ const util = require("util");
 const jwt = require("jsonwebtoken");
 const Logger = require("./logger");
 const pool = require("./config/db");
+const { ACCESS_TOKEN_SECRET } = require("./utils/tokens");
 require("dotenv").config();
+
 const router = express.Router();
 const execPromise = util.promisify(exec);
 const os = require("os");
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    console.error('JWT_SECRET не установлен в переменных окружения в файле "back/.env"');
-    process.exit(1);
-}
 
 const BACKUP_DIR = path.join(__dirname, "backups");
 const MAX_BACKUPS = 10;
@@ -24,28 +20,53 @@ if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
-const checkAdmin = (req, res, next) => {
+const checkUserInDB = async (userId) => {
+    const result = await pool.query(
+        'SELECT id, username, role, name, secondname FROM users WHERE id = $1',
+        [userId]
+    );
+    return result.rows[0] || null;
+};
+
+const authenticateAndCheckDB = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: "Требуется авторизация" });
+    }
+
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
+        const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+        
+        const dbUser = await checkUserInDB(decoded.id);
+        if (!dbUser) {
+            return res.status(401).json({ error: "Пользователь не найден в системе" });
         }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Требуются права администратора" });
+        
+        if (dbUser.role !== decoded.role) {
+            console.log(`Роль пользователя ${dbUser.username} изменилась с ${decoded.role} на ${dbUser.role}`);
         }
-
-        req.user = decoded;
+        
+        req.user = dbUser;
         next();
     } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: "Token expired" });
+        }
         return res.status(403).json({ error: "Недействительный токен" });
     }
 };
 
-// Получение списка бэкапов
-router.get("/", checkAdmin, async (req, res) => {
+const checkAdmin = (req, res, next) => {
+    if (req.user && req.user.role === "admin") {
+        next();
+    } else {
+        return res.status(403).json({ error: "Требуются права администратора" });
+    }
+};
+
+router.get("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT b.*, u.username as created_by_username, u.name, u.secondname
@@ -71,8 +92,7 @@ router.get("/", checkAdmin, async (req, res) => {
     }
 });
 
-// Создание бэкапа в формате .backup (custom format)
-router.post("/", checkAdmin, async (req, res) => {
+router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const { description } = req.body;
         const isWindows = os.platform() === "win32";
@@ -105,8 +125,6 @@ router.post("/", checkAdmin, async (req, res) => {
             }
         }
 
-        // Формат -Fc (custom format) для совместимости с pg_restore и pgAdmin4
-        // -Fc создает сжатый файл .backup который можно восстановить через pg_restore или pgAdmin4
         const dumpCommand = `"${pgDumpPath}" -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.user} -d ${dbConfig.database} -Fc -f "${filepath}"`;
 
         console.log("Executing command:", dumpCommand);
@@ -177,8 +195,7 @@ router.post("/", checkAdmin, async (req, res) => {
     }
 });
 
-// Скачивание бэкапа
-router.get("/:id/download", checkAdmin, async (req, res) => {
+router.get("/:id/download", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const backupId = parseInt(req.params.id);
         const result = await pool.query("SELECT filename, filepath FROM backups WHERE id = $1", [backupId]);
@@ -205,8 +222,7 @@ router.get("/:id/download", checkAdmin, async (req, res) => {
     }
 });
 
-// Удаление бэкапа
-router.delete("/:id", checkAdmin, async (req, res) => {
+router.delete("/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const backupId = parseInt(req.params.id);
         const result = await pool.query("SELECT filename, filepath FROM backups WHERE id = $1", [backupId]);
