@@ -106,12 +106,25 @@ app.get("/verifyToken", authenticate, checkUserInDB, (req, res) => {
 
 app.get("/countUsers", async (req, res) => {
     try {
+        const tableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'users'
+            );
+        `);
+
+        const tableExists = tableCheck.rows[0].exists;
+
+        if (!tableExists) {
+            return res.json({ hasUsers: false });
+        }
         const result = await pool.query("SELECT COUNT(*) FROM users");
         const count = parseInt(result.rows[0].count);
         res.json({ hasUsers: count > 0 });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        console.error("Ошибка в /countUsers:", error);
+        res.json({ hasUsers: false });
     }
 });
 
