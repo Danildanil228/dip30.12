@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { useUser } from "@/hooks/useUser";
 import { useState, useEffect } from "react";
+import { authService } from "@/services/authService";
 
 export default function Header() {
     const { user, isAdmin } = useUser();
@@ -25,9 +26,8 @@ export default function Header() {
 
     if (!user) return null;
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+    const handleLogout = async () => {
+        await authService.logout();
         window.location.href = "/login";
     };
 

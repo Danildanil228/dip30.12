@@ -2,18 +2,19 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const pool = require("./config/db");
 const Logger = require("./logger");
 const backupRoutes = require("./backup");
-require("dotenv").config(); 
+const { generateTokens, saveRefreshToken, revokeAllUserSessions, verifyRefreshToken, cleanupExpiredSessions, ACCESS_TOKEN_SECRET } = require("./utils/tokens");
+const { authenticate, checkUserInDB, authenticateAndCheckDB, checkAdmin, checkAdminOrAccountant } = require("./middleware/auth");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET;
 
-// проверка JWT_SECRET
-if (!JWT_SECRET) {
-    console.error("КРИТИЧЕСКАЯ ОШИБКА: JWT_SECRET не установлен в переменных окружения!");
+if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
+    console.error("КРИТИЧЕСКАЯ ОШИБКА: JWT_SECRET и REFRESH_TOKEN_SECRET должны быть установлены!");
     process.exit(1);
 }
 
@@ -22,11 +23,12 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(cookieParser());
 app.use(
     cors({
         origin: function (origin, callback) {
             if (!origin) return callback(null, true);
-            if (origin.includes(":5173")) {
+            if (origin.includes(":5173") || origin.includes("localhost")) {
                 return callback(null, true);
             }
             return callback(null, true);
@@ -36,34 +38,75 @@ app.use(
         allowedHeaders: ["Content-Type", "Authorization"]
     })
 );
-
 app.use(express.json());
 app.use("/backups", backupRoutes);
 
-//Проверка на админа
-const checkAdmin = (req, res, next) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
+setInterval(
+    async () => {
+        const cleaned = await cleanupExpiredSessions();
+        if (cleaned > 0) {
+            console.log(`Очищено ${cleaned} просроченных сессий`);
         }
+    },
+    60 * 60 * 1000
+);
 
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Требуются права администратора" });
-        }
-
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(403).json({ error: "Недействительный токен" });
+// ============= ОБНОВЛЕНИЕ ТОКЕНОВ =============
+app.post("/refresh", async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+        return res.status(401).json({ error: "Refresh token not found" });
     }
-};
+
+    const { valid, error, userId } = await verifyRefreshToken(refreshToken, req);
+    if (!valid) {
+        res.clearCookie("refreshToken", { httpOnly: true, sameSite: "strict" });
+        return res.status(401).json({ error: error || "Invalid refresh token" });
+    }
+
+    const userResult = await pool.query("SELECT id, username, role, name, secondname FROM users WHERE id = $1", [userId]);
+
+    if (userResult.rows.length === 0) {
+        await revokeAllUserSessions(userId);
+        res.clearCookie("refreshToken", { httpOnly: true, sameSite: "strict" });
+        return res.status(401).json({ error: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+    const userPayload = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        name: user.name,
+        secondname: user.secondname
+    };
+
+    const newTokens = generateTokens(userPayload);
+    const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const oldHashedToken = require("crypto").createHash("sha256").update(refreshToken).digest("hex");
+    await pool.query("DELETE FROM user_sessions WHERE refresh_token_hash = $1", [oldHashedToken]);
+    await saveRefreshToken(user.id, newTokens.refreshToken, refreshTokenExpiresAt, req);
+
+    res.cookie("refreshToken", newTokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({ accessToken: newTokens.accessToken });
+});
+
+// ============= ПУБЛИЧНЫЕ РОУТЫ =============
+
+app.get("/verifyToken", authenticate, checkUserInDB, (req, res) => {
+    res.json({ valid: true, user: req.user });
+});
 
 app.get("/countUsers", async (req, res) => {
     try {
-        const result = await pool.query("select count(*) from users");
+        const result = await pool.query("SELECT COUNT(*) FROM users");
         const count = parseInt(result.rows[0].count);
         res.json({ hasUsers: count > 0 });
     } catch (error) {
@@ -89,35 +132,42 @@ app.post("/registerFirst", async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const result = await pool.query(
-            "INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, email, phone, birthday",
-            [username, hashedPassword, "admin", "admin", "admin", "", "", null]
-        );
+        const result = await pool.query("INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname", [
+            username,
+            hashedPassword,
+            "admin",
+            "admin",
+            "admin",
+            "",
+            "",
+            null
+        ]);
 
         const user = result.rows[0];
+        const userPayload = {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            name: user.name,
+            secondname: user.secondname
+        };
 
-        const token = jwt.sign(
-            {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-                name: user.name,
-                secondname: user.secondname
-            },
-            JWT_SECRET,
-            { expiresIn: "8h" }
-        );
+        const tokens = generateTokens(userPayload);
+        const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await saveRefreshToken(user.id, tokens.refreshToken, refreshTokenExpiresAt, req);
+
+        res.cookie("refreshToken", tokens.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
 
         res.json({
             message: "Первый пользователь создан",
-            user: {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-                name: user.name,
-                secondname: user.secondname
-            },
-            token: token
+            user: userPayload,
+            accessToken: tokens.accessToken
         });
     } catch (error) {
         console.error(error);
@@ -146,30 +196,32 @@ app.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Неверные данные" });
         }
 
-        const token = jwt.sign(
-            {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-                name: user.name,
-                secondname: user.secondname
-            },
-            JWT_SECRET,
-            { expiresIn: "8h" }
-        );
+        const userPayload = {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            name: user.name,
+            secondname: user.secondname
+        };
+
+        const tokens = generateTokens(userPayload);
+        const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await saveRefreshToken(user.id, tokens.refreshToken, refreshTokenExpiresAt, req);
+
+        res.cookie("refreshToken", tokens.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
 
         await Logger.login(user.id, user.username);
 
         res.json({
             message: "Совершен вход",
-            user: {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-                name: user.name,
-                secondname: user.secondname
-            },
-            token: token
+            user: userPayload,
+            accessToken: tokens.accessToken
         });
     } catch (error) {
         console.error(error);
@@ -177,20 +229,20 @@ app.post("/login", async (req, res) => {
     }
 });
 
-app.get("/verifyToken", (req, res) => {
+app.post("/logout", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ valid: false });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET);
-        res.json({ valid: true, user: decoded });
+        res.clearCookie("refreshToken", { httpOnly: true, sameSite: "strict" });
+        await Logger.log(req.user.id, "logout", "Выход из системы", `Пользователь ${req.user.username} вышел из системы`);
+        res.json({ message: "Выход выполнен" });
     } catch (error) {
-        res.status(401).json({ valid: false });
+        console.error(error);
+        res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.post("/createUser", checkAdmin, async (req, res) => {
+// ============= ЗАЩИЩЕННЫЕ РОУТЫ (с проверкой в БД) =============
+
+app.post("/createUser", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const { username, password, name, secondname, role } = req.body;
 
@@ -202,36 +254,17 @@ app.post("/createUser", checkAdmin, async (req, res) => {
             return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
         }
 
-        const token = req.headers.authorization?.split(" ")[1];
-        let adminUsername = "system";
-
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, JWT_SECRET);
-                adminUsername = decoded.username;
-            } catch (error) {
-                console.log("Токен не валиден, создание от имени системы");
-            }
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-     RETURNING id, username, role, name, secondname, email, phone, birthday`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+             RETURNING id, username, role, name, secondname`,
             [username, hashedPassword, role, name, secondname, "", "", null]
         );
 
         const user = result.rows[0];
 
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, JWT_SECRET);
-                await Logger.userCreated(decoded.id, decoded.username, user.username, user.id);
-            } catch (error) {
-                console.log("Не удалось записать лог");
-            }
-        }
+        await Logger.userCreated(req.user.id, req.user.username, user.username, user.id);
 
         res.json({
             message: "Пользователь успешно создан",
@@ -239,30 +272,22 @@ app.post("/createUser", checkAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error("Ошибка при создании пользователя:", error);
-
         if (error.code === "23505") {
             return res.status(400).json({ error: "Пользователь с таким логином уже существует" });
         }
-
         res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-app.get("/users", async (req, res) => {
+app.get("/users", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
+        const currentUserRole = req.user.role;
         let query = "SELECT id, username, role, name, secondname, created_at FROM users";
         const params = [];
 
-        if (decoded.role === "admin") {
+        if (currentUserRole === "admin") {
             query += " ORDER BY name, secondname";
-        } else if (decoded.role === "accountant") {
+        } else if (currentUserRole === "accountant") {
             query += " WHERE role IN ('storekeeper', 'accountant') ORDER BY name, secondname";
         } else {
             return res.json({ users: [] });
@@ -276,8 +301,7 @@ app.get("/users", async (req, res) => {
     }
 });
 
-// Удаление пользователя
-app.delete("/users/:id", checkAdmin, async (req, res) => {
+app.delete("/users/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
 
@@ -291,8 +315,12 @@ app.delete("/users/:id", checkAdmin, async (req, res) => {
         if (userId === req.user.id) {
             return res.status(400).json({ error: "Нельзя удалить самого себя" });
         }
+
+        const revokedCount = await revokeAllUserSessions(userId);
+        console.log(`Отозвано ${revokedCount} сессий пользователя ${userToDelete.username}`);
+
         const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id, username", [userId]);
-        await Logger.userDeleted(req.user.id, req.user.username, userToDelete.username, userToDelete.id);
+        await Logger.userDeleted(req.user.id, req.user.username, userToDelete.username, userId);
 
         res.json({
             message: "Пользователь удален",
@@ -304,62 +332,14 @@ app.delete("/users/:id", checkAdmin, async (req, res) => {
     }
 });
 
-//ЛОГИ
-
-// Получение логов
-app.get("/logs", checkAdmin, async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT n.*, u.username as user_name, u.name, u.secondname 
-            FROM notifications n
-            LEFT JOIN users u ON n.user_id = u.id
-            ORDER BY n.created_at DESC
-        `);
-
-        await pool.query("UPDATE notifications SET read = true WHERE read = false");
-
-        res.json({ logs: result.rows });
-    } catch (error) {
-        console.error("Ошибка при получении логов:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
-    }
-});
-
-// Удаление лога
-app.delete("/logs/:id", checkAdmin, async (req, res) => {
-    try {
-        const logId = parseInt(req.params.id);
-
-        const result = await pool.query("DELETE FROM notifications WHERE id = $1 RETURNING id", [logId]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Лог не найден" });
-        }
-
-        res.json({ message: "Лог удален" });
-    } catch (error) {
-        console.error("Ошибка при удалении лога:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
-    }
-});
-
-// Удаление всех логов
-app.delete("/logs", checkAdmin, async (req, res) => {
-    try {
-        await pool.query("DELETE FROM notifications");
-        res.json({ message: "Все логи удалены" });
-    } catch (error) {
-        console.error("Ошибка при удалении логов:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
-    }
-});
-
-// profile
-
-// Получение данных пользователя по ID
-app.get("/users/:id", async (req, res) => {
+app.get("/users/:id", authenticateAndCheckDB, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
+        const currentUser = req.user;
+
+        if (currentUser.role !== "admin" && currentUser.id !== userId) {
+            return res.status(403).json({ error: "Недостаточно прав" });
+        }
 
         const result = await pool.query(
             `SELECT id, username, role, name, secondname, email, phone, 
@@ -379,20 +359,17 @@ app.get("/users/:id", async (req, res) => {
     }
 });
 
-// Обновление данных пользователя
-app.put("/users/:id", async (req, res) => {
+app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         const { username, name, secondname, email, phone, birthday, role } = req.body;
+        const currentUser = req.user;
+        const isAdmin = currentUser.role === "admin";
+        const isSelf = currentUser.id === userId;
 
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
+        if (!isSelf && !isAdmin) {
+            return res.status(403).json({ error: "Недостаточно прав" });
         }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const isAdmin = decoded.role === "admin";
-        const isSelf = decoded.id === userId;
 
         const oldUserResult = await pool.query("SELECT *, birthday::text as birthday_text FROM users WHERE id = $1", [userId]);
 
@@ -401,10 +378,6 @@ app.put("/users/:id", async (req, res) => {
         }
 
         const oldUser = oldUserResult.rows[0];
-
-        if (!isSelf && !isAdmin) {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
 
         const updateData = {
             name: name || oldUser.name,
@@ -415,10 +388,12 @@ app.put("/users/:id", async (req, res) => {
             updated_at: new Date()
         };
 
+        let roleChanged = false;
         if (isAdmin) {
             updateData.username = username || oldUser.username;
-            if (!isSelf) {
-                updateData.role = role || oldUser.role;
+            if (!isSelf && role && role !== oldUser.role) {
+                updateData.role = role;
+                roleChanged = true;
             } else {
                 updateData.role = oldUser.role;
             }
@@ -455,6 +430,11 @@ app.put("/users/:id", async (req, res) => {
         const result = await pool.query(query, values);
         const updatedUser = result.rows[0];
 
+        if (roleChanged) {
+            const revokedCount = await revokeAllUserSessions(userId);
+            await Logger.log(currentUser.id, "security_sessions_revoked", "Отзыв сессий", `Администратор ${currentUser.username} изменил роль пользователя ${oldUser.username} с ${oldUser.role} на ${role}. Отозвано ${revokedCount} сессий.`);
+        }
+
         const changedFields = {};
         Object.entries(updateData).forEach(([key, newValue]) => {
             let oldValue;
@@ -486,7 +466,7 @@ app.put("/users/:id", async (req, res) => {
 
         if (Object.keys(changedFields).length > 0) {
             if (isAdmin && !isSelf) {
-                await Logger.userUpdated(decoded.id, decoded.username, userId, oldUser.username, changedFields);
+                await Logger.userUpdated(currentUser.id, currentUser.username, userId, oldUser.username, changedFields);
             } else {
                 await Logger.profileUpdated(userId, oldUser.username, changedFields);
             }
@@ -498,27 +478,17 @@ app.put("/users/:id", async (req, res) => {
         });
     } catch (error) {
         console.error("Ошибка при обновлении пользователя:", error);
-        if (error.name === "JsonWebTokenError") {
-            return res.status(401).json({ error: "Недействительный токен" });
-        }
         res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-// Смена пароля
-app.put("/users/:id/password", async (req, res) => {
+app.put("/users/:id/password", authenticateAndCheckDB, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         const { currentPassword, newPassword, isAdminChange } = req.body;
-
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const isAdmin = decoded.role === "admin";
-        const isSelf = decoded.id === userId;
+        const currentUser = req.user;
+        const isAdmin = currentUser.role === "admin";
+        const isSelf = currentUser.id === userId;
 
         if (!isSelf && !isAdmin) {
             return res.status(403).json({ error: "Недостаточно прав" });
@@ -552,7 +522,7 @@ app.put("/users/:id/password", async (req, res) => {
         await pool.query("UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [hashedPassword, userId]);
 
         if (isAdmin && !isSelf) {
-            await Logger.passwordChanged(decoded.id, decoded.username, false, userId, user.username);
+            await Logger.passwordChanged(currentUser.id, currentUser.username, false, userId, user.username);
         } else {
             await Logger.passwordChanged(userId, user.username, true);
         }
@@ -560,16 +530,58 @@ app.put("/users/:id/password", async (req, res) => {
         res.json({ message: "Пароль успешно изменен" });
     } catch (error) {
         console.error("Ошибка при смене пароля:", error);
-        if (error.name === "JsonWebTokenError") {
-            return res.status(401).json({ error: "Недействительный токен" });
-        }
         res.status(500).json({ error: "Ошибка сервера" });
     }
 });
 
-///// MATERIALS МАТЕРИАЛЫ \\\\\
+// ============= ЛОГИ =============
 
-// все категории
+app.get("/logs", authenticateAndCheckDB, checkAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT n.*, u.username as user_name, u.name, u.secondname 
+            FROM notifications n
+            LEFT JOIN users u ON n.user_id = u.id
+            ORDER BY n.created_at DESC
+        `);
+
+        await pool.query("UPDATE notifications SET read = true WHERE read = false");
+
+        res.json({ logs: result.rows });
+    } catch (error) {
+        console.error("Ошибка при получении логов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+app.delete("/logs/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
+    try {
+        const logId = parseInt(req.params.id);
+        const result = await pool.query("DELETE FROM notifications WHERE id = $1 RETURNING id", [logId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Лог не найден" });
+        }
+
+        res.json({ message: "Лог удален" });
+    } catch (error) {
+        console.error("Ошибка при удалении лога:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+app.delete("/logs", authenticateAndCheckDB, checkAdmin, async (req, res) => {
+    try {
+        await pool.query("DELETE FROM notifications");
+        res.json({ message: "Все логи удалены" });
+    } catch (error) {
+        console.error("Ошибка при удалении логов:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// ============= КАТЕГОРИИ =============
+
 app.get("/categories", async (req, res) => {
     try {
         const result = await pool.query(`
@@ -588,20 +600,17 @@ app.get("/categories", async (req, res) => {
     }
 });
 
-// создать
-app.post("/categories", checkAdmin, async (req, res) => {
+app.post("/categories", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
         const { name, description } = req.body;
 
         if (!name) {
             return res.status(400).json({ error: "Название категории обязательно" });
         }
 
-        const result = await pool.query(`INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`, [name, description || null, decoded.id]);
+        const result = await pool.query(`INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`, [name, description || null, req.user.id]);
 
-        await Logger.log(decoded.id, "category_created", "Создание категории", `Администратор ${decoded.username} создал категорию: ${name}`);
+        await Logger.log(req.user.id, "category_created", "Создание категории", `Администратор ${req.user.username} создал категорию: ${name}`);
 
         res.json({
             message: "Категория создана",
@@ -616,11 +625,8 @@ app.post("/categories", checkAdmin, async (req, res) => {
     }
 });
 
-//update
-app.put("/categories/:id", checkAdmin, async (req, res) => {
+app.put("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
         const categoryId = parseInt(req.params.id);
         const { name, description } = req.body;
 
@@ -636,14 +642,14 @@ app.put("/categories/:id", checkAdmin, async (req, res) => {
 
         const oldCategory = oldCategoryResult.rows[0];
 
-        const result = await pool.query(`UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`, [name, description || null, decoded.id, categoryId]);
+        const result = await pool.query(`UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`, [name, description || null, req.user.id, categoryId]);
 
         const changes = [];
         if (name !== oldCategory.name) changes.push(`название: "${oldCategory.name}" → "${name}"`);
         if (description !== oldCategory.description) changes.push("описание изменено");
 
         if (changes.length > 0) {
-            await Logger.log(decoded.id, "category_updated", "Изменение категории", `Администратор ${decoded.username} изменил категорию "${oldCategory.name}": ${changes.join(", ")}`);
+            await Logger.log(req.user.id, "category_updated", "Изменение категории", `Администратор ${req.user.username} изменил категорию "${oldCategory.name}": ${changes.join(", ")}`);
         }
 
         res.json({
@@ -659,8 +665,7 @@ app.put("/categories/:id", checkAdmin, async (req, res) => {
     }
 });
 
-///delete
-app.delete("/categories/:id", checkAdmin, async (req, res) => {
+app.delete("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const categoryId = parseInt(req.params.id);
 
@@ -696,6 +701,8 @@ app.delete("/categories/:id", checkAdmin, async (req, res) => {
     }
 });
 
+// ============= МАТЕРИАЛЫ =============
+
 app.get("/materials", async (req, res) => {
     try {
         const { category_id, search, low_stock } = req.query;
@@ -703,7 +710,10 @@ app.get("/materials", async (req, res) => {
         let query = `
             SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username
             FROM materials m
-            LEFT JOIN materialCategories c ON m.category_id = c.id LEFT JOIN users uc ON m.created_by = uc.id LEFT JOIN users uu ON m.updated_by = uu.id WHERE 1=1
+            LEFT JOIN materialCategories c ON m.category_id = c.id 
+            LEFT JOIN users uc ON m.created_by = uc.id 
+            LEFT JOIN users uu ON m.updated_by = uu.id 
+            WHERE 1=1
         `;
         const params = [];
         let paramIndex = 1;
@@ -772,18 +782,8 @@ app.get("/materials/:id", async (req, res) => {
     }
 });
 
-app.post("/materials", checkAdmin, async (req, res) => {
+app.post("/materials", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
         const { name, code, description, unit, category_id, quantity } = req.body;
 
         if (!name || !unit) {
@@ -792,10 +792,6 @@ app.post("/materials", checkAdmin, async (req, res) => {
 
         if (!code) {
             return res.status(400).json({ error: "Код материала обязателен" });
-        }
-
-        if (quantity && quantity < 0) {
-            return res.status(400).json({ error: "Количество не может быть отрицательным" });
         }
 
         const existingCode = await pool.query("SELECT id FROM materials WHERE code = $1", [code]);
@@ -814,10 +810,10 @@ app.post("/materials", checkAdmin, async (req, res) => {
             `INSERT INTO materials (name, code, description, unit, category_id, quantity, created_by) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [name, code, description || null, unit, category_id || null, quantity || 0, decoded.id]
+            [name, code, description || null, unit, category_id || null, quantity || 0, req.user.id]
         );
 
-        await Logger.materialCreated(decoded.id, decoded.username, name);
+        await Logger.materialCreated(req.user.id, req.user.username, name);
 
         res.json({
             message: "Материал создан",
@@ -829,18 +825,8 @@ app.post("/materials", checkAdmin, async (req, res) => {
     }
 });
 
-app.put("/materials/:id", checkAdmin, async (req, res) => {
+app.put("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
         const materialId = parseInt(req.params.id);
         const { name, code, description, unit, category_id } = req.body;
 
@@ -876,7 +862,7 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
                  category_id = $5, updated_by = $6, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $7 
              RETURNING *`,
-            [name, code || null, description || null, unit, category_id || null, decoded.id, materialId]
+            [name, code || null, description || null, unit, category_id || null, req.user.id, materialId]
         );
 
         const changes = [];
@@ -886,7 +872,7 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
         if (category_id !== oldMaterial.category_id) changes.push("категория изменена");
 
         if (changes.length > 0) {
-            await Logger.materialUpdated(decoded.id, decoded.username, oldMaterial.name, changes.join(", "));
+            await Logger.materialUpdated(req.user.id, req.user.username, oldMaterial.name, changes.join(", "));
         }
 
         res.json({
@@ -899,7 +885,7 @@ app.put("/materials/:id", checkAdmin, async (req, res) => {
     }
 });
 
-app.delete("/materials/:id", checkAdmin, async (req, res) => {
+app.delete("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const materialId = parseInt(req.params.id);
 
@@ -931,18 +917,12 @@ app.delete("/materials/:id", checkAdmin, async (req, res) => {
     }
 });
 
-//// ===========ЗАЯВКИ============
+// ============= ЗАЯВКИ =============
 
-// Получение списка заявок
-app.get("/requests", async (req, res) => {
+app.get("/requests", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
         const { status } = req.query;
+        const currentUser = req.user;
 
         let query = `
             SELECT r.*, 
@@ -966,10 +946,10 @@ app.get("/requests", async (req, res) => {
             paramIndex++;
         }
 
-        const isAdmin = decoded.role === "admin";
+        const isAdmin = currentUser.role === "admin";
         if (!isAdmin) {
             query += ` AND (r.is_public = true OR r.created_by = $${paramIndex})`;
-            params.push(decoded.id);
+            params.push(currentUser.id);
             paramIndex++;
         }
 
@@ -983,16 +963,10 @@ app.get("/requests", async (req, res) => {
     }
 });
 
-// Получение конкретной заявки
-app.get("/requests/:id", async (req, res) => {
+app.get("/requests/:id", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
         const requestId = parseInt(req.params.id);
+        const currentUser = req.user;
 
         const requestResult = await pool.query(
             `SELECT r.*, 
@@ -1013,8 +987,8 @@ app.get("/requests/:id", async (req, res) => {
 
         const request = requestResult.rows[0];
 
-        const isAdminOrAccountant = decoded.role === "admin" || decoded.role === "accountant";
-        const isCreator = decoded.id === request.created_by;
+        const isAdminOrAccountant = currentUser.role === "admin" || currentUser.role === "accountant";
+        const isCreator = currentUser.id === request.created_by;
         const canView = isAdminOrAccountant || isCreator || request.is_public === true;
 
         if (!canView) {
@@ -1040,19 +1014,13 @@ app.get("/requests/:id", async (req, res) => {
     }
 });
 
-// Создание заявки
-app.post("/requests", async (req, res) => {
+app.post("/requests", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
         const { title, request_type, notes, items, is_public } = req.body;
+        const currentUser = req.user;
 
         if (!title || !request_type || !items || !items.length) {
-            return res.status(400).json({ error: "Заполните обязательные поля (название, тип, хотя бы один товар)" });
+            return res.status(400).json({ error: "Заполните обязательные поля" });
         }
 
         if (request_type !== "incoming" && request_type !== "outgoing") {
@@ -1088,7 +1056,7 @@ app.post("/requests", async (req, res) => {
             }
         }
 
-        const isAdmin = decoded.role === "admin";
+        const isAdmin = currentUser.role === "admin";
         const isApproved = isAdmin && req.body.is_approved === true;
         const status = isApproved ? "approved" : "pending";
         const publicStatus = isAdmin ? is_public !== false : true;
@@ -1102,7 +1070,7 @@ app.post("/requests", async (req, res) => {
                 `INSERT INTO material_requests (title, request_type, status, created_by, notes, is_public, reviewed_by, reviewed_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                  RETURNING *`,
-                [title, request_type, status, decoded.id, notes || null, publicStatus, isApproved ? decoded.id : null, isApproved ? new Date() : null]
+                [title, request_type, status, currentUser.id, notes || null, publicStatus, isApproved ? currentUser.id : null, isApproved ? new Date() : null]
             );
 
             const newRequest = requestResult.rows[0];
@@ -1136,10 +1104,10 @@ app.post("/requests", async (req, res) => {
                 })
                 .join(", ");
 
-            await Logger.requestCreated(decoded.id, decoded.username, title, request_type, itemsList);
+            await Logger.requestCreated(currentUser.id, currentUser.username, title, request_type, itemsList);
 
             if (isApproved) {
-                await Logger.requestApproved(decoded.id, decoded.username, title, request_type, itemsList);
+                await Logger.requestApproved(currentUser.id, currentUser.username, title, request_type, itemsList);
                 res.json({
                     message: "Заявка создана и подтверждена",
                     request: newRequest,
@@ -1164,20 +1132,9 @@ app.post("/requests", async (req, res) => {
     }
 });
 
-// Подтверждение заявки
-app.put("/requests/:id/approve", async (req, res) => {
+app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin" && decoded.role !== "accountant") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const requestId = parseInt(req.params.id);
 
         const requestResult = await pool.query(
@@ -1220,7 +1177,7 @@ app.put("/requests/:id/approve", async (req, res) => {
                 `UPDATE material_requests 
                  SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
                  WHERE id = $2`,
-                [decoded.id, requestId]
+                [currentUser.id, requestId]
             );
 
             for (const item of items) {
@@ -1232,7 +1189,7 @@ app.put("/requests/:id/approve", async (req, res) => {
             await client.query("COMMIT");
 
             const itemsList = items.map((i) => `ID:${i.material_id} (${i.quantity})`).join(", ");
-            await Logger.requestApproved(decoded.id, decoded.username, request.title, request.request_type, itemsList);
+            await Logger.requestApproved(currentUser.id, currentUser.username, request.title, request.request_type, itemsList);
 
             res.json({ message: "Заявка подтверждена" });
         } catch (err) {
@@ -1247,20 +1204,9 @@ app.put("/requests/:id/approve", async (req, res) => {
     }
 });
 
-// Отклонение заявки
-app.put("/requests/:id/reject", async (req, res) => {
+app.put("/requests/:id/reject", authenticateAndCheckDB, checkAdminOrAccountant, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin" && decoded.role !== "accountant") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const requestId = parseInt(req.params.id);
         const { rejection_reason } = req.body;
 
@@ -1282,10 +1228,10 @@ app.put("/requests/:id/reject", async (req, res) => {
             `UPDATE material_requests 
              SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
              WHERE id = $3`,
-            [decoded.id, rejection_reason, requestId]
+            [currentUser.id, rejection_reason, requestId]
         );
 
-        await Logger.requestRejected(decoded.id, decoded.username, request.title, request.request_type, rejection_reason);
+        await Logger.requestRejected(currentUser.id, currentUser.username, request.title, request.request_type, rejection_reason);
 
         res.json({ message: "Заявка отклонена" });
     } catch (error) {
@@ -1294,18 +1240,12 @@ app.put("/requests/:id/reject", async (req, res) => {
     }
 });
 
-// =========== ИНВЕНТАРИЗАЦИЯ =============
+// ============= ИНВЕНТАРИЗАЦИЯ =============
 
-// Получение списка инвентаризаций
-app.get("/inventories", async (req, res) => {
+app.get("/inventories", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const isAdminOrAccountant = decoded.role === "admin" || decoded.role === "accountant";
+        const currentUser = req.user;
+        const isAdminOrAccountant = currentUser.role === "admin" || currentUser.role === "accountant";
 
         let query = `
             SELECT i.*, 
@@ -1327,7 +1267,7 @@ app.get("/inventories", async (req, res) => {
 
         if (!isAdminOrAccountant) {
             query += ` AND i.responsible_person = $${paramIndex}`;
-            params.push(decoded.id);
+            params.push(currentUser.id);
             paramIndex++;
         }
 
@@ -1341,17 +1281,11 @@ app.get("/inventories", async (req, res) => {
     }
 });
 
-// Получение деталей инвентаризации
-app.get("/inventories/:id", async (req, res) => {
+app.get("/inventories/:id", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
-        const isAdminOrAccountant = decoded.role === "admin" || decoded.role === "accountant";
+        const isAdminOrAccountant = currentUser.role === "admin" || currentUser.role === "accountant";
 
         const inventoryResult = await pool.query(
             `SELECT i.*, 
@@ -1372,7 +1306,7 @@ app.get("/inventories/:id", async (req, res) => {
 
         const inventory = inventoryResult.rows[0];
 
-        const canView = isAdminOrAccountant || decoded.id === inventory.responsible_person;
+        const canView = isAdminOrAccountant || currentUser.id === inventory.responsible_person;
         if (!canView) {
             return res.status(403).json({ error: "Недостаточно прав" });
         }
@@ -1414,20 +1348,9 @@ app.get("/inventories/:id", async (req, res) => {
     }
 });
 
-// Создание инвентаризации (только admin/accountant)
-app.post("/inventories", async (req, res) => {
+app.post("/inventories", authenticateAndCheckDB, checkAdminOrAccountant, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin" && decoded.role !== "accountant") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const { title, responsible_person, start_date, end_date, description, categories, materials } = req.body;
 
         if (!title || !responsible_person || !start_date || !end_date) {
@@ -1447,11 +1370,11 @@ app.post("/inventories", async (req, res) => {
                 `INSERT INTO inventories (title, created_by, responsible_person, start_date, end_date, description, status)
                  VALUES ($1, $2, $3, $4, $5, $6, 'draft')
                  RETURNING *`,
-                [title, decoded.id, responsible_person, start_date, end_date, description || null]
+                [title, currentUser.id, responsible_person, start_date, end_date, description || null]
             );
 
             const inventory = inventoryResult.rows[0];
-            const newInventoryId = inventory.id; // СОХРАНЯЕМ ID
+            const newInventoryId = inventory.id;
 
             if (categories && categories.length > 0) {
                 for (const categoryId of categories) {
@@ -1494,7 +1417,7 @@ app.post("/inventories", async (req, res) => {
 
             await client.query("COMMIT");
 
-            await Logger.inventoryCreated(decoded.id, decoded.username, title, newInventoryId);
+            await Logger.inventoryCreated(currentUser.id, currentUser.username, title, newInventoryId);
 
             res.json({
                 message: "Инвентаризация создана",
@@ -1512,19 +1435,9 @@ app.post("/inventories", async (req, res) => {
     }
 });
 
-app.put("/inventories/:id", async (req, res) => {
+app.put("/inventories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
         const { title, responsible_person, start_date, end_date, description } = req.body;
 
@@ -1582,7 +1495,7 @@ app.put("/inventories/:id", async (req, res) => {
 
         if (changes.length > 0) {
             Logger.setCurrentInventoryId(inventoryId);
-            await Logger.inventoryUpdated(decoded.id, decoded.username, oldData.title, changes.join(", "), inventoryId);
+            await Logger.inventoryUpdated(currentUser.id, currentUser.username, oldData.title, changes.join(", "), inventoryId);
         }
 
         res.json({
@@ -1595,15 +1508,9 @@ app.put("/inventories/:id", async (req, res) => {
     }
 });
 
-// Начать инвентаризацию (только ответственный)
-app.put("/inventories/:id/start", async (req, res) => {
+app.put("/inventories/:id/start", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
 
         const inventory = await pool.query("SELECT title, responsible_person, status FROM inventories WHERE id = $1", [inventoryId]);
@@ -1612,7 +1519,7 @@ app.put("/inventories/:id/start", async (req, res) => {
             return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
-        if (inventory.rows[0].responsible_person !== decoded.id) {
+        if (inventory.rows[0].responsible_person !== currentUser.id) {
             return res.status(403).json({ error: "Только ответственный может начать инвентаризацию" });
         }
 
@@ -1623,7 +1530,7 @@ app.put("/inventories/:id/start", async (req, res) => {
         await pool.query(`UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
         Logger.setCurrentInventoryId(inventoryId);
-        await Logger.inventoryStarted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
+        await Logger.inventoryStarted(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация начата" });
     } catch (error) {
@@ -1632,15 +1539,9 @@ app.put("/inventories/:id/start", async (req, res) => {
     }
 });
 
-// Сохранение результатов (черновик)
-app.put("/inventories/:id/results", async (req, res) => {
+app.put("/inventories/:id/results", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
         const { results } = req.body;
 
@@ -1650,7 +1551,7 @@ app.put("/inventories/:id/results", async (req, res) => {
             return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
-        if (inventory.rows[0].responsible_person !== decoded.id) {
+        if (inventory.rows[0].responsible_person !== currentUser.id) {
             return res.status(403).json({ error: "Только ответственный может сохранять результаты" });
         }
 
@@ -1667,7 +1568,7 @@ app.put("/inventories/:id/results", async (req, res) => {
             );
         }
 
-        await Logger.inventorySaved(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
+        await Logger.inventorySaved(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Результаты сохранены" });
     } catch (error) {
@@ -1676,15 +1577,9 @@ app.put("/inventories/:id/results", async (req, res) => {
     }
 });
 
-// Завершить инвентаризацию и отправить на проверку
-app.put("/inventories/:id/complete", async (req, res) => {
+app.put("/inventories/:id/complete", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
 
         const inventory = await pool.query("SELECT title, responsible_person, status FROM inventories WHERE id = $1", [inventoryId]);
@@ -1693,7 +1588,7 @@ app.put("/inventories/:id/complete", async (req, res) => {
             return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
-        if (inventory.rows[0].responsible_person !== decoded.id) {
+        if (inventory.rows[0].responsible_person !== currentUser.id) {
             return res.status(403).json({ error: "Только ответственный может завершить инвентаризацию" });
         }
 
@@ -1710,7 +1605,7 @@ app.put("/inventories/:id/complete", async (req, res) => {
         await pool.query(`UPDATE inventories SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
         Logger.setCurrentInventoryId(inventoryId);
-        await Logger.inventoryCompleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
+        await Logger.inventoryCompleted(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация завершена и отправлена на проверку" });
     } catch (error) {
@@ -1719,20 +1614,9 @@ app.put("/inventories/:id/complete", async (req, res) => {
     }
 });
 
-// Подтвердить инвентаризацию (admin/accountant)
-app.put("/inventories/:id/approve", async (req, res) => {
+app.put("/inventories/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin" && decoded.role !== "accountant") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
 
         const inventory = await pool.query("SELECT title, status FROM inventories WHERE id = $1", [inventoryId]);
@@ -1766,12 +1650,12 @@ app.put("/inventories/:id/approve", async (req, res) => {
                 `UPDATE inventories 
                  SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = $1, updated_at = CURRENT_TIMESTAMP
                  WHERE id = $2`,
-                [decoded.id, inventoryId]
+                [currentUser.id, inventoryId]
             );
 
             await client.query("COMMIT");
 
-            await Logger.inventoryApproved(decoded.id, decoded.username, inventory.rows[0].title, results.rows.length, inventoryId);
+            await Logger.inventoryApproved(currentUser.id, currentUser.username, inventory.rows[0].title, results.rows.length, inventoryId);
 
             res.json({ message: "Инвентаризация подтверждена, остатки обновлены" });
         } catch (err) {
@@ -1786,20 +1670,9 @@ app.put("/inventories/:id/approve", async (req, res) => {
     }
 });
 
-// Отмена инвентаризации (admin)
-app.put("/inventories/:id/cancel", async (req, res) => {
+app.put("/inventories/:id/cancel", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
 
         const inventory = await pool.query("SELECT title FROM inventories WHERE id = $1", [inventoryId]);
@@ -1808,10 +1681,10 @@ app.put("/inventories/:id/cancel", async (req, res) => {
             return res.status(404).json({ error: "Инвентаризация не найдена" });
         }
 
-        await pool.query(`UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [decoded.id, inventoryId]);
+        await pool.query(`UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [currentUser.id, inventoryId]);
 
         Logger.setCurrentInventoryId(inventoryId);
-        await Logger.inventoryCancelled(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
+        await Logger.inventoryCancelled(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация отменена" });
     } catch (error) {
@@ -1820,20 +1693,9 @@ app.put("/inventories/:id/cancel", async (req, res) => {
     }
 });
 
-// Удаление инвентаризации (admin)
-app.delete("/inventories/:id", async (req, res) => {
+app.delete("/inventories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.role !== "admin") {
-            return res.status(403).json({ error: "Недостаточно прав" });
-        }
-
+        const currentUser = req.user;
         const inventoryId = parseInt(req.params.id);
 
         const inventory = await pool.query("SELECT title FROM inventories WHERE id = $1", [inventoryId]);
@@ -1845,7 +1707,7 @@ app.delete("/inventories/:id", async (req, res) => {
         await pool.query("DELETE FROM inventories WHERE id = $1", [inventoryId]);
 
         Logger.setCurrentInventoryId(inventoryId);
-        await Logger.inventoryDeleted(decoded.id, decoded.username, inventory.rows[0].title, inventoryId);
+        await Logger.inventoryDeleted(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация удалена" });
     } catch (error) {
@@ -1854,17 +1716,10 @@ app.delete("/inventories/:id", async (req, res) => {
     }
 });
 
-// =========== DASHBOARD API ===========
+// ============= DASHBOARD =============
 
-// Метрики для дашборда
-app.get("/dashboard/metrics", async (req, res) => {
+app.get("/dashboard/metrics", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET);
         const { startDate, endDate } = req.query;
 
         let start = startDate;
@@ -1938,14 +1793,8 @@ app.get("/dashboard/metrics", async (req, res) => {
     }
 });
 
-// График движения товаров
-app.get("/dashboard/movement", async (req, res) => {
+app.get("/dashboard/movement", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate } = req.query;
 
         if (!startDate || !endDate) {
@@ -1998,14 +1847,8 @@ app.get("/dashboard/movement", async (req, res) => {
     }
 });
 
-// Статус инвентаризаций для дашборда
-app.get("/dashboard/inventory-status", async (req, res) => {
+app.get("/dashboard/inventory-status", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate } = req.query;
 
         let query = `
@@ -2049,14 +1892,8 @@ app.get("/dashboard/inventory-status", async (req, res) => {
     }
 });
 
-// Статус заявок для дашборда
-app.get("/dashboard/requests-status", async (req, res) => {
+app.get("/dashboard/requests-status", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate } = req.query;
 
         let query = `
@@ -2098,16 +1935,10 @@ app.get("/dashboard/requests-status", async (req, res) => {
     }
 });
 
-// =========== REPORTS API ===========
+// ============= REPORTS =============
 
-// Отчет: Движение материалов
-app.get("/reports/material-movement", async (req, res) => {
+app.get("/reports/material-movement", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate, categoryId, materialId, type } = req.query;
 
         let query = `
@@ -2181,14 +2012,8 @@ app.get("/reports/material-movement", async (req, res) => {
     }
 });
 
-// Отчет: Заявки
-app.get("/reports/requests", async (req, res) => {
+app.get("/reports/requests", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate, status, type, userId } = req.query;
 
         let query = `
@@ -2259,14 +2084,8 @@ app.get("/reports/requests", async (req, res) => {
     }
 });
 
-// Отчет: Оборотно-сальдовая ведомость (ОСВ)
-app.get("/reports/turnover-balance", async (req, res) => {
+app.get("/reports/turnover-balance", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate, categoryId } = req.query;
 
         let materialsQuery = `
@@ -2373,14 +2192,8 @@ app.get("/reports/turnover-balance", async (req, res) => {
     }
 });
 
-// Отчет: Активность пользователей
-app.get("/reports/user-activity", async (req, res) => {
+app.get("/reports/user-activity", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const { startDate, endDate } = req.query;
 
         const result = await pool.query(
@@ -2431,14 +2244,8 @@ app.get("/reports/user-activity", async (req, res) => {
     }
 });
 
-// Получение списка материалов для фильтров
-app.get("/reports/materials-list", async (req, res) => {
+app.get("/reports/materials-list", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const result = await pool.query(`
             SELECT id, name, code, category_id
             FROM materials
@@ -2452,14 +2259,8 @@ app.get("/reports/materials-list", async (req, res) => {
     }
 });
 
-// Получение списка пользователей для фильтров
-app.get("/reports/users-list", async (req, res) => {
+app.get("/reports/users-list", authenticateAndCheckDB, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ error: "Требуется авторизация" });
-        }
-
         const result = await pool.query(`
             SELECT id, username, name, secondname, role
             FROM users
@@ -2473,12 +2274,12 @@ app.get("/reports/users-list", async (req, res) => {
     }
 });
 
-// тест
+// ============= ТЕСТ =============
 app.get("/test", (req, res) => {
     res.json({ message: "hello world" });
 });
 
-// Запуск сервера
+// ============= ЗАПУСК =============
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
 });

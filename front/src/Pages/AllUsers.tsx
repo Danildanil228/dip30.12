@@ -58,19 +58,15 @@ export default function AllUsers() {
             {
                 id: "select",
                 header: ({ table }) => (
-                    <Checkbox
-                        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                        aria-label="Select all"
-                    />
+                    <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
                 ),
                 cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
                 enableSorting: false,
-                enableHiding: false,
+                enableHiding: false
             },
             {
                 accessorKey: "id",
-                header: "ID",
+                header: "ID"
             },
             {
                 accessorKey: "username",
@@ -79,15 +75,15 @@ export default function AllUsers() {
                         Логин
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
-                ),
+                )
             },
             {
                 accessorKey: "name",
-                header: "Имя",
+                header: "Имя"
             },
             {
                 accessorKey: "secondname",
-                header: "Фамилия",
+                header: "Фамилия"
             },
             {
                 accessorKey: "role",
@@ -97,7 +93,7 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>,
+                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>
             },
             {
                 accessorKey: "created_at",
@@ -107,7 +103,7 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
+                cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>
             },
             {
                 accessorKey: "actions",
@@ -138,10 +134,10 @@ export default function AllUsers() {
                             </AlertDialog>
                         </div>
                     );
-                },
-            },
+                }
+            }
         ],
-        [currentUser],
+        [currentUser]
     );
 
     return (
