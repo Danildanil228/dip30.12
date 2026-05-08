@@ -1,19 +1,19 @@
 import axios from "axios";
 
 
-const getApiBaseUrl = () => {
-    if (import.meta.env.VITE_API_URL) {
-        return import.meta.env.VITE_API_URL;
-    }
-    return "/api";
-};
 // const getApiBaseUrl = () => {
-//     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-//         return "http://localhost:3000";
+//     if (import.meta.env.VITE_API_URL) {
+//         return import.meta.env.VITE_API_URL;
 //     }
-//     return import.meta.env.VITE_API_URL || "https://бэкенд.onrender.com";
-//     // return `http://${window.location.hostname}:3000`;
+//     return "/api";
 // };
+const getApiBaseUrl = () => {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return "http://localhost:3000";
+    }
+    // return import.meta.env.VITE_API_URL || "https://бэкенд.onrender.com";
+    return `http://${window.location.hostname}:3000`;
+};
 
 export const API_BASE_URL = getApiBaseUrl();
 

@@ -25,7 +25,6 @@ export default function RequestDetails() {
     const isAccountant = user?.role === "accountant";
     const canApprove = (isAdmin || isAccountant) && currentRequest?.status === "pending";
     const [notesExpanded, setNotesExpanded] = useState(false);
-
     const { loading: userLoading } = useUser();
 
     useEffect(() => {
