@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 import { CapitalizedInput } from "../CapitalizedInput";
 import { materialService } from "@/services/materialService";
+import { SearchableSelect } from "../ui/SearchableSelect";
 
 interface Category {
     id: number;
@@ -100,7 +101,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                 description: description.trim() || null,
                 unit,
                 quantity: quantityNum,
-                category_id: categoryIdToSend,
+                category_id: categoryIdToSend
             });
 
             setName("");
@@ -192,19 +193,13 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
 
                         <div className="grid gap-2">
                             <Label htmlFor="material-category">Категория</Label>
-                            <Select value={categoryId} onValueChange={setCategoryId} disabled={loading || loadingCategories}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Выберите категорию" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="no-category">Без категории</SelectItem>
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id.toString()}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={categoryId}
+                                onChange={setCategoryId}
+                                options={[{ value: "no-category", label: "Без категории" }, ...categories.map((c) => ({ value: c.id.toString(), label: c.name }))]}
+                                placeholder="Выберите категорию"
+                                disabled={loading || loadingCategories}
+                            />
                             {loadingCategories && <p className="text-sm text-gray-500">Загрузка категорий...</p>}
                         </div>
 

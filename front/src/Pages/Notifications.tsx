@@ -99,10 +99,13 @@ export default function Notifications({ onVisited }: NotificationsProps) {
 
         while ((match = regex.exec(message)) !== null) {
             if (match.index > lastIndex) {
-                parts.push({
-                    type: "text",
-                    content: message.substring(lastIndex, match.index)
-                });
+                const textPart = message.substring(lastIndex, match.index).replace(/\s+/g, " ").trim();
+                if (textPart) {
+                    parts.push({
+                        type: "text",
+                        content: textPart
+                    });
+                }
             }
 
             const userMatch = match[0].match(/\[user:(\d+):(\w+)\]/);
@@ -137,15 +140,18 @@ export default function Notifications({ onVisited }: NotificationsProps) {
         }
 
         if (lastIndex < message.length) {
-            parts.push({
-                type: "text",
-                content: message.substring(lastIndex)
-            });
+            const textPart = message.substring(lastIndex).replace(/\s+/g, " ").trim();
+            if (textPart) {
+                parts.push({
+                    type: "text",
+                    content: textPart
+                });
+            }
         }
 
         return parts.map((part, index) => {
             if (part.type === "text") {
-                return <span key={index}>{part.content}</span>;
+                return <span key={index}>{part.content} </span>;
             }
             if (part.type === "user") {
                 return (
@@ -175,7 +181,6 @@ export default function Notifications({ onVisited }: NotificationsProps) {
     if (loading) {
         return <LoadingSpinner />;
     }
-
 
     const filterGroups = [
         { title: "Пользователи", types: LOG_TYPES.filter((t) => t.category === "users") },
@@ -303,11 +308,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                     </div>
                 ))}
 
-                {paginatedLogs.length === 0 && (
-                    <p className="text-center py-10 text-muted-foreground">
-                        {selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}
-                    </p>
-                )}
+                {paginatedLogs.length === 0 && <p className="text-center py-10 text-muted-foreground">{selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}</p>}
             </div>
         </div>
     );

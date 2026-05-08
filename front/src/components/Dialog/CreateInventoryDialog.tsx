@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
@@ -158,7 +157,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 responsible_person: parseInt(responsiblePerson),
                 start_date: format(startDate, "yyyy-MM-dd"),
                 end_date: format(endDate, "yyyy-MM-dd"),
-                description: description.trim() || null,
+                description: description.trim() || null
             };
 
             if (selectionMode === "categories" && selectedCategories.length > 0) {
@@ -319,19 +318,6 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                 className="pl-10"
                                             />
                                         </div>
-                                        <Select value={materialSelectedCategory} onValueChange={setMaterialSelectedCategory}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Все категории" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Все категории</SelectItem>
-                                                {categories.map((category) => (
-                                                    <SelectItem key={category.id} value={category.id.toString()}>
-                                                        {category.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
                                     </div>
 
                                     <div className="space-y-3 max-h-60 overflow-y-auto border rounded p-2">
@@ -359,12 +345,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                 <span className="text-sm">
                                                     {currentPage + 1} / {totalPages}
                                                 </span>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-                                                    disabled={currentPage === totalPages - 1}
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                                                     <ChevronRight className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="outline" size="sm" onClick={() => setShowAllMaterials(true)}>

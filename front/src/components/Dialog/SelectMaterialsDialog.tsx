@@ -5,7 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Search, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { materialService } from "@/services/materialService";
 import type { Material, Category } from "@/types/material.types";
@@ -29,10 +28,9 @@ interface SelectMaterialsDialogProps {
 
 export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, selectedItems, requestType }: SelectMaterialsDialogProps) {
     const [materials, setMaterials] = useState<Material[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
+    const [_categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [tempSelected, setTempSelected] = useState<SelectedItem[]>(selectedItems);
     const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
     const [showAll, setShowAll] = useState(false);
@@ -83,9 +81,9 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
             material.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (material.category_name && material.category_name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const matchesCategory = selectedCategory === "all" || (material.category_id && material.category_id.toString() === selectedCategory);
+        
 
-        return matchesSearch && matchesCategory;
+        return matchesSearch;
     });
 
     const totalItems = filteredMaterials.length;
@@ -142,7 +140,7 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
             code: material.code,
             unit: material.unit,
             quantity: quantity,
-            current_quantity: material.quantity,
+            current_quantity: material.quantity
         };
 
         setTempSelected([...tempSelected, newItem]);
@@ -218,12 +216,7 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
                             />
                             <span className="text-sm">{material.unit}</span>
                         </div>
-                        <Button
-                            size="sm"
-                            onClick={() => handleAddMaterial(material)}
-                            disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)}
-                            variant={isSelected ? "secondary" : "default"}
-                        >
+                        <Button size="sm" onClick={() => handleAddMaterial(material)} disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)} variant={isSelected ? "secondary" : "default"}>
                             {isSelected ? "✓" : <Plus className="h-4 w-4" />}
                         </Button>
                     </div>
@@ -254,21 +247,7 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
                                 className="pl-10"
                             />
                         </div>
-                        <div className="w-full md:w-64 justify-center flex sm:justify-end">
-                            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger className="sm:w-full max-w-70">
-                                    <SelectValue placeholder="Все категории" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Все категории</SelectItem>
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id.toString()}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        
                     </div>
 
                     <div className="hidden md:block border rounded-lg overflow-hidden">

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
 import { useMaterials } from "@/hooks/useMaterials";
 import EditMaterialDialog from "@/components/Dialog/EditMaterialDialog";
@@ -9,6 +9,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { DataTable } from "@/components/ui/DataTable";
 import type { Material } from "@/types/material.types";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useState } from "react";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -25,21 +26,64 @@ export default function Materials() {
     const { isAdmin } = useUser();
     const { materials, loading, deleteMaterial, fetchMaterials } = useMaterials();
 
-    const handleDeleteMaterial = async (id: number) => {
-        try {
-            await deleteMaterial(id);
-        } catch (error) {
-            alert("Не удалось удалить материал");
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
+    const [multipleDeleteIds, setMultipleDeleteIds] = useState<number[]>([]);
+    const [isMultipleDelete, setIsMultipleDelete] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
+
+    const handleDeleteClick = (material: Material) => {
+        if (material.quantity > 0) {
+            setDeleteErrorMessage(`Материал "${material.name}" имеет остаток ${material.quantity} ${material.unit}. Оформите заявку на расход, а после совершите удаление.`);
+            setDeleteDialogOpen(true);
+            return;
         }
+        setMaterialToDelete(material);
+        setIsMultipleDelete(false);
+        setDeleteError(null);
+        setDeleteErrorMessage(null);
+        setDeleteDialogOpen(true);
     };
 
-    const handleDeleteSelected = async (selectedIds: number[]) => {
+    const handleDeleteSelected = (selectedIds: number[]) => {
+        const selectedMaterials = materials.filter((m) => selectedIds.includes(m.id));
+        const materialsWithStock = selectedMaterials.filter((m) => m.quantity > 0);
+
+        if (materialsWithStock.length > 0) {
+            const stockList = materialsWithStock.map((m) => `${m.name} (${m.quantity} ${m.unit})`).join(", ");
+            setDeleteErrorMessage(`Некоторые материалы имеют остаток на складе: ${stockList}. Оформите заявку на расход, а после совершите удаление.`);
+            setDeleteDialogOpen(true);
+            return;
+        }
+
+        setMultipleDeleteIds(selectedIds);
+        setIsMultipleDelete(true);
+        setDeleteError(null);
+        setDeleteErrorMessage(null);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        setDeleteError(null);
+
         try {
-            for (const id of selectedIds) {
-                await deleteMaterial(id);
+            if (isMultipleDelete) {
+                for (const id of multipleDeleteIds) {
+                    await deleteMaterial(id);
+                }
+                fetchMaterials();
+                setDeleteDialogOpen(false);
+                setMultipleDeleteIds([]);
+                setIsMultipleDelete(false);
+            } else if (materialToDelete) {
+                await deleteMaterial(materialToDelete.id);
+                fetchMaterials();
+                setDeleteDialogOpen(false);
+                setMaterialToDelete(null);
             }
-        } catch (error) {
-            alert("Не удалось удалить материалы");
+        } catch (error: any) {
+            setDeleteError(error.response?.data?.error || "Не удалось удалить материал");
         }
     };
 
@@ -47,41 +91,37 @@ export default function Materials() {
         {
             id: "select",
             header: ({ table }) => (
-                <Checkbox
-                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
+                <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
             ),
             cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
             enableSorting: false,
-            enableHiding: false,
+            enableHiding: false
         },
         {
             accessorKey: "id",
-            header: "ID",
+            header: "ID"
         },
         {
             accessorKey: "name",
-            header: "Название",
+            header: "Название"
         },
         {
             accessorKey: "code",
-            header: "Код",
+            header: "Код"
         },
         {
             accessorKey: "quantity",
             header: "Количество",
-            cell: ({ row }) => <div className="text-center">{row.original.quantity}</div>,
+            cell: ({ row }) => <div className="text-center">{row.original.quantity}</div>
         },
         {
             accessorKey: "unit",
-            header: "Ед. измерения",
+            header: "Ед. измерения"
         },
         {
             accessorKey: "category_name",
             header: "Категория",
-            cell: ({ row }) => <div>{row.original.category_name || "Без категории"}</div>,
+            cell: ({ row }) => <div>{row.original.category_name || "Без категории"}</div>
         },
         {
             accessorKey: "created_by_username",
@@ -97,12 +137,12 @@ export default function Materials() {
                 ) : (
                     <p>{username}</p>
                 );
-            },
+            }
         },
         {
             accessorKey: "created_at",
             header: "Дата создания",
-            cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
+            cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>
         },
         {
             accessorKey: "actions",
@@ -112,29 +152,12 @@ export default function Materials() {
                 if (!isAdmin) return null;
                 return (
                     <div className="flex items-center gap-5">
-                        <EditMaterialDialog
-                            materialId={material.id}
-                            onMaterialUpdated={fetchMaterials}
-                            triggerButton={<img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />}
-                        />
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить материал" />
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Удалить материал {material.name}?</AlertDialogTitle>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>Удалить</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <EditMaterialDialog materialId={material.id} onMaterialUpdated={fetchMaterials} triggerButton={<img src="/edit.png" className="icon w-5 cursor-pointer" alt="Редактировать" />} />
+                        <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить материал" onClick={() => handleDeleteClick(material)} />
                     </div>
                 );
-            },
-        },
+            }
+        }
     ];
 
     return (
@@ -156,6 +179,29 @@ export default function Materials() {
                 exportTitle="Материалы"
                 skipExportColumns={["actions"]}
             />
+
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{deleteErrorMessage ? "Невозможно удалить" : deleteError ? "Ошибка" : "Удалить материал?"}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {deleteErrorMessage ? (
+                                <span className="">{deleteErrorMessage}</span>
+                            ) : deleteError ? (
+                                <span className="">{deleteError}</span>
+                            ) : isMultipleDelete ? (
+                                `Вы уверены, что хотите удалить ${multipleDeleteIds.length} выбранных материалов? Это действие нельзя отменить.`
+                            ) : (
+                                materialToDelete && `Вы уверены, что хотите удалить материал "${materialToDelete.name}"? Это действие нельзя отменить.`
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        {!deleteErrorMessage && !deleteError && <AlertDialogAction onClick={confirmDelete}>Удалить</AlertDialogAction>}
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </section>
     );
 }
