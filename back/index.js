@@ -1253,6 +1253,124 @@ app.put("/requests/:id/reject", authenticateAndCheckDB, checkAdminOrAccountant, 
     }
 });
 
+// Удаление заявки
+app.delete("/requests/:id", authenticateAndCheckDB, async (req, res) => {
+    try {
+        const requestId = parseInt(req.params.id);
+        const currentUser = req.user;
+        const isAdmin = currentUser.role === "admin";
+
+        const requestResult = await pool.query("SELECT title, created_by, status FROM material_requests WHERE id = $1", [requestId]);
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: "Заявка не найдена" });
+        }
+
+        const request = requestResult.rows[0];
+
+        if (!isAdmin && request.created_by !== currentUser.id) {
+            return res.status(403).json({ error: "Недостаточно прав для удаления" });
+        }
+
+        if (request.status === "approved") {
+            return res.status(400).json({ error: "Нельзя удалить подтверждённую заявку" });
+        }
+
+        await pool.query("DELETE FROM material_requests_items WHERE request_id = $1", [requestId]);
+
+        await pool.query("DELETE FROM material_requests WHERE id = $1", [requestId]);
+
+        await Logger.requestDeleted(currentUser.id, currentUser.username, request.title);
+
+        res.json({ message: "Заявка удалена" });
+    } catch (error) {
+        console.error("Ошибка удаления заявки:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Редактирование заявки
+app.put("/requests/:id", authenticateAndCheckDB, async (req, res) => {
+    try {
+        const requestId = parseInt(req.params.id);
+        const currentUser = req.user;
+        const isAdmin = currentUser.role === "admin";
+        const { title, notes, is_public, items } = req.body;
+
+        const oldRequestResult = await pool.query("SELECT title, notes, is_public, created_by, status FROM material_requests WHERE id = $1", [requestId]);
+
+        if (oldRequestResult.rows.length === 0) {
+            return res.status(404).json({ error: "Заявка не найдена" });
+        }
+
+        const oldRequest = oldRequestResult.rows[0];
+
+        if (!isAdmin && oldRequest.created_by !== currentUser.id) {
+            return res.status(403).json({ error: "Недостаточно прав для редактирования" });
+        }
+
+        if (oldRequest.status === "approved") {
+            return res.status(400).json({ error: "Нельзя редактировать подтверждённую заявку" });
+        }
+
+        const changes = [];
+        if (title && title !== oldRequest.title) changes.push(`название: "${oldRequest.title}" → "${title}"`);
+        if (notes !== undefined && notes !== oldRequest.notes) changes.push("примечания изменены");
+        if (isAdmin && is_public !== undefined && is_public !== oldRequest.is_public) {
+            changes.push(`видимость: ${oldRequest.is_public ? "публичная" : "приватная"} → ${is_public ? "публичная" : "приватная"}`);
+        }
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        if (title) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title);
+        }
+        if (notes !== undefined) {
+            updateFields.push(`notes = $${paramIndex++}`);
+            updateValues.push(notes || null);
+        }
+        if (isAdmin && is_public !== undefined) {
+            updateFields.push(`is_public = $${paramIndex++}`);
+            updateValues.push(is_public);
+        }
+
+        updateFields.push(`updated_at = NOW()`);
+        updateValues.push(requestId);
+
+        if (updateFields.length > 1) {
+            await pool.query(`UPDATE material_requests SET ${updateFields.join(", ")} WHERE id = $${paramIndex}`, updateValues);
+        }
+
+        if (items && items.length > 0) {
+            await pool.query("DELETE FROM material_requests_items WHERE request_id = $1", [requestId]);
+
+            for (const item of items) {
+                const materialResult = await pool.query("SELECT quantity FROM materials WHERE id = $1", [item.material_id]);
+                const currentQuantity = materialResult.rows[0]?.quantity || 0;
+
+                await pool.query(
+                    `INSERT INTO material_requests_items (request_id, material_id, quantity, current_quantity_at_request)
+                     VALUES ($1, $2, $3, $4)`,
+                    [requestId, item.material_id, item.quantity, currentQuantity]
+                );
+            }
+            changes.push("состав заявки изменён");
+        }
+
+        if (changes.length > 0) {
+            await Logger.requestUpdated(currentUser.id, currentUser.username, oldRequest.title, changes.join(", "));
+        }
+
+        res.json({ message: "Заявка обновлена" });
+    } catch (error) {
+        console.error("Ошибка обновления заявки:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
 // ============= ИНВЕНТАРИЗАЦИЯ =============
 
 app.get("/inventories", authenticateAndCheckDB, async (req, res) => {
