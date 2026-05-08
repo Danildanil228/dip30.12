@@ -179,7 +179,7 @@ export default function Categories() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Невозможно удалить</AlertDialogTitle>
                         <AlertDialogDescription>
-                            <span className="text-red-500">{deleteError}</span>
+                            <span className="">{deleteError}</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
