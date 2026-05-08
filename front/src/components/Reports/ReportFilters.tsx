@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { Download, Printer, RotateCcw, Search } from "lucide-react";
+import { Search, RotateCcw } from "lucide-react";
+import { SearchableSelect } from "../ui/SearchableSelect";
 
 interface FilterOption {
     value: string;
@@ -32,14 +33,8 @@ interface ReportFiltersProps {
     users?: FilterOption[];
     searchTerm?: string;
     onSearchChange?: (value: string) => void;
-
     onApply: () => void;
     onReset: () => void;
-    onExportPDF?: () => void;
-    onExportExcel?: () => void;
-    onExportCSV?: () => void;
-    onPrint?: () => void;
-
     loading?: boolean;
 }
 
@@ -67,10 +62,6 @@ export function ReportFilters({
     onSearchChange,
     onApply,
     onReset,
-    onExportPDF,
-    onExportExcel,
-    onExportCSV,
-    onPrint,
     loading = false
 }: ReportFiltersProps) {
     return (
@@ -84,45 +75,21 @@ export function ReportFilters({
                 {categories.length > 0 && onCategoryChange && (
                     <div>
                         <Label className="text-sm mb-2 block">Категория</Label>
-                        <Select value={categoryId} onValueChange={onCategoryChange} disabled={loading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Все категории" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Все категории</SelectItem>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.value} value={cat.value}>
-                                        {cat.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect value={categoryId || "all"} onChange={onCategoryChange} options={[{ value: "all", label: "Все категории" }, ...categories]} placeholder="Выберите категорию" disabled={loading} />
                     </div>
                 )}
 
                 {materials.length > 0 && onMaterialChange && (
                     <div>
                         <Label className="text-sm mb-2 block">Материал</Label>
-                        <Select value={materialId} onValueChange={onMaterialChange} disabled={loading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Все материалы" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Все материалы</SelectItem>
-                                {materials.map((mat) => (
-                                    <SelectItem key={mat.value} value={mat.value}>
-                                        {mat.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect value={materialId || "all"} onChange={onMaterialChange} options={[{ value: "all", label: "Все материалы" }, ...materials]} placeholder="Выберите материал" disabled={loading} />
                     </div>
                 )}
 
                 {types.length > 0 && onTypeChange && (
                     <div>
                         <Label className="text-sm mb-2 block">Тип операции</Label>
-                        <Select value={type} onValueChange={onTypeChange} disabled={loading}>
+                        <Select value={type || "all"} onValueChange={onTypeChange} disabled={loading}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Все" />
                             </SelectTrigger>
@@ -141,7 +108,7 @@ export function ReportFilters({
                 {statuses.length > 0 && onStatusChange && (
                     <div>
                         <Label className="text-sm mb-2 block">Статус</Label>
-                        <Select value={status} onValueChange={onStatusChange} disabled={loading}>
+                        <Select value={status || "all"} onValueChange={onStatusChange} disabled={loading}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Все" />
                             </SelectTrigger>
@@ -160,19 +127,7 @@ export function ReportFilters({
                 {users.length > 0 && onUserChange && (
                     <div>
                         <Label className="text-sm mb-2 block">Пользователь</Label>
-                        <Select value={userId} onValueChange={onUserChange} disabled={loading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Все пользователи" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Все пользователи</SelectItem>
-                                {users.map((u) => (
-                                    <SelectItem key={u.value} value={u.value}>
-                                        {u.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect value={userId || "all"} onChange={onUserChange} options={[{ value: "all", label: "Все пользователи" }, ...users]} placeholder="Выберите пользователя" disabled={loading} />
                     </div>
                 )}
 
@@ -197,33 +152,6 @@ export function ReportFilters({
                         <RotateCcw className="mr-2 h-4 w-4" />
                         Сбросить
                     </Button>
-                </div>
-
-                <div className="flex gap-2">
-                    {onExportPDF && (
-                        <Button variant="outline" onClick={onExportPDF} disabled={loading}>
-                            <Download className="mr-2 h-4 w-4" />
-                            PDF
-                        </Button>
-                    )}
-                    {onExportExcel && (
-                        <Button variant="outline" onClick={onExportExcel} disabled={loading}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Excel
-                        </Button>
-                    )}
-                    {onExportCSV && (
-                        <Button variant="outline" onClick={onExportCSV} disabled={loading}>
-                            <Download className="mr-2 h-4 w-4" />
-                            CSV
-                        </Button>
-                    )}
-                    {onPrint && (
-                        <Button variant="outline" onClick={onPrint} disabled={loading}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Печать
-                        </Button>
-                    )}
                 </div>
             </div>
         </div>
