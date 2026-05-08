@@ -26,6 +26,12 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
         );
     }
 
+    const getNestedValue = (obj: any, path: string) => {
+        return path.split(".").reduce((current, key) => {
+            return current?.[key];
+        }, obj);
+    };
+
     const formatCellValue = (value: any, formatFn?: (value: any) => string): string => {
         if (value === null || value === undefined) return "";
         if (formatFn) {
@@ -36,20 +42,38 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                 return String(value);
             }
         }
+        if (typeof value === "object") {
+            return JSON.stringify(value);
+        }
         return String(value);
+    };
+
+    const prepareExportData = () => {
+        return data.map((item) => {
+            const row: any = {};
+            columns.forEach((col) => {
+                let value = getNestedValue(item, col.accessorKey);
+                if (col.format) {
+                    value = col.format(value);
+                }
+                row[col.header] = value !== undefined && value !== null ? String(value) : "";
+            });
+            return row;
+        });
     };
 
     const exportToCSV = () => {
         setExporting(true);
         try {
+            const exportData = prepareExportData();
             const headers = columns.map((col) => col.header).join(",");
 
-            const rows = data
-                .map((item) => {
+            const rows = exportData
+                .map((row) => {
                     return columns
                         .map((col) => {
-                            let value = item[col.header];
-                            const formattedValue = formatCellValue(value, col.format);
+                            let value = row[col.header];
+                            const formattedValue = String(value || "");
                             if (formattedValue.includes(",") || formattedValue.includes('"') || formattedValue.includes("\n")) {
                                 return `"${formattedValue.replace(/"/g, '""')}"`;
                             }
@@ -81,17 +105,9 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
         setExporting(true);
         try {
             const XLSX = await import("xlsx");
+            const exportData = prepareExportData();
 
-            const worksheetData = data.map((item) => {
-                const row: any = {};
-                columns.forEach((col) => {
-                    let value = item[col.header];
-                    row[col.header] = formatCellValue(value, col.format);
-                });
-                return row;
-            });
-
-            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, title.substring(0, 31));
 
@@ -106,23 +122,14 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
 
     const exportToPDF = () => {
         setExporting(true);
-
         try {
+            const exportData = prepareExportData();
             const printWindow = window.open("", "_blank");
             if (!printWindow) {
                 alert("Разрешите всплывающие окна для экспорта");
                 setExporting(false);
                 return;
             }
-
-            const formattedData = data.map((item) => {
-                const row: any = {};
-                columns.forEach((col) => {
-                    let value = item[col.header];
-                    row[col.header] = formatCellValue(value, col.format);
-                });
-                return row;
-            });
 
             const html = `
                 <!DOCTYPE html>
@@ -160,7 +167,7 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                         <h1>${title}</h1>
                         <div class="info">
                             Дата формирования: ${new Date().toLocaleDateString("ru-RU")}<br>
-                            Всего записей: ${data.length}
+                            Всего записей: ${exportData.length}
                         </div>
                     </div>
                     <table>
@@ -168,19 +175,13 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
                             <tr>${columns.map((col) => `<th>${col.header}</th>`).join("")}</tr>
                         </thead>
                         <tbody>
-                            ${formattedData
+                            ${exportData
                                 .map(
                                     (row) => `
                                 <tr>
-                                    ${columns
-                                        .map((col) => {
-                                            let value = row[col.header];
-                                            const displayText = String(value || "-");
-                                            return `<td>${displayText.substring(0, 100)}</td>`;
-                                        })
-                                        .join("")}
+                                    ${columns.map((col) => `<td>${String(row[col.header] || "-").substring(0, 100)}</td>`).join("")}
                                 </tr>
-                            `,
+                            `
                                 )
                                 .join("")}
                         </tbody>
