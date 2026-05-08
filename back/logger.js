@@ -103,7 +103,7 @@ class Logger {
     }
 
     static async categoryDeleted(userId, username, categoryName) {
-        await this.log(userId, "category_deleted", "Удаление категории", `[user:${userId}:${username}] удалил категорию: ${categoryName}`);
+        await this.log(userId, "category_deleted", "Удаление категории", `[user:${userId}:${username}] удалить категорию: ${categoryName}`);
     }
 
     // Заявки

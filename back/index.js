@@ -623,7 +623,7 @@ app.post("/categories", authenticateAndCheckDB, checkAdmin, async (req, res) => 
 
         const result = await pool.query(`INSERT INTO materialCategories (name, description, created_by) VALUES ($1, $2, $3) RETURNING *`, [name, description || null, req.user.id]);
 
-        await Logger.log(req.user.id, "category_created", "Создание категории", `Администратор ${req.user.username} создал категорию: ${name}`);
+        await Logger.categoryCreated(req.user.id, req.user.username, name);
 
         res.json({
             message: "Категория создана",
@@ -662,7 +662,7 @@ app.put("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) 
         if (description !== oldCategory.description) changes.push("описание изменено");
 
         if (changes.length > 0) {
-            await Logger.log(req.user.id, "category_updated", "Изменение категории", `Администратор ${req.user.username} изменил категорию "${oldCategory.name}": ${changes.join(", ")}`);
+            await Logger.categoryUpdated(req.user.id, req.user.username, oldCategory.name, changes.join(", "));
         }
 
         res.json({
@@ -702,7 +702,7 @@ app.delete("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, re
 
         const result = await pool.query("DELETE FROM materialCategories WHERE id = $1 RETURNING id, name", [categoryId]);
 
-        await Logger.log(req.user.id, "category_deleted", "Удаление категории", `Администратор ${req.user.username} удалил категорию: ${categoryName}`);
+        await Logger.categoryDeleted(req.user.id, req.user.username, categoryName);
 
         res.json({
             message: "Категория удалена",
