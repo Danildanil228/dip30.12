@@ -32,21 +32,21 @@ export default function ExportButton({ data, columns, filename, title }: ExportB
         }, obj);
     };
 
-    const formatCellValue = (value: any, formatFn?: (value: any) => string): string => {
-        if (value === null || value === undefined) return "";
-        if (formatFn) {
-            try {
-                const result = formatFn(value);
-                return result || "";
-            } catch {
-                return String(value);
-            }
-        }
-        if (typeof value === "object") {
-            return JSON.stringify(value);
-        }
-        return String(value);
-    };
+    // const formatCellValue = (value: any, formatFn?: (value: any) => string): string => {
+    //     if (value === null || value === undefined) return "";
+    //     if (formatFn) {
+    //         try {
+    //             const result = formatFn(value);
+    //             return result || "";
+    //         } catch {
+    //             return String(value);
+    //         }
+    //     }
+    //     if (typeof value === "object") {
+    //         return JSON.stringify(value);
+    //     }
+    //     return String(value);
+    // };
 
     const prepareExportData = () => {
         return data.map((item) => {
