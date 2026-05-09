@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
 import { useMaterials } from "@/hooks/useMaterials";
@@ -7,9 +6,13 @@ import EditCategoryDialog from "@/components/Dialog/EditCategoryDialog";
 import CreateCategoryDialog from "@/components/Dialog/CreateCategoryDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { DataTable } from "@/components/ui/DataTable";
+import { ExportDropdown } from "@/components/ExportDropdown";
 import type { Category } from "@/types/material.types";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { ExportColumn } from "@/services/exportService";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ArrowUpDown } from "lucide-react";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -28,6 +31,8 @@ export default function Categories() {
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [_categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+    // const [multipleDeleteIds, setMultipleDeleteIds] = useState<number[]>([]);
+    // const [isMultipleDelete, setIsMultipleDelete] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [isChecking, setIsChecking] = useState(false);
 
@@ -61,7 +66,6 @@ export default function Categories() {
         setIsChecking(true);
         let hasError = false;
         let errorMessage = "";
-        // let errorCategory = "";
 
         for (const id of selectedIds) {
             try {
@@ -72,7 +76,6 @@ export default function Categories() {
                 const category = categories.find((c) => c.id === id);
                 if (materialCount) {
                     errorMessage = `В категории "${category?.name}" находится ${materialCount} материалов. Сначала удалите или переместите их.`;
-                    // errorCategory = category?.name || `ID ${id}`;
                 } else {
                     errorMessage = error.response?.data?.error || "Не удалось удалить категорию";
                 }
@@ -94,28 +97,34 @@ export default function Categories() {
         setDeleteError(null);
     };
 
-    const columns = (): ColumnDef<Category>[] => [
-        {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
-            ),
-            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
-            enableSorting: false,
-            enableHiding: false
-        },
+    // Колонки для экспорта
+    const exportColumns: ExportColumn<Category>[] = [
+        { key: "id", header: "ID" },
+        { key: "name", header: "Название" },
+        { key: "description", header: "Описание", format: (v) => v || "-" },
+        { key: "created_by_username", header: "Создал", format: (v) => v || "-" },
+        { key: "created_at", header: "Дата создания", format: (v) => formatDate(v) },
+    ];
+
+    // Колонки для таблицы
+    const columns: ColumnDef<Category>[] = [
         {
             accessorKey: "id",
-            header: "ID"
+            header: "ID",
         },
         {
             accessorKey: "name",
-            header: "Название"
+            header: ({ column }) => (
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Название
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            ),
         },
         {
             accessorKey: "description",
             header: "Описание",
-            cell: ({ row }) => <div className="max-w-50 truncate">{row.original.description || "-"}</div>
+            cell: ({ row }) => <div className="max-w-50 truncate">{row.original.description || "-"}</div>,
         },
         {
             accessorKey: "created_by_username",
@@ -131,15 +140,15 @@ export default function Categories() {
                 ) : (
                     <p>{username}</p>
                 );
-            }
+            },
         },
         {
             accessorKey: "created_at",
             header: "Дата создания",
-            cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>
+            cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
         },
         {
-            accessorKey: "actions",
+            id: "actions",
             header: "Функции",
             cell: ({ row }) => {
                 const category = row.original;
@@ -150,9 +159,11 @@ export default function Categories() {
                         <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить категорию" onClick={() => handleDeleteClick(category)} />
                     </div>
                 );
-            }
-        }
+            },
+        },
     ];
+
+    const customToolbar = <ExportDropdown data={categories} columns={exportColumns} filename="categories" title="Категории материалов" />;
 
     return (
         <section className="mx-auto">
@@ -163,15 +174,13 @@ export default function Categories() {
             </div>
 
             <DataTable
-                columns={columns()}
+                columns={columns}
                 data={categories}
                 loading={loading || isChecking}
                 searchPlaceholder="Поиск по названию..."
                 onDeleteSelected={isAdmin ? handleDeleteSelected : undefined}
+                customToolbar={customToolbar}
                 showCheckboxes={isAdmin}
-                exportFilename="categories"
-                exportTitle="Категории материалов"
-                skipExportColumns={["actions"]}
             />
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={closeDialog}>
@@ -179,7 +188,7 @@ export default function Categories() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Невозможно удалить</AlertDialogTitle>
                         <AlertDialogDescription>
-                            <span className="">{deleteError}</span>
+                            <span>{deleteError}</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

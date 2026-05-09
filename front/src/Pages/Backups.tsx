@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Download } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
@@ -8,8 +7,10 @@ import { useBackups } from "@/hooks/useBackups";
 import CreateBackupDialog from "@/components/Dialog/CreateBackupDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { DataTable } from "@/components/ui/DataTable";
+import { ExportDropdown } from "@/components/ExportDropdown";
 import type { Backup } from "@/types/backup.types";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { ExportColumn } from "@/services/exportService";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -65,20 +66,16 @@ export default function Backups() {
         }
     };
 
-    const columns = (): ColumnDef<Backup>[] => [
-        {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
-            enableSorting: false,
-            enableHiding: false,
-        },
+    const exportColumns: ExportColumn<Backup>[] = [
+        { key: "id", header: "ID" },
+        { key: "filename", header: "Имя файла" },
+        { key: "description", header: "Описание", format: (v) => v || "-" },
+        { key: "file_size", header: "Размер", format: (v) => formatFileSize(v) },
+        { key: "created_by_username", header: "Создал", format: (v) => v || "-" },
+        { key: "created_at", header: "Дата создания", format: (v) => formatDate(v) },
+    ];
+
+    const columns: ColumnDef<Backup>[] = [
         {
             accessorKey: "id",
             header: "ID",
@@ -120,7 +117,7 @@ export default function Backups() {
             cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
         },
         {
-            accessorKey: "actions",
+            id: "actions",
             header: "Функции",
             cell: ({ row }) => {
                 const backup = row.original;
@@ -156,7 +153,7 @@ export default function Backups() {
         },
     ];
 
-    // const totalSize = backups.reduce((sum, b) => sum + (typeof b.file_size === "number" ? b.file_size : 0), 0);
+    const customToolbar = <ExportDropdown data={backups} columns={exportColumns} filename="backups" title="Бэкапы базы данных" />;
 
     return (
         <section className="mx-auto">
@@ -167,15 +164,13 @@ export default function Backups() {
             </div>
 
             <DataTable
-                columns={columns()}
+                columns={columns}
                 data={backups}
                 loading={loading}
                 searchPlaceholder="Поиск по имени файла..."
                 onDeleteSelected={isAdmin ? handleDeleteSelected : undefined}
+                customToolbar={customToolbar}
                 showCheckboxes={isAdmin}
-                exportFilename="backups"
-                exportTitle="Бэкапы базы данных"
-                skipExportColumns={["actions"]}
             />
         </section>
     );

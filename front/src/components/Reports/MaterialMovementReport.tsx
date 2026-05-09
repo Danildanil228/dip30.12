@@ -3,12 +3,13 @@ import { ReportFilters } from "./ReportFilters";
 import { ReportTable } from "./ReportTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, subMonths } from "date-fns";
-import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useReports } from "@/hooks/useReports";
 import { materialService } from "@/services/materialService";
 import type { MovementItem } from "@/types/report.types";
+import type { ExportColumn } from "@/services/exportService";
+import { ExportDropdown } from "../ExportDropdown";
 
 export function MaterialMovementReport() {
     const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 1));
@@ -111,6 +112,17 @@ export function MaterialMovementReport() {
         { key: "created_by_username", header: "Кто создал", width: "120px" },
     ];
 
+    const exportColumns: ExportColumn<MovementItem>[] = [
+        { key: "date", header: "Дата", format: (v) => format(new Date(v), "dd.MM.yyyy") },
+        { key: "request_title", header: "Заявка" },
+        { key: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
+        { key: "material_name", header: "Материал" },
+        { key: "code", header: "Код" },
+        { key: "category_name", header: "Категория" },
+        { key: "quantity", header: "Кол-во", format: (v) => v?.toLocaleString() || "0" },
+        { key: "created_by_username", header: "Кто создал", format: (v) => v || "-" },
+    ];
+
     if (loading) {
         return <LoadingSpinner />;
     }
@@ -136,21 +148,9 @@ export function MaterialMovementReport() {
                 loading={loading || filterLoading}
             />
 
-            <ExportButton
-                data={data}
-                columns={[
-                    { accessorKey: "date", header: "Дата", format: (v) => format(new Date(v), "dd.MM.yyyy") },
-                    { accessorKey: "request_title", header: "Заявка" },
-                    { accessorKey: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
-                    { accessorKey: "material_name", header: "Материал" },
-                    { accessorKey: "code", header: "Код" },
-                    { accessorKey: "category_name", header: "Категория" },
-                    { accessorKey: "quantity", header: "Кол-во", format: (v) => v?.toLocaleString() },
-                    { accessorKey: "created_by_username", header: "Кто создал" },
-                ]}
-                filename="material_movement"
-                title="Отчет по движению материалов"
-            />
+            <div className="flex justify-end mb-4">
+                <ExportDropdown data={data} columns={exportColumns} filename="material_movement" title="Отчет по движению материалов" />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Card>

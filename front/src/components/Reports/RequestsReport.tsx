@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, subMonths } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useReports } from "@/hooks/useReports";
 import { userService } from "@/services/userService";
+import type { ExportColumn } from "@/services/exportService";
+import { ExportDropdown } from "../ExportDropdown";
 
 interface RequestItem {
     id: number;
@@ -118,6 +119,36 @@ export function RequestsReport() {
         { key: "items_preview", header: "Товары", width: "150px", format: (v: any) => (v ? v.map((i: any) => `${i.name} (${i.quantity})`).join(", ") : "-") },
     ];
 
+    const exportColumns: ExportColumn<RequestItem>[] = [
+        { key: "id", header: "№" },
+        { key: "title", header: "Название" },
+        { key: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
+        {
+            key: "status",
+            header: "Статус",
+            format: (v) => {
+                switch (v) {
+                    case "pending":
+                        return "На рассмотрении";
+                    case "approved":
+                        return "Подтверждена";
+                    case "rejected":
+                        return "Отклонена";
+                    default:
+                        return v;
+                }
+            },
+        },
+        { key: "created_by_username", header: "Создал", format: (v) => v || "-" },
+        { key: "reviewed_by_username", header: "Рассмотрел", format: (v) => v || "-" },
+        { key: "created_at", header: "Дата создания", format: (v) => format(new Date(v), "dd.MM.yyyy") },
+        {
+            key: "items_preview",
+            header: "Товары",
+            format: (v) => (v ? v.map((i: any) => `${i.name} (${i.quantity})`).join(", ") : "-"),
+        },
+    ];
+
     if (loading) {
         return <LoadingSpinner />;
     }
@@ -143,36 +174,9 @@ export function RequestsReport() {
                 loading={loading}
             />
 
-            <ExportButton
-                data={data}
-                columns={[
-                    { accessorKey: "id", header: "№" },
-                    { accessorKey: "title", header: "Название" },
-                    { accessorKey: "request_type", header: "Тип", format: (v) => (v === "incoming" ? "Приход" : "Расход") },
-                    {
-                        accessorKey: "status",
-                        header: "Статус",
-                        format: (v) => {
-                            switch (v) {
-                                case "pending":
-                                    return "На рассмотрении";
-                                case "approved":
-                                    return "Подтверждена";
-                                case "rejected":
-                                    return "Отклонена";
-                                default:
-                                    return v;
-                            }
-                        },
-                    },
-                    { accessorKey: "created_by_username", header: "Создал" },
-                    { accessorKey: "reviewed_by_username", header: "Рассмотрел", format: (v) => v || "-" },
-                    { accessorKey: "created_at", header: "Дата создания", format: (v) => format(new Date(v), "dd.MM.yyyy") },
-                    { accessorKey: "items_preview", header: "Товары", format: (v) => (v ? v.map((i: any) => `${i.name} (${i.quantity})`).join(", ") : "-") },
-                ]}
-                filename="requests"
-                title="Отчет по заявкам"
-            />
+            <div className="flex justify-end mb-4">
+                <ExportDropdown data={data} columns={exportColumns} filename="requests" title="Отчет по заявкам" />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <Card>

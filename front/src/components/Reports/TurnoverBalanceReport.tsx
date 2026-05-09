@@ -3,11 +3,12 @@ import { ReportFilters } from "./ReportFilters";
 import { ReportTable } from "./ReportTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, subMonths } from "date-fns";
-import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useReports } from "@/hooks/useReports";
 import type { TurnoverItem } from "@/types/report.types";
+import type { ExportColumn } from "@/services/exportService";
+import { ExportDropdown } from "../ExportDropdown";
 
 export function TurnoverBalanceReport() {
     const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 1));
@@ -91,6 +92,17 @@ export function TurnoverBalanceReport() {
         { key: "closing_balance", header: "Кон. остаток", width: "100px", format: (v: number, _row: any) => <span className={getBalanceClass(v)}>{formatNumber(v)}</span> },
     ];
 
+    const exportColumns: ExportColumn<TurnoverItem>[] = [
+        { key: "name", header: "Материал" },
+        { key: "code", header: "Код" },
+        { key: "unit", header: "Ед." },
+        { key: "category_name", header: "Категория" },
+        { key: "opening_balance", header: "Нач. остаток", format: (v) => v?.toLocaleString() || "0" },
+        { key: "incoming", header: "Приход", format: (v) => v?.toLocaleString() || "0" },
+        { key: "outgoing", header: "Расход", format: (v) => v?.toLocaleString() || "0" },
+        { key: "closing_balance", header: "Кон. остаток", format: (v) => v?.toLocaleString() || "0" },
+    ];
+
     if (loading) {
         return <LoadingSpinner />;
     }
@@ -110,21 +122,9 @@ export function TurnoverBalanceReport() {
                 loading={loading}
             />
 
-            <ExportButton
-                data={data}
-                columns={[
-                    { accessorKey: "name", header: "Материал" },
-                    { accessorKey: "code", header: "Код" },
-                    { accessorKey: "unit", header: "Ед." },
-                    { accessorKey: "category_name", header: "Категория" },
-                    { accessorKey: "opening_balance", header: "Нач. остаток", format: (v) => v?.toLocaleString() },
-                    { accessorKey: "incoming", header: "Приход", format: (v) => v?.toLocaleString() },
-                    { accessorKey: "outgoing", header: "Расход", format: (v) => v?.toLocaleString() },
-                    { accessorKey: "closing_balance", header: "Кон. остаток", format: (v) => v?.toLocaleString() },
-                ]}
-                filename="turnover_balance"
-                title="Оборотно-сальдовая ведомость"
-            />
+            <div className="flex justify-end mb-4">
+                <ExportDropdown data={data} columns={exportColumns} filename="turnover_balance" title="Оборотно-сальдовая ведомость" />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <Card>
