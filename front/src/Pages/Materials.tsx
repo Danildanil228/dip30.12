@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
 import { useMaterials } from "@/hooks/useMaterials";
@@ -7,9 +6,13 @@ import EditMaterialDialog from "@/components/Dialog/EditMaterialDialog";
 import CreateMaterialDialog from "@/components/Dialog/CreateMaterialDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { DataTable } from "@/components/ui/DataTable";
+import { ExportDropdown } from "@/components/ExportDropdown";
 import type { Material } from "@/types/material.types";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { ExportColumn } from "@/services/exportService";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ArrowUpDown } from "lucide-react";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -87,41 +90,48 @@ export default function Materials() {
         }
     };
 
-    const columns = (): ColumnDef<Material>[] => [
-        {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
-            ),
-            cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
-            enableSorting: false,
-            enableHiding: false
-        },
+    const exportColumns: ExportColumn<Material>[] = [
+        { key: "id", header: "ID" },
+        { key: "name", header: "Название" },
+        { key: "code", header: "Код" },
+        { key: "quantity", header: "Количество", format: (v) => v?.toLocaleString() || "0" },
+        { key: "unit", header: "Ед. измерения" },
+        { key: "category_name", header: "Категория", format: (v) => v || "Без категории" },
+        { key: "created_by_username", header: "Создал", format: (v) => v || "-" },
+        { key: "created_at", header: "Дата создания", format: (v) => formatDate(v) },
+    ];
+
+    const columns: ColumnDef<Material>[] = [
         {
             accessorKey: "id",
-            header: "ID"
+            header: "ID",
         },
         {
             accessorKey: "name",
-            header: "Название"
+            header: ({ column }) => (
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Название
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            ),
         },
         {
             accessorKey: "code",
-            header: "Код"
+            header: "Код",
         },
         {
             accessorKey: "quantity",
             header: "Количество",
-            cell: ({ row }) => <div className="text-center">{row.original.quantity}</div>
+            cell: ({ row }) => <div className="text-center">{row.original.quantity}</div>,
         },
         {
             accessorKey: "unit",
-            header: "Ед. измерения"
+            header: "Ед. измерения",
         },
         {
             accessorKey: "category_name",
             header: "Категория",
-            cell: ({ row }) => <div>{row.original.category_name || "Без категории"}</div>
+            cell: ({ row }) => <div>{row.original.category_name || "Без категории"}</div>,
         },
         {
             accessorKey: "created_by_username",
@@ -137,15 +147,15 @@ export default function Materials() {
                 ) : (
                     <p>{username}</p>
                 );
-            }
+            },
         },
         {
             accessorKey: "created_at",
             header: "Дата создания",
-            cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>
+            cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
         },
         {
-            accessorKey: "actions",
+            id: "actions",
             header: "Функции",
             cell: ({ row }) => {
                 const material = row.original;
@@ -156,9 +166,11 @@ export default function Materials() {
                         <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" title="Удалить материал" onClick={() => handleDeleteClick(material)} />
                     </div>
                 );
-            }
-        }
+            },
+        },
     ];
+
+    const customToolbar = <ExportDropdown data={materials} columns={exportColumns} filename="materials" title="Материалы" />;
 
     return (
         <section className="mx-auto">
@@ -169,15 +181,13 @@ export default function Materials() {
             </div>
 
             <DataTable
-                columns={columns()}
+                columns={columns}
                 data={materials}
                 loading={loading}
                 searchPlaceholder="Поиск по названию, коду..."
                 onDeleteSelected={isAdmin ? handleDeleteSelected : undefined}
+                customToolbar={customToolbar}
                 showCheckboxes={isAdmin}
-                exportFilename="materials"
-                exportTitle="Материалы"
-                skipExportColumns={["actions"]}
             />
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -186,9 +196,9 @@ export default function Materials() {
                         <AlertDialogTitle>{deleteErrorMessage ? "Невозможно удалить" : deleteError ? "Ошибка" : "Удалить материал?"}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {deleteErrorMessage ? (
-                                <span className="">{deleteErrorMessage}</span>
+                                <span>{deleteErrorMessage}</span>
                             ) : deleteError ? (
-                                <span className="">{deleteError}</span>
+                                <span>{deleteError}</span>
                             ) : isMultipleDelete ? (
                                 `Вы уверены, что хотите удалить ${multipleDeleteIds.length} выбранных материалов? Это действие нельзя отменить.`
                             ) : (

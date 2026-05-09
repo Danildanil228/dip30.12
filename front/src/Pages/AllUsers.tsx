@@ -1,16 +1,17 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowUpDown } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AddUserDialog from "@/components/Dialog/AddUserDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { DataTable } from "@/components/ui/DataTable";
+import { ExportDropdown } from "@/components/ExportDropdown";
 import { useUsers } from "@/hooks/useUsers";
 import { useUser } from "@/hooks/useUser";
 import type { User } from "@/types/user.types";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { ExportColumn } from "@/services/exportService";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -53,20 +54,25 @@ export default function AllUsers() {
         }
     };
 
+    // Колонки для экспорта
+    const exportColumns: ExportColumn<User>[] = [
+        { key: "id", header: "ID" },
+        { key: "username", header: "Логин" },
+        { key: "name", header: "Имя" },
+        { key: "secondname", header: "Фамилия" },
+        {
+            key: "role",
+            header: "Роль",
+            format: (v) => (v === "admin" ? "Администратор" : v === "accountant" ? "Бухгалтер" : "Кладовщик"),
+        },
+        { key: "created_at", header: "Дата создания", format: (v) => formatDate(v) },
+    ];
+
     const columns = useMemo<ColumnDef<User>[]>(
         () => [
             {
-                id: "select",
-                header: ({ table }) => (
-                    <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
-                ),
-                cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
-                enableSorting: false,
-                enableHiding: false
-            },
-            {
                 accessorKey: "id",
-                header: "ID"
+                header: "ID",
             },
             {
                 accessorKey: "username",
@@ -75,15 +81,15 @@ export default function AllUsers() {
                         Логин
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
-                )
+                ),
             },
             {
                 accessorKey: "name",
-                header: "Имя"
+                header: "Имя",
             },
             {
                 accessorKey: "secondname",
-                header: "Фамилия"
+                header: "Фамилия",
             },
             {
                 accessorKey: "role",
@@ -93,7 +99,7 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>
+                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>,
             },
             {
                 accessorKey: "created_at",
@@ -103,10 +109,10 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>
+                cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
             },
             {
-                accessorKey: "actions",
+                id: "actions",
                 header: "Функции",
                 cell: ({ row }) => {
                     const user = row.original;
@@ -134,11 +140,13 @@ export default function AllUsers() {
                             </AlertDialog>
                         </div>
                     );
-                }
-            }
+                },
+            },
         ],
-        [currentUser]
+        [currentUser],
     );
+
+    const customToolbar = <ExportDropdown data={users} columns={exportColumns} filename="users" title="Пользователи" />;
 
     return (
         <section className="mx-auto">
@@ -148,16 +156,7 @@ export default function AllUsers() {
                 <AddUserDialog onUserCreated={() => window.location.reload()} />
             </div>
 
-            <DataTable
-                columns={columns}
-                data={users}
-                loading={loading}
-                searchPlaceholder="Поиск по логину или имени..."
-                onDeleteSelected={handleDeleteSelected}
-                exportFilename="users"
-                exportTitle="Пользователи"
-                skipExportColumns={["actions"]}
-            />
+            <DataTable columns={columns} data={users} loading={loading} searchPlaceholder="Поиск по логину или имени..." onDeleteSelected={handleDeleteSelected} customToolbar={customToolbar} showCheckboxes={true} />
         </section>
     );
 }

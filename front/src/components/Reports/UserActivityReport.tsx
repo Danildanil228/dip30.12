@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, subMonths } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import ExportButton from "../ExportButton";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useReports } from "@/hooks/useReports";
 import type { UserActivity } from "@/types/report.types";
+import type { ExportColumn } from "@/services/exportService";
+import { ExportDropdown } from "../ExportDropdown";
 
 export function UserActivityReport() {
     const navigate = useNavigate();
@@ -38,9 +39,7 @@ export function UserActivityReport() {
             const totalApproved = userData.reduce((sum: number, u: UserActivity) => sum + (Number(u.requests_approved) || 0), 0);
             const totalRejected = userData.reduce((sum: number, u: UserActivity) => sum + (Number(u.requests_rejected) || 0), 0);
             const totalInventories = userData.reduce((sum: number, u: UserActivity) => sum + (Number(u.inventories_completed) || 0), 0);
-            const activeUsers = userData.filter(
-                (u: UserActivity) => (Number(u.requests_created) || 0) > 0 || (Number(u.requests_approved) || 0) > 0 || (Number(u.inventories_completed) || 0) > 0,
-            ).length;
+            const activeUsers = userData.filter((u: UserActivity) => (Number(u.requests_created) || 0) > 0 || (Number(u.requests_approved) || 0) > 0 || (Number(u.inventories_completed) || 0) > 0).length;
 
             setSummary({
                 total_requests: totalRequests,
@@ -107,6 +106,34 @@ export function UserActivityReport() {
         { key: "inventories_completed", header: "Инвентаризаций проведено", width: "160px", format: (v: number) => <span>{formatNumber(v)}</span> },
     ];
 
+    const exportColumns: ExportColumn<UserActivity>[] = [
+        {
+            key: "name",
+            header: "Пользователь",
+            format: (_v, row) => `${row?.name || ""} ${row?.secondname || ""}`.trim() || "-",
+        },
+        {
+            key: "role",
+            header: "Роль",
+            format: (v) => {
+                switch (v) {
+                    case "admin":
+                        return "Администратор";
+                    case "accountant":
+                        return "Бухгалтер";
+                    case "storekeeper":
+                        return "Кладовщик";
+                    default:
+                        return v;
+                }
+            },
+        },
+        { key: "requests_created", header: "Создано заявок", format: (v) => (Number(v) || 0).toLocaleString() },
+        { key: "requests_approved", header: "Подтверждено", format: (v) => (Number(v) || 0).toLocaleString() },
+        { key: "requests_rejected", header: "Отклонено", format: (v) => (Number(v) || 0).toLocaleString() },
+        { key: "inventories_completed", header: "Инвентаризаций", format: (v) => (Number(v) || 0).toLocaleString() },
+    ];
+
     const handleRowClick = (row: UserActivity) => {
         navigate(`/profile/${row.id}`);
     };
@@ -121,34 +148,9 @@ export function UserActivityReport() {
         <div className="space-y-4">
             <ReportFilters startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} onApply={handleApply} onReset={handleReset} loading={loading} />
 
-            <ExportButton
-                data={activeData}
-                columns={[
-                    { accessorKey: "name", header: "Пользователь", format: (v: any) => v || "-" },
-                    {
-                        accessorKey: "role",
-                        header: "Роль",
-                        format: (v: string) => {
-                            switch (v) {
-                                case "admin":
-                                    return "Администратор";
-                                case "accountant":
-                                    return "Бухгалтер";
-                                case "storekeeper":
-                                    return "Кладовщик";
-                                default:
-                                    return v;
-                            }
-                        },
-                    },
-                    { accessorKey: "requests_created", header: "Создано заявок", format: (v: number) => (Number(v) || 0).toLocaleString() },
-                    { accessorKey: "requests_approved", header: "Подтверждено", format: (v: number) => (Number(v) || 0).toLocaleString() },
-                    { accessorKey: "requests_rejected", header: "Отклонено", format: (v: number) => (Number(v) || 0).toLocaleString() },
-                    { accessorKey: "inventories_completed", header: "Инвентаризаций проведено", format: (v: number) => (Number(v) || 0).toLocaleString() },
-                ]}
-                filename="user_activity"
-                title="Активность пользователей"
-            />
+            <div className="flex justify-end mb-4">
+                <ExportDropdown data={activeData} columns={exportColumns} filename="user_activity" title="Активность пользователей" />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <Card>
