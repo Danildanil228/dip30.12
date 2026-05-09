@@ -9,10 +9,9 @@ interface ExportDropdownProps<T> {
     columns: ExportColumn<T>[];
     filename: string;
     title: string;
-    disabled?: boolean;
 }
 
-export function ExportDropdown<T>({ data, columns, filename, title, disabled = false }: ExportDropdownProps<T>) {
+export function ExportDropdown<T>({ data, columns, filename, title }: ExportDropdownProps<T>) {
     const { exporting, exportToCSV, exportToExcel, exportToPDF } = useExport({
         data,
         columns,
@@ -20,7 +19,7 @@ export function ExportDropdown<T>({ data, columns, filename, title, disabled = f
         title,
     });
 
-    if (data.length === 0) {
+    if (!data.length) {
         return (
             <Button variant="outline" disabled>
                 <Download className="mr-2 h-4 w-4" />
@@ -32,21 +31,21 @@ export function ExportDropdown<T>({ data, columns, filename, title, disabled = f
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={disabled || exporting}>
+                <Button variant="outline" disabled={exporting}>
                     {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {exporting ? "Экспорт..." : "Экспорт"}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={exportToPDF} disabled={exporting}>
+                <DropdownMenuItem onClick={exportToPDF}>
                     <FileText className="mr-2 h-4 w-4" />
                     PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportToExcel} disabled={exporting}>
+                <DropdownMenuItem onClick={exportToExcel}>
                     <FileSpreadsheet className="mr-2 h-4 w-4" />
                     Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportToCSV} disabled={exporting}>
+                <DropdownMenuItem onClick={exportToCSV}>
                     <File className="mr-2 h-4 w-4" />
                     CSV
                 </DropdownMenuItem>
