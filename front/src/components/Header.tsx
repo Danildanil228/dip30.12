@@ -32,7 +32,7 @@ export default function Header() {
     };
 
     return (
-        <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4!">
+        <section className="container flex flex-wrap justify-between lg:border-none border-b py-4! sm:mb-0! mb-4! bg-background sm:rounded-2xl z-10">
             <Link to="/profile">{user.role === "admin" ? "Администратор" : user.role === "storekeeper" ? "Работник склада" : user.role === "accountant" ? "Бухгалтер" : "Неизвестная роль"}</Link>
             <Link to="/profile" className="lg:flex hidden">
                 {user.name} {user.secondname}

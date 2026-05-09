@@ -153,7 +153,7 @@ export default function Inventories() {
         <div>
             <ScrollToTop />
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <h1 className="text-2xl font-bold">Инвентаризация</h1>
+                <h1 className="text-2xl font-bold bg-background! z-10">Инвентаризация</h1>
                 {isAdminOrAccountant && <Button onClick={() => setShowCreateDialog(true)}>Создать</Button>}
             </div>
 
@@ -167,11 +167,11 @@ export default function Inventories() {
                             setSearchTerm(e.target.value);
                             setCurrentPage(0);
                         }}
-                        className="pl-10"
+                        className="pl-10 bg-background! z-10"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button
+                    <Button className="z-10"
                         variant={statusFilter === "all" ? "default" : "outline"}
                         onClick={() => {
                             setStatusFilter("all");
@@ -180,7 +180,7 @@ export default function Inventories() {
                     >
                         Все
                     </Button>
-                    <Button
+                    <Button className="z-10"
                         variant={statusFilter === "draft" ? "default" : "outline"}
                         onClick={() => {
                             setStatusFilter("draft");
@@ -189,7 +189,7 @@ export default function Inventories() {
                     >
                         Черновики
                     </Button>
-                    <Button
+                    <Button className="z-10"
                         variant={statusFilter === "in_progress" ? "default" : "outline"}
                         onClick={() => {
                             setStatusFilter("in_progress");
@@ -198,7 +198,7 @@ export default function Inventories() {
                     >
                         В процессе
                     </Button>
-                    <Button
+                    <Button className="z-10"
                         variant={statusFilter === "completed" ? "default" : "outline"}
                         onClick={() => {
                             setStatusFilter("completed");
@@ -207,7 +207,7 @@ export default function Inventories() {
                     >
                         Завершены
                     </Button>
-                    <Button
+                    <Button className="z-10"
                         variant={statusFilter === "approved" ? "default" : "outline"}
                         onClick={() => {
                             setStatusFilter("approved");
@@ -216,7 +216,7 @@ export default function Inventories() {
                     >
                         Утверждены
                     </Button>
-                    <Button
+                    <Button className="z-10"
                         variant={statusFilter === "cancelled" ? "default" : "outline"}
                         onClick={() => {
                             setStatusFilter("cancelled");
@@ -230,13 +230,14 @@ export default function Inventories() {
 
             {filteredInventories.length > itemsPerPage && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                    <div className="text-sm text-muted-foreground">Всего инвентаризаций: {filteredInventories.length}</div>
+                    <div className="text-sm text-muted-foreground bg-background! z-10">Всего инвентаризаций: {filteredInventories.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
+                        <Button variant="outline" className="bg-background! z-10" size="sm" onClick={handleToggleShowAll}>
                             {showAll ? "Свернуть" : "Развернуть"}
                         </Button>
                         {!showAll && (
                             <>
+                            <div className="flex items-center gap-2 bg-background! z-10">
                                 <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
                                     {"<"}
                                 </Button>
@@ -246,6 +247,8 @@ export default function Inventories() {
                                 <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
                                     {">"}
                                 </Button>
+                            </div>
+                                
                             </>
                         )}
                     </div>
@@ -253,8 +256,9 @@ export default function Inventories() {
             )}
 
             <div className="space-y-4">
+
                 {paginatedInventories.length === 0 ? (
-                    <div className="text-center py-10 text-muted-foreground">Инвентаризаций не найдено</div>
+                    <div className="justify-center flex"><p className="my-10 text-muted-foreground bg-background! z-10">Инвентаризаций не найдено</p></div>
                 ) : (
                     paginatedInventories.map((inventory) => (
                         <Card key={inventory.id} className="overflow-hidden">

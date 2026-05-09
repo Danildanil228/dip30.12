@@ -176,7 +176,7 @@ export default function Materials() {
         <section className="mx-auto">
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Материалы</h1>
+                <h1 className="text-2xl font-bold bg-background z-10">Материалы</h1>
                 {isAdmin && <CreateMaterialDialog onMaterialCreated={fetchMaterials} />}
             </div>
 

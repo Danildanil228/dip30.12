@@ -153,7 +153,7 @@ export function MaterialMovementReport() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card>
+                <Card className="z-10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm text-green-600">Приход</CardTitle>
                     </CardHeader>
@@ -161,7 +161,7 @@ export function MaterialMovementReport() {
                         <div className="text-2xl font-bold">{summary.incoming.toLocaleString()} ед.</div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="z-10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm text-red-600">Расход</CardTitle>
                     </CardHeader>
@@ -169,7 +169,7 @@ export function MaterialMovementReport() {
                         <div className="text-2xl font-bold">{summary.outgoing.toLocaleString()} ед.</div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="z-10">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm">Оборот</CardTitle>
                     </CardHeader>

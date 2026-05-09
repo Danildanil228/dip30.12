@@ -57,7 +57,7 @@ export function DateRangePicker({ startDate, endDate, onStartDateChange, onEndDa
         <div className={cn("flex flex-col sm:flex-row gap-2", className)}>
             <div className="relative">
                 <Popover open={startOpen} onOpenChange={setStartOpen}>
-                    <PopoverTrigger asChild>
+                    <PopoverTrigger asChild className="bg-background! z-10">
                         <Button variant="outline" className={cn("justify-start", startError && "border-red-500")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {startDate ? format(startDate, "dd.MM.yyyy") : "Дата начала"}
@@ -71,7 +71,7 @@ export function DateRangePicker({ startDate, endDate, onStartDateChange, onEndDa
 
             <div className="relative">
                 <Popover open={endOpen} onOpenChange={setEndOpen}>
-                    <PopoverTrigger asChild>
+                    <PopoverTrigger asChild className="bg-background! z-10">
                         <Button variant="outline" className={cn("justify-start", endError && "border-red-500")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {endDate ? format(endDate, "dd.MM.yyyy") : "Дата окончания"}

@@ -159,7 +159,7 @@ export default function Backups() {
         <section className="mx-auto">
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6 gap-1">
-                <h1 className="text-2xl font-bold text-wrap">Бэкапы базы данных</h1>
+                <h1 className="text-2xl font-bold text-wrap bg-background! z-10">Бэкапы базы данных</h1>
                 {isAdmin && <CreateBackupDialog onBackupCreated={fetchBackups} />}
             </div>
 

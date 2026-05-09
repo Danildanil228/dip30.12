@@ -31,7 +31,7 @@ export function ReportTable({ columns, data, onRowClick, itemsPerPage = 10 }: Re
     return (
         <div className="space-y-4">
             <div className="border rounded-lg overflow-hidden">
-                <Table>
+                <Table className="bg-background z-10">
                     <TableHeader>
                         <TableRow>
                             {columns.map((col) => (
@@ -55,10 +55,10 @@ export function ReportTable({ columns, data, onRowClick, itemsPerPage = 10 }: Re
 
             {totalPages > 1 && (
                 <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground bg-background! z-10">
                         Показано {startIndex + 1}-{Math.min(startIndex + itemsPerPage, data.length)} из {data.length}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 bg-background! z-10">
                         <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>

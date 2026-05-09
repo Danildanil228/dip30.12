@@ -169,7 +169,7 @@ export default function Categories() {
         <section className="mx-auto">
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Категории материалов</h1>
+                <h1 className="text-2xl font-bold bg-background z-10">Категории материалов</h1>
                 {isAdmin && <CreateCategoryDialog onCategoryCreated={fetchCategories} />}
             </div>
 

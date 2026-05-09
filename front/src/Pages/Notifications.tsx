@@ -78,7 +78,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
         { value: "inventory_approved", label: "Подтверждение инвентаризации", category: "inventories" },
         { value: "inventory_cancelled", label: "Отмена инвентаризации", category: "inventories" },
         { value: "inventory_updated", label: "Изменение инвентаризации", category: "inventories" },
-        { value: "inventory_deleted", label: "Удаление инвентаризации", category: "inventories" }
+        { value: "inventory_deleted", label: "Удаление инвентаризации", category: "inventories" },
     ];
 
     const handleTypeChange = (type: string, checked: boolean) => {
@@ -103,7 +103,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                 if (textPart) {
                     parts.push({
                         type: "text",
-                        content: textPart
+                        content: textPart,
                     });
                 }
             }
@@ -114,7 +114,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                     type: "user",
                     content: userMatch[2],
                     id: parseInt(userMatch[1]),
-                    username: userMatch[2]
+                    username: userMatch[2],
                 });
             }
 
@@ -123,7 +123,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                 parts.push({
                     type: "request",
                     content: "заявку",
-                    id: parseInt(requestMatch[1])
+                    id: parseInt(requestMatch[1]),
                 });
             }
 
@@ -132,7 +132,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                 parts.push({
                     type: "inventory",
                     content: "инвентаризацию",
-                    id: parseInt(inventoryMatch[1])
+                    id: parseInt(inventoryMatch[1]),
                 });
             }
 
@@ -144,7 +144,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
             if (textPart) {
                 parts.push({
                     type: "text",
-                    content: textPart
+                    content: textPart,
                 });
             }
         }
@@ -190,18 +190,18 @@ export default function Notifications({ onVisited }: NotificationsProps) {
         { title: "Материалы", types: LOG_TYPES.filter((t) => t.category === "materials") },
         { title: "Категории", types: LOG_TYPES.filter((t) => t.category === "categories") },
         { title: "Заявки", types: LOG_TYPES.filter((t) => t.category === "requests") },
-        { title: "Инвентаризации", types: LOG_TYPES.filter((t) => t.category === "inventories") }
+        { title: "Инвентаризации", types: LOG_TYPES.filter((t) => t.category === "inventories") },
     ];
 
     return (
         <div className="lg:my-0 my-10">
             <ScrollToTop />
             <div className="sm:flex grid items-start sm:justify-between">
-                <h1 className="text-2xl mb-4">Журнал действий {logs.length !== filteredLogs.length && `(${filteredLogs.length}/${logs.length})`}</h1>
+                <h1 className="text-2xl mb-4 bg-background! z-10">Журнал действий {logs.length !== filteredLogs.length && `(${filteredLogs.length}/${logs.length})`}</h1>
 
                 <div className="sm:flex gap-3 grid">
                     <Popover>
-                        <PopoverTrigger asChild>
+                        <PopoverTrigger asChild className="bg-background! z-10">
                             <Button variant="outline">
                                 <FunnelPlus />
                                 Фильтры {selectedTypes.length > 0 && `(${selectedTypes.length})`}
@@ -228,14 +228,14 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                         </PopoverContent>
                     </Popover>
                     {selectedTypes.length > 0 && (
-                        <Button variant="outline" onClick={handleResetFilters}>
+                        <Button variant="outline" className="bg-background! z-10" onClick={handleResetFilters}>
                             <FunnelX />
                         </Button>
                     )}
 
                     {logs.length > 1 && (
                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                            <AlertDialogTrigger asChild className="bg-background! z-10">
                                 <Button variant="outline">Удалить все ({logs.length})</Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -254,9 +254,10 @@ export default function Notifications({ onVisited }: NotificationsProps) {
 
             {filteredLogs.length > itemsPerPage && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-muted-foreground">Всего записей: {filteredLogs.length}</div>
+                    <div className="text-sm text-muted-foreground bg-background! z-10">Всего записей: {filteredLogs.length}</div>
                     <div className="flex items-center gap-2">
                         <Button
+                            className="bg-background! z-10"
                             variant="outline"
                             size="sm"
                             onClick={() => {
@@ -268,15 +269,17 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                         </Button>
                         {!showAll && totalPages > 1 && (
                             <>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
-                                    {"<"}
-                                </Button>
-                                <span className="text-sm">
-                                    Стр. {currentPage + 1} из {totalPages}
-                                </span>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
-                                    {">"}
-                                </Button>
+                                <div className="bg-background! z-10 flex items-center gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
+                                        {"<"}
+                                    </Button>
+                                    <span className="text-sm">
+                                        Стр. {currentPage + 1} из {totalPages}
+                                    </span>
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
+                                        {">"}
+                                    </Button>
+                                </div>
                             </>
                         )}
                     </div>
@@ -285,7 +288,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
 
             <div className="space-y-3 text-base">
                 {paginatedLogs.map((log) => (
-                    <div key={log.id} className="p-4 border rounded-lg">
+                    <div key={log.id} className="p-4 border rounded-lg bg-background! z-10">
                         <div className="flex justify-between items-center">
                             <div className="flex justify-between w-full gap-10 items-center">
                                 <div className="sm:flex grid items-center sm:justify-between sm:w-full">
@@ -307,8 +310,12 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                         )}
                     </div>
                 ))}
-
-                {paginatedLogs.length === 0 && <p className="text-center py-10 text-muted-foreground">{selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}</p>}
+                {paginatedLogs.length === 0 &&(
+                    <div className="flex justify-center">
+                        <p className="text-center my-10 text-muted-foreground bg-background! z-10">{selectedTypes.length > 0 ? "Нет записей по выбранным фильтрам" : "Нет записей в журнале"}</p>
+                    </div>
+                )}
+                
             </div>
         </div>
     );

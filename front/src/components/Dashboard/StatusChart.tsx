@@ -113,7 +113,7 @@ export function StatusChart() {
     }
 
     return (
-        <Card>
+        <Card className="z-10">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <CardTitle>Статус {getEntityLabel()}</CardTitle>

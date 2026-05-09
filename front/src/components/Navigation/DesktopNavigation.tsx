@@ -21,7 +21,7 @@ export default function DesktopNavigation() {
     const filItems = navItems.filter((item) => !item.adminOnly || (item.adminOnly && isAdmin));
 
     return (
-        <div className="container hidden lg:block border rounded-2xl my-4!">
+        <div className="container hidden lg:block border rounded-2xl my-4! bg-background z-10">
             <div className="">
                 <div className="flex justify-between py-4">
                     {filItems.map((item) => {

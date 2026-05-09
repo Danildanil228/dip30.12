@@ -65,8 +65,8 @@ export function ReportFilters({
     loading = false
 }: ReportFiltersProps) {
     return (
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-4 p-4 border rounded-lg bg-background! z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ">
                 <div>
                     <Label className="text-sm mb-2 block">Период</Label>
                     <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={onStartDateChange} onEndDateChange={onEndDateChange} />

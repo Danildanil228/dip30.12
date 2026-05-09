@@ -112,7 +112,7 @@ export default function InventoryReview() {
         return (
             <div className="text-center py-20">
                 <p className="text-red-500 mb-4 whitespace-pre-line">{error || "Инвентаризация не найдена"}</p>
-                <Button onClick={() => navigate("/inventories")} className="mt-4">
+                <Button onClick={() => navigate("/inventories")} className="mt-4 bg-background! z-10">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Назад к списку
                 </Button>
@@ -129,7 +129,7 @@ export default function InventoryReview() {
                 Назад к списку
             </Button>
 
-            <Card className="mb-6">
+            <Card className="mb-6 z-10">
                 <CardHeader>
                     <div className="sm:flex sm:justify-between grid gap-2 flex-wrap items-center">
                         <p className="text-lg">{currentInventory.title}</p>
@@ -212,7 +212,7 @@ export default function InventoryReview() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="z-10">
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
                         <Package className="h-5 w-5" />

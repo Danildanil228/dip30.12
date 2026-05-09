@@ -88,12 +88,12 @@ export default function InventoryDetails() {
 
     return (
         <div>
-            <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
+            <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4 bg-background! z-10">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
             </Button>
 
-            <Card className="mb-6">
+            <Card className="mb-6 z-10">
                 <CardHeader>
                     <div className="flex flex-wrap justify-between items-start gap-4">
                         <div>
@@ -166,7 +166,7 @@ export default function InventoryDetails() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="z-10">
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
                         <Package className="h-5 w-5" />

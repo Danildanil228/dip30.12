@@ -105,7 +105,7 @@ export default function RequestDetails() {
 
     return (
         <div>
-            <Button variant="ghost" onClick={() => navigate("/requests")} className="mb-4">
+            <Button variant="ghost" onClick={() => navigate("/requests")} className="mb-4 bg-background! z-10">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к заявкам
             </Button>

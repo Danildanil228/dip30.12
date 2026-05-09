@@ -25,27 +25,27 @@ export default function Reports() {
             <ScrollToTop />
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-2xl font-bold">Аналитика и отчеты</h1>
+                <h1 className="text-2xl font-bold bg-background! z-10">Аналитика и отчеты</h1>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex!">
                 <div className="sm:flex grid gap-2 text-center! sm:justify-between text-wrap">
-                    <TabsList className="flex w-full">
+                    <TabsList className="flex w-full z-10">
                         <TabsTrigger value="movement" className="py-2">
                             Движение материалов
                         </TabsTrigger>
                     </TabsList>
-                    <TabsList className="w-full">
+                    <TabsList className="w-full z-10">
                         <TabsTrigger value="requests" className="py-2">
                             Заявки
                         </TabsTrigger>
                     </TabsList>
-                    <TabsList className="flex w-full">
+                    <TabsList className="flex w-full z-10">
                         <TabsTrigger value="turnover" className="py-2">
                             Оборотно-сальдовая ведомость
                         </TabsTrigger>
                     </TabsList>
-                    <TabsList className="w-full">
+                    <TabsList className="w-full z-10">
                         <TabsTrigger value="activity" className="py-2">
                             Активность пользователей
                         </TabsTrigger>

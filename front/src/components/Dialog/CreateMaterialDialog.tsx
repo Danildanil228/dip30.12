@@ -138,7 +138,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
 
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
-            <AlertDialogTrigger asChild>{triggerButton || <Button>Добавить</Button>}</AlertDialogTrigger>
+            <AlertDialogTrigger asChild className="z-10">{triggerButton || <Button>Добавить</Button>}</AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Добавить новый материал</AlertDialogTitle>

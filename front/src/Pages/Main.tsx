@@ -54,7 +54,7 @@ export default function Main() {
     return (
         <div className="space-y-4">
             <ScrollToTop />
-            <div className="border rounded-lg p-6">
+            <div className="border rounded-lg p-6 bg-background z-10">
                 <h1 className="text-xl font-semibold mb-1">
                     Добро пожаловать, {user?.name} {user?.secondname}
                 </h1>
@@ -62,7 +62,7 @@ export default function Main() {
             </div>
 
             {sections.map((section) => (
-                <div key={section.id} className="border rounded-lg overflow-hidden">
+                <div key={section.id} className="border rounded-lg overflow-hidden bg-background z-10">
                     <button onClick={() => toggleSection(section.id)} className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left">
                         <div className="flex items-center gap-2">
                             {section.icon}

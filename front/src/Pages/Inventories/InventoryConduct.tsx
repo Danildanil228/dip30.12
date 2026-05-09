@@ -166,12 +166,12 @@ export default function InventoryConduct() {
     return (
         <div>
             <ScrollToTop />
-            <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4">
+            <Button variant="ghost" onClick={() => navigate("/inventories")} className="mb-4 bg-background! z-10">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад к списку
             </Button>
 
-            <Card className="mb-6">
+            <Card className="mb-6 z-10">
                 <CardHeader>
                     <div className="flex justify-between items-center flex-wrap">
                         <p className="text-lg">{currentInventory.title}</p>
@@ -246,7 +246,7 @@ export default function InventoryConduct() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="z-10">
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
                         <Package className="h-5 w-5" />

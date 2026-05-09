@@ -64,10 +64,10 @@ export default function Dashboard() {
             <ScrollToTop />
 
             <div className="flex justify-between">
-                <h1 className="text-2xl font-bold">Дашборд</h1>
+                <h1 className="text-2xl font-bold bg-background! z-10">Дашборд</h1>
                 <div className="flex flex-wrap gap-2">
                     <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
-                    <Button variant="outline" size="icon" onClick={handleRefresh}>
+                    <Button variant="outline" className="bg-background! z-10" size="icon" onClick={handleRefresh}>
                         <RefreshCw className="h-4 w-4" />
                     </Button>
                 </div>
@@ -76,20 +76,20 @@ export default function Dashboard() {
             {error && <div className="bg-red-50 dark:bg-red-900/20 text-red-600 p-4 rounded-lg">{error}</div>}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard title="Всего материалов" value={metrics?.total_materials || 0} icon={<Package className="h-4 w-4" />} />
-                <MetricCard title="Остатки на складе" value={`${(metrics?.total_quantity || 0).toLocaleString()} ед.`} icon={<Boxes className="h-4 w-4" />} />
+                <MetricCard title="Всего материалов" value={metrics?.total_materials || 0} icon={<Package className="h-4 w-4 z-10" />} />
+                <MetricCard title="Остатки на складе" value={`${(metrics?.total_quantity || 0).toLocaleString()} ед.`} icon={<Boxes className="h-4 w-4 z-10" />} />
                 <MetricCard
                     title="Активные заявки"
                     value={metrics?.pending_requests.total || 0}
                     description={`${metrics?.pending_requests.incoming || 0} приход / ${metrics?.pending_requests.outgoing || 0} расход`}
-                    icon={<Clock className="h-4 w-4" />}
+                    icon={<Clock className="h-4 w-4 z-10" />}
                 />
                 <MetricCard
                     title="Завершено за период"
                     value={metrics?.completed_requests || 0}
                     change={metrics?.completed_change}
                     changeText="к прошлому периоду"
-                    icon={<CheckCircle className="h-4 w-4" />}
+                    icon={<CheckCircle className="h-4 w-4 z-10" />}
                 />
             </div>
 

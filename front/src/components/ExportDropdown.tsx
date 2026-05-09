@@ -21,7 +21,7 @@ export function ExportDropdown<T>({ data, columns, filename, title }: ExportDrop
 
     if (!data.length) {
         return (
-            <Button variant="outline" disabled>
+            <Button variant="outline" disabled className="bg-background z-10">
                 <Download className="mr-2 h-4 w-4" />
                 Нет данных
             </Button>
@@ -30,7 +30,7 @@ export function ExportDropdown<T>({ data, columns, filename, title }: ExportDrop
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild className="z-10 bg-background!">
                 <Button variant="outline" disabled={exporting}>
                     {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {exporting ? "Экспорт..." : "Экспорт"}

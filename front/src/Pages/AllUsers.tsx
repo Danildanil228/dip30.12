@@ -54,7 +54,6 @@ export default function AllUsers() {
         }
     };
 
-    // Колонки для экспорта
     const exportColumns: ExportColumn<User>[] = [
         { key: "id", header: "ID" },
         { key: "username", header: "Логин" },
@@ -152,7 +151,7 @@ export default function AllUsers() {
         <section className="mx-auto">
             <ScrollToTop />
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Все пользователи</h1>
+                <h1 className="text-2xl font-bold bg-background z-10">Все пользователи</h1>
                 <AddUserDialog onUserCreated={() => window.location.reload()} />
             </div>
 

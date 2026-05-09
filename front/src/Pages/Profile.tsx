@@ -128,7 +128,9 @@ export default function Profile() {
                     </h1>
                 )}
                 <div className="mt-2">{getRoleBadge(user.role)}</div>
-                <p className="text-muted-foreground mt-1">{user.username}</p>
+                <div className="w-full justify-center flex">
+                    <p className="text-muted-foreground mt-1 bg-background! z-10">{user.username}</p>
+                </div>
             </div>
 
             <Card className="mb-6">
@@ -194,12 +196,12 @@ export default function Profile() {
             </Card>
 
             <div className="flex flex-wrap gap-4 justify-center">
-                <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+                <Button variant="outline" className="gap-2 bg-background! z-10" onClick={() => setEditOpen(true)}>
                     <img src="/edit.png" className="icon w-4" alt="" />
                     Изменить данные
                 </Button>
 
-                <Button variant="outline" className="gap-2" onClick={() => setPasswordOpen(true)}>
+                <Button variant="outline" className="gap-2 bg-background! z-10" onClick={() => setPasswordOpen(true)}>
                     <img src="/padlock.png" className="icon w-4" alt="" />
                     Сменить пароль
                 </Button>

@@ -76,7 +76,7 @@ export function MovementChart() {
     };
 
     return (
-        <Card className="col-span-2">
+        <Card className="col-span-2 z-10">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <CardTitle>Движение товаров</CardTitle>
