@@ -1,3 +1,4 @@
+// front/src/services/exportService.ts
 import { saveAs } from "file-saver";
 
 export interface ExportColumn<T = any> {
@@ -49,7 +50,7 @@ export class ExportService {
         XLSX.writeFile(wb, `${filename}_${this.getDateString()}.xlsx`);
     }
 
-    static async exportToPDF<T>(data: T[], columns: ExportColumn<T>[], filename: string, title: string): Promise<void> {
+    static async exportToPDF<T>(data: T[], columns: ExportColumn<T>[], _filename: string, title: string): Promise<void> {
         if (!data.length) return;
 
         const html = this.generateHTML(data, columns, title);
@@ -116,10 +117,10 @@ export class ExportService {
     
     <table>
         <thead>
-            <tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>
+            <tr>${headers.map((h) => `<th>${this.escapeHtml(h)}</th>`).join("")}</tr>
         </thead>
         <tbody>
-            ${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell || "-"}</td>`).join("")}</tr>`).join("")}
+            ${rows.map((row) => `<tr>${row.map((cell) => `<td>${this.escapeHtml(cell) || "-"}</td>`).join("")}</tr>`).join("")}
         </tbody>
     </table>
     
@@ -139,6 +140,11 @@ export class ExportService {
             return `"${value.replace(/"/g, '""')}"`;
         }
         return value;
+    }
+
+    private static escapeHtml(str: string): string {
+        if (!str) return "";
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
     private static getDateString(): string {
