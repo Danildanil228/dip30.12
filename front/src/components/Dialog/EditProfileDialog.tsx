@@ -64,7 +64,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         const lettersRegex = /^[А-Яа-яЁё]+$/;
         if (!lettersRegex.test(value)) return "Фамилия должна содержать только русские буквы";
         if (value.length < 3) return "Фамилия должна содержать минимум 3 символа";
-        if (value.length > 30) return "Фамилия не должна превышать 30 символов";
+        if (value.length > 20) return "Фамилия не должна превышать 20 символов";
         return "";
     };
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { authService } from "@/services/authService";
 import DarkModeButtonToggle from "@/components/DarkModeButtonToggle";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Shield } from "lucide-react";
 
 export default function Login() {
     const [username, setUsername] = useState("");
@@ -81,59 +82,119 @@ export default function Login() {
     };
 
     return (
-        <section className="flex justify-center items-center sm:h-screen h-140">
-            <form onSubmit={handleSubmit} className="text-center">
-                <h1 className="mb-4 text-wrap"> {isFirst ? "Создание админа" : "Авторизация в систему"} </h1>
-                <div className="grid gap-5">
-                    <input
-                        type="text"
-                        placeholder="Введите ваш логин"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="px-4 py-2 border rounded focus:outline-none focus:ring-1 sm:text-xl text-base"
-                        disabled={loading}
-                        required
-                    />
-                    <div className="relative">
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Введите ваш пароль"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10 sm:text-xl text-base"
-                            disabled={loading}
-                            required
-                        />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2" tabIndex={-1}>
-                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                    </div>
-                    {isFirst && (
-                        <div className="relative">
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10 -z-10" />
+
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="w-full max-w-md">
+                <div className="text-center mb-8">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                    >
+                        {isFirst ? <Shield className="w-8 h-8 text-primary" /> : <img src="/boxes.png" className="w-8 h-8 icon" alt="Logo" />}
+                    </motion.div>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Material House</h1>
+                    <p className="text-muted-foreground mt-2">{isFirst ? "Создание администратора" : "Вход в систему"}</p>
+                </div>
+
+                <div className="rounded-2xl border bg-card shadow-lg p-6 sm:p-8">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block">Логин</label>
                             <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Подтвердите пароль"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="px-4 py-2 border rounded focus:outline-none focus:ring-1 w-full pr-10 sm:text-xl text-base"
+                                type="text"
+                                placeholder="Введите ваш логин"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                 disabled={loading}
+                                autoFocus
                                 required
                             />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2" tabIndex={-1}>
-                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                            </button>
                         </div>
-                    )}
 
-                    <div className="flex gap-5 items-center">
-                        <button type="submit" disabled={loading} className="w-full px-6 py-2 border rounded cursor-pointer hover:transition-colors disabled:opacity-50">
-                            {loading ? "..." : isFirst ? "Создать" : "Войти"}
-                        </button>
-                        <DarkModeButtonToggle />
-                    </div>
-                    {error && <p className="text-red-500 text-base">{error}</p>}
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block">Пароль</label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Введите ваш пароль"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary pr-12 transition-all"
+                                    disabled={loading}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <AnimatePresence>
+                            {isFirst && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
+                                    <label className="text-sm font-medium mb-1.5 block">Подтвердите пароль</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Подтвердите пароль"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary pr-12 transition-all"
+                                            disabled={loading}
+                                            required
+                                        />
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="flex-1 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {loading ? (
+                                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+                                ) : isFirst ? (
+                                    <>
+                                        <UserPlus className="h-4 w-4" /> Создать
+                                    </>
+                                ) : (
+                                    <>
+                                        <LogIn className="h-4 w-4" /> Войти
+                                    </>
+                                )}
+                            </button>
+                            <DarkModeButtonToggle />
+                        </div>
+
+                        <AnimatePresence>
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center"
+                                >
+                                    {error}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </form>
                 </div>
-            </form>
-        </section>
+
+                <p className="text-center text-xs text-muted-foreground mt-6">Система управления складскими запасами</p>
+            </motion.div>
+        </div>
     );
 }

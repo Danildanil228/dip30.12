@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Plus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AddUserDialog from "@/components/Dialog/AddUserDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -27,6 +28,10 @@ const formatDate = (value: unknown): string => {
 export default function AllUsers() {
     const { users, loading, deleteUser } = useUsers();
     const { user: currentUser } = useUser();
+
+    const adminCount = users.filter((u) => u.role === "admin").length;
+    const accountantCount = users.filter((u) => u.role === "accountant").length;
+    const storekeeperCount = users.filter((u) => u.role === "storekeeper").length;
 
     const handleDeleteUser = async (id: number) => {
         if (currentUser?.id === id) {
@@ -81,14 +86,16 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
+                cell: ({ row }) => <span className="font-medium">{row.original.username}</span>,
             },
             {
                 accessorKey: "name",
                 header: "Имя",
-            },
-            {
-                accessorKey: "secondname",
-                header: "Фамилия",
+                cell: ({ row }) => (
+                    <span>
+                        {row.original.name} {row.original.secondname}
+                    </span>
+                ),
             },
             {
                 accessorKey: "role",
@@ -98,34 +105,36 @@ export default function AllUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 ),
-                cell: ({ row }) => <div className="capitalize">{row.original.role === "admin" ? "Администратор" : row.original.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</div>,
+                cell: ({ row }) => {
+                    const role = row.original.role;
+                    const roleName = role === "admin" ? "Администратор" : role === "accountant" ? "Бухгалтер" : "Кладовщик";
+                    const colorClass = role === "admin" ? "text-blue-600 dark:text-blue-400" : role === "accountant" ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400";
+                    return <span className={`font-medium text-sm ${colorClass}`}>{roleName}</span>;
+                },
             },
             {
                 accessorKey: "created_at",
-                header: ({ column }) => (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Дата создания
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                ),
-                cell: ({ row }) => <div>{formatDate(row.original.created_at)}</div>,
+                header: "Дата создания",
+                cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDate(row.original.created_at)}</span>,
             },
             {
                 id: "actions",
-                header: "Функции",
+                header: "Действия",
                 cell: ({ row }) => {
                     const user = row.original;
                     if (user.id === currentUser?.id) {
-                        return <span className="text-gray-400">Вы</span>;
+                        return <span className="text-xs text-muted-foreground">Это вы</span>;
                     }
                     return (
-                        <div className="flex gap-5">
-                            <Link to={`/profile/${user.id}`} className="text-blue-500 hover:text-blue-700">
-                                <img src="/profile.png" className="icon w-5" alt="Профиль" title="Перейти в профиль" />
+                        <div className="flex items-center gap-2">
+                            <Link to={`/profile/${user.id}`} className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent">
+                                <img src="/profile.png" className="icon w-4" alt="Профиль" title="Перейти в профиль" />
                             </Link>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <img src="/trash.png" className="w-5 icon cursor-pointer" alt="Удалить" />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <img src="/trash.png" className="w-4 icon" alt="Удалить" />
+                                    </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
@@ -145,17 +154,53 @@ export default function AllUsers() {
         [currentUser],
     );
 
-    const customToolbar = <ExportDropdown data={users} columns={exportColumns} filename="users" title="Пользователи" />;
+    const customToolbar = (
+        <div className="flex items-center gap-2">
+            <ExportDropdown data={users} columns={exportColumns} filename="users" title="Пользователи" />
+        </div>
+    );
 
     return (
-        <section className="mx-auto">
+        <div className="space-y-6">
             <ScrollToTop />
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold bg-background z-10">Все пользователи</h1>
-                <AddUserDialog onUserCreated={() => window.location.reload()} />
+
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Пользователи</h1>
+                    <p className="text-muted-foreground mt-1">Управление учётными записями</p>
+                </div>
+                <AddUserDialog
+                    onUserCreated={() => window.location.reload()}
+                    triggerButton={
+                        <Button>
+                            <Plus className="h-4 w-4 mr-1" /> Добавить
+                        </Button>
+                    }
+                />
+            </motion.div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="text-sm text-muted-foreground">Всего</div>
+                    <div className="text-2xl font-bold mt-1">{users.length}</div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="text-sm text-muted-foreground">Админы</div>
+                    <div className="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">{adminCount}</div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="text-sm text-muted-foreground">Бухгалтеры</div>
+                    <div className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">{accountantCount}</div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="text-sm text-muted-foreground">Кладовщики</div>
+                    <div className="text-2xl font-bold mt-1 text-orange-600 dark:text-orange-400">{storekeeperCount}</div>
+                </motion.div>
             </div>
 
-            <DataTable columns={columns} data={users} loading={loading} searchPlaceholder="Поиск по логину или имени..." onDeleteSelected={handleDeleteSelected} customToolbar={customToolbar} showCheckboxes={true} />
-        </section>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-xl border bg-card shadow-sm overflow-hidden">
+                <DataTable columns={columns} data={users} loading={loading} searchPlaceholder="Поиск по логину или имени..." onDeleteSelected={handleDeleteSelected} customToolbar={customToolbar} showCheckboxes={true} />
+            </motion.div>
+        </div>
     );
 }

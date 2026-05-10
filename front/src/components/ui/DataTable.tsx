@@ -96,7 +96,7 @@ export function DataTable<TData extends { id: number }>({
     }
 
     return (
-        <div className="w-full">
+        <div className="w-full px-4">
             <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 py-4">
                 <Input placeholder={searchPlaceholder} value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="max-w-sm bg-background! z-10" />
 
@@ -126,12 +126,7 @@ export function DataTable<TData extends { id: number }>({
                     <TableBody className="">
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                    className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
-                                    onClick={() => onRowClick?.(row.original)}
-                                >
+                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onRowClick?.(row.original)}>
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                                     ))}
@@ -150,16 +145,16 @@ export function DataTable<TData extends { id: number }>({
 
             {showPagination && data.length > 0 && (
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-4">
-                    <div className="text-sm text-muted-foreground bg-background z-10">Всего: {table.getFilteredRowModel().rows.length} записей</div>
+                    <div className="text-sm text-muted-foreground z-10">Всего: {table.getFilteredRowModel().rows.length} записей</div>
                     <div className="flex items-center space-x-2">
                         {data.length > 10 && (
-                            <Button variant="outline" onClick={handleToggleShowAll} className="z-10 bg-background!">
+                            <Button variant="outline" onClick={handleToggleShowAll} className="z-10">
                                 {showAll ? "Свернуть" : "Развернуть"}
                             </Button>
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
-                            <div className="flex items-center space-x-2 bg-background z-10">
+                            <div className="flex items-center space-x-2  z-10">
                                 <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                                     {"<"}
                                 </Button>

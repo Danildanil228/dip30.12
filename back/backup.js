@@ -77,9 +77,9 @@ router.get("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
                 const fileExists = await fs.pathExists(backup.filepath);
                 return {
                     ...backup,
-                    file_exists: fileExists
+                    file_exists: fileExists,
                 };
-            })
+            }),
         );
 
         res.json({ backups: backupsWithFileCheck });
@@ -94,6 +94,15 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
         const { description } = req.body;
         const isWindows = os.platform() === "win32";
 
+        const countResult = await pool.query("SELECT COUNT(*) FROM backups");
+        const backupCount = parseInt(countResult.rows[0].count);
+
+        if (backupCount >= MAX_BACKUPS) {
+            return res.status(400).json({
+                error: `Достигнут лимит бэкапов (${MAX_BACKUPS} шт.). Пожалуйста, удалите старые бэкапы вручную перед созданием нового.`,
+            });
+        }
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
         const filename = `backup_${timestamp}.backup`;
         const filepath = path.join(BACKUP_DIR, filename);
@@ -103,7 +112,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
             port: process.env.DB_PORT,
             database: process.env.DB_NAME,
             user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD
+            password: process.env.DB_PASSWORD,
         };
 
         if (!dbConfig.user || !dbConfig.password) {
@@ -142,33 +151,15 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
                 `INSERT INTO backups (filename, filepath, file_size, created_by, description) 
                  VALUES ($1, $2, $3, $4, $5) 
                  RETURNING id, filename, file_size, created_at, description`,
-                [filename, filepath, fileSize, req.user.id, description || null]
+                [filename, filepath, fileSize, req.user.id, description || null],
             );
 
             const backup = result.rows[0];
             await Logger.backupCreated(req.user.id, req.user.username, filename);
 
-            const countResult = await pool.query("SELECT COUNT(*) FROM backups");
-            const backupCount = parseInt(countResult.rows[0].count);
-
-            if (backupCount > MAX_BACKUPS) {
-                const oldBackups = await pool.query("SELECT id, filename, filepath FROM backups ORDER BY created_at ASC LIMIT $1", [backupCount - MAX_BACKUPS]);
-
-                for (const oldBackup of oldBackups.rows) {
-                    try {
-                        if (await fs.pathExists(oldBackup.filepath)) {
-                            await fs.unlink(oldBackup.filepath);
-                        }
-                        await pool.query("DELETE FROM backups WHERE id = $1", [oldBackup.id]);
-                    } catch (deleteError) {
-                        console.error("Ошибка при удалении старого бэкапа:", deleteError);
-                    }
-                }
-            }
-
             res.json({
                 message: "Бэкап успешно создан",
-                backup: backup
+                backup: backup,
             });
         } catch (dumpError) {
             console.error("Ошибка при создании бэкапа:", dumpError);
@@ -183,7 +174,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 
             res.status(500).json({
                 error: errorMessage,
-                details: dumpError.message
+                details: dumpError.message,
             });
         }
     } catch (error) {
@@ -244,7 +235,7 @@ router.delete("/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 
         res.json({
             message: "Бэкап удален",
-            deletedBackup: { id: backupId, filename: backup.filename }
+            deletedBackup: { id: backupId, filename: backup.filename },
         });
     } catch (error) {
         console.error("Ошибка при удалении бэкапа:", error);

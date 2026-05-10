@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,11 @@ export default function Inventories() {
 
     const isAdminOrAccountant = isAdmin || user?.role === "accountant";
     const isResponsible = (inventory: Inventory) => inventory.responsible_person === user?.id;
+
+    const draftCount = inventories.filter((i) => i.status === "draft").length;
+    const inProgressCount = inventories.filter((i) => i.status === "in_progress").length;
+    const completedCount = inventories.filter((i) => i.status === "completed").length;
+    const approvedCount = inventories.filter((i) => i.status === "approved").length;
 
     useEffect(() => {
         fetchInventories();
@@ -76,44 +82,26 @@ export default function Inventories() {
         }
     };
 
-    const handleView = (id: number) => {
-        navigate(`/inventories/${id}`);
-    };
+    const handleView = (id: number) => navigate(`/inventories/${id}`);
+    const handleConduct = (id: number) => navigate(`/inventories/${id}/conduct`);
 
-    const handleConduct = (id: number) => {
-        navigate(`/inventories/${id}/conduct`);
-    };
-
-    // const handleReview = (id: number) => {
-    //     navigate(`/inventories/${id}/review`);
-    // };
-
-    const handleEdit = (inventory: Inventory) => {
-        setEditingInventory(inventory);
-    };
-
+    const handleEdit = (inventory: Inventory) => setEditingInventory(inventory);
     const handleEditSuccess = () => {
         setEditingInventory(null);
         fetchInventories();
     };
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case "draft":
-                return "Черновик";
-            case "in_progress":
-                return "В процессе";
-            case "completed":
-                return "Завершена";
-            case "approved":
-                return "Утверждена";
-            case "cancelled":
-                return "Отменена";
-            case "expired":
-                return "Просрочена";
-            default:
-                return status;
-        }
+    const getStatusBadge = (status: string) => {
+        const map: Record<string, { label: string; className: string }> = {
+            draft: { label: "Черновик", className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
+            in_progress: { label: "В процессе", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+            completed: { label: "Завершена", className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+            approved: { label: "Утверждена", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+            cancelled: { label: "Отменена", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+            expired: { label: "Просрочена", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+        };
+        const info = map[status] || { label: status, className: "" };
+        return <Badge className={`${info.className} border-0`}>{info.label}</Badge>;
     };
 
     const getProgress = (inventory: Inventory) => {
@@ -132,34 +120,41 @@ export default function Inventories() {
     const totalPages = Math.ceil(filteredInventories.length / itemsPerPage);
     const paginatedInventories = showAll ? filteredInventories : filteredInventories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
-    const handleToggleShowAll = () => {
-        if (showAll) {
-            setShowAll(false);
-            setCurrentPage(0);
-        } else {
-            setShowAll(true);
-        }
-    };
-
-    const goToPage = (page: number) => {
-        setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
-    };
-
-    if (loading) {
-        return <LoadingSpinner />;
-    }
+    if (loading) return <LoadingSpinner />;
 
     return (
-        <div>
+        <div className="space-y-6">
             <ScrollToTop />
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <h1 className="text-2xl font-bold bg-background! z-10">Инвентаризация</h1>
-                {isAdminOrAccountant && <Button onClick={() => setShowCreateDialog(true)}>Создать</Button>}
+
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Инвентаризация</h1>
+                    <p className="text-muted-foreground mt-1">Управление проверками склада</p>
+                </div>
+                {isAdminOrAccountant && (
+                    <Button onClick={() => setShowCreateDialog(true)}>
+                        <Package className="h-4 w-4 mr-2" /> Создать
+                    </Button>
+                )}
+            </motion.div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                    { label: "Черновики", count: draftCount, color: "text-gray-600" },
+                    { label: "В процессе", count: inProgressCount, color: "text-blue-600" },
+                    { label: "Завершены", count: completedCount, color: "text-purple-600" },
+                    { label: "Утверждены", count: approvedCount, color: "text-green-600" },
+                ].map((stat, i) => (
+                    <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }} className="rounded-xl border bg-card p-4 shadow-sm">
+                        <div className="text-sm text-muted-foreground">{stat.label}</div>
+                        <div className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.count}</div>
+                    </motion.div>
+                ))}
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Поиск по названию или ответственному..."
                         value={searchTerm}
@@ -167,88 +162,51 @@ export default function Inventories() {
                             setSearchTerm(e.target.value);
                             setCurrentPage(0);
                         }}
-                        className="pl-10 bg-background! z-10"
+                        className="pl-10"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button className="z-10"
-                        variant={statusFilter === "all" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("all");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Все
-                    </Button>
-                    <Button className="z-10"
-                        variant={statusFilter === "draft" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("draft");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Черновики
-                    </Button>
-                    <Button className="z-10"
-                        variant={statusFilter === "in_progress" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("in_progress");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        В процессе
-                    </Button>
-                    <Button className="z-10"
-                        variant={statusFilter === "completed" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("completed");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Завершены
-                    </Button>
-                    <Button className="z-10"
-                        variant={statusFilter === "approved" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("approved");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Утверждены
-                    </Button>
-                    <Button className="z-10"
-                        variant={statusFilter === "cancelled" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("cancelled");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Отменены
-                    </Button>
+                    {["all", "draft", "in_progress", "completed", "approved", "cancelled"].map((s) => (
+                        <Button
+                            key={s}
+                            variant={statusFilter === s ? "default" : "outline"}
+                            onClick={() => {
+                                setStatusFilter(s);
+                                setCurrentPage(0);
+                            }}
+                            size="sm"
+                        >
+                            {s === "all" ? "Все" : s === "draft" ? "Черновики" : s === "in_progress" ? "В процессе" : s === "completed" ? "Завершены" : s === "approved" ? "Утверждены" : "Отменены"}
+                        </Button>
+                    ))}
                 </div>
             </div>
 
             {filteredInventories.length > itemsPerPage && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                    <div className="text-sm text-muted-foreground bg-background! z-10">Всего инвентаризаций: {filteredInventories.length}</div>
+                <div className="flex items-center justify-between gap-4">
+                    <div className="text-sm text-muted-foreground">Найдено: {filteredInventories.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" className="bg-background! z-10" size="sm" onClick={handleToggleShowAll}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setShowAll(!showAll);
+                                if (!showAll) setCurrentPage(0);
+                            }}
+                        >
                             {showAll ? "Свернуть" : "Развернуть"}
                         </Button>
-                        {!showAll && (
+                        {!showAll && totalPages > 1 && (
                             <>
-                            <div className="flex items-center gap-2 bg-background! z-10">
-                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
-                                    {"<"}
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
+                                    &lt;
                                 </Button>
                                 <span className="text-sm">
                                     Стр. {currentPage + 1} из {totalPages}
                                 </span>
-                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
-                                    {">"}
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} disabled={currentPage === totalPages - 1}>
+                                    &gt;
                                 </Button>
-                            </div>
-                                
                             </>
                         )}
                     </div>
@@ -256,102 +214,102 @@ export default function Inventories() {
             )}
 
             <div className="space-y-4">
+                <AnimatePresence>
+                    {paginatedInventories.length === 0 ? (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 rounded-xl border bg-card shadow-sm">
+                            <div className="text-4xl mb-3">📋</div>
+                            <p className="text-lg font-medium">Инвентаризаций не найдено</p>
+                        </motion.div>
+                    ) : (
+                        paginatedInventories.map((inventory, index) => (
+                            <motion.div key={inventory.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
+                                <Card className="overflow-hidden hover:shadow-md transition-shadow">
+                                    <CardContent className="p-5">
+                                        <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="text-lg font-semibold">{inventory.title}</h3>
+                                                {getStatusBadge(inventory.status)}
+                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleView(inventory.id)}>
+                                                        <Eye className="mr-2 h-4 w-4" /> Просмотр
+                                                    </DropdownMenuItem>
+                                                    {isAdmin && (
+                                                        <DropdownMenuItem onClick={() => handleEdit(inventory)}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Изменить
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {isResponsible(inventory) && inventory.status === "in_progress" && (
+                                                        <DropdownMenuItem onClick={() => handleConduct(inventory.id)}>
+                                                            <Package className="mr-2 h-4 w-4" /> Провести
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {isResponsible(inventory) && inventory.status === "draft" && (
+                                                        <DropdownMenuItem onClick={() => handleStart(inventory.id)}>
+                                                            <Play className="mr-2 h-4 w-4" /> Начать
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {isResponsible(inventory) && inventory.status === "in_progress" && (
+                                                        <DropdownMenuItem onClick={() => setCompleteDialog({ open: true, id: inventory.id, title: inventory.title })}>
+                                                            <Send className="mr-2 h-4 w-4" /> Завершить
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {isAdmin && (inventory.status === "draft" || inventory.status === "in_progress") && (
+                                                        <DropdownMenuItem onClick={() => setCancelDialog({ open: true, id: inventory.id, title: inventory.title })}>Отменить</DropdownMenuItem>
+                                                    )}
+                                                    {isAdmin && inventory.status === "cancelled" && (
+                                                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
 
-                {paginatedInventories.length === 0 ? (
-                    <div className="justify-center flex"><p className="my-10 text-muted-foreground bg-background! z-10">Инвентаризаций не найдено</p></div>
-                ) : (
-                    paginatedInventories.map((inventory) => (
-                        <Card key={inventory.id} className="overflow-hidden">
-                            <CardContent className="p-0">
-                                <div className="p-4">
-                                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h3 className="text-lg font-semibold">{inventory.title}</h3>
-                                            <Badge variant="outline">{getStatusText(inventory.status)}</Badge>
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleView(inventory.id)}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    Просмотр
-                                                </DropdownMenuItem>
-                                                {isAdmin && (
-                                                    <DropdownMenuItem onClick={() => handleEdit(inventory)}>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Изменить
-                                                    </DropdownMenuItem>
-                                                )}
-                                                {isResponsible(inventory) && inventory.status === "in_progress" && (
-                                                    <DropdownMenuItem onClick={() => handleConduct(inventory.id)}>
-                                                        <Package className="mr-2 h-4 w-4" />
-                                                        Провести
-                                                    </DropdownMenuItem>
-                                                )}
-                                                {isResponsible(inventory) && inventory.status === "draft" && (
-                                                    <DropdownMenuItem onClick={() => handleStart(inventory.id)}>
-                                                        <Play className="mr-2 h-4 w-4" />
-                                                        Начать
-                                                    </DropdownMenuItem>
-                                                )}
-                                                {isResponsible(inventory) && inventory.status === "in_progress" && (
-                                                    <DropdownMenuItem onClick={() => setCompleteDialog({ open: true, id: inventory.id, title: inventory.title })}>
-                                                        <Send className="mr-2 h-4 w-4" />
-                                                        Завершить
-                                                    </DropdownMenuItem>
-                                                )}
-                                                {isAdmin && (inventory.status === "draft" || inventory.status === "in_progress") && (
-                                                    <DropdownMenuItem onClick={() => setCancelDialog({ open: true, id: inventory.id, title: inventory.title })}>Отменить</DropdownMenuItem>
-                                                )}
-                                                {isAdmin && inventory.status === "cancelled" && (
-                                                    <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, id: inventory.id, title: inventory.title })}>Удалить</DropdownMenuItem>
-                                                )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-3">
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <Calendar className="h-4 w-4" />
-                                            <span>
-                                                {format(new Date(inventory.start_date), "dd.MM.yyyy")} - {format(new Date(inventory.end_date), "dd.MM.yyyy")}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <User className={isResponsible(inventory) ? "h-4 w-4" : "h-4 w-4 text-muted-foreground"} />
-                                            <span className={isResponsible(inventory) ? "underline" : "text-muted-foreground"}>
-                                                Ответственный: {inventory.responsible_username || "-"}
-                                                {isResponsible(inventory) && " (Вы)"}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <FileText className="h-4 w-4" />
-                                            <span>Создал: {inventory.created_by_username || "-"}</span>
-                                        </div>
-                                    </div>
-                                    {inventory.status === "in_progress" && (
-                                        <div className="mt-3">
-                                            <div className="flex justify-between text-sm mb-1">
-                                                <span>Прогресс</span>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm mb-3">
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <Calendar className="h-4 w-4" />
                                                 <span>
-                                                    {getProgress(inventory)}% ({inventory.checked_items ?? 0}/{inventory.total_items ?? 0})
+                                                    {format(new Date(inventory.start_date), "dd.MM.yyyy")} – {format(new Date(inventory.end_date), "dd.MM.yyyy")}
                                                 </span>
                                             </div>
-                                            <div className="w-full bg-muted rounded-full h-2">
-                                                <div className="bg-foreground h-2 rounded-full transition-all" style={{ width: `${getProgress(inventory)}%` }} />
+                                            <div className="flex items-center gap-2">
+                                                <User className={isResponsible(inventory) ? "h-4 w-4 text-primary" : "h-4 w-4 text-muted-foreground"} />
+                                                <span className={isResponsible(inventory) ? "font-medium text-primary" : "text-muted-foreground"}>
+                                                    {inventory.responsible_username || "—"}
+                                                    {isResponsible(inventory) && " (Вы)"}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <FileText className="h-4 w-4" />
+                                                <span>{inventory.created_by_username || "—"}</span>
                                             </div>
                                         </div>
-                                    )}
-                                    {inventory.completed_at && <div className="text-xs text-muted-foreground mt-2">Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}</div>}
-                                    {inventory.approved_at && <div className="text-xs text-muted-foreground">Утверждена: {format(new Date(inventory.approved_at), "dd.MM.yyyy HH:mm")}</div>}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                )}
+
+                                        {inventory.status === "in_progress" && (
+                                            <div className="mt-3">
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="text-muted-foreground">Прогресс</span>
+                                                    <span className="font-medium">{getProgress(inventory)}%</span>
+                                                </div>
+                                                <div className="w-full bg-muted rounded-full h-2">
+                                                    <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${getProgress(inventory)}%` }} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {inventory.completed_at && <div className="text-xs text-muted-foreground mt-2">Завершена: {format(new Date(inventory.completed_at), "dd.MM.yyyy HH:mm")}</div>}
+                                        {inventory.approved_at && <div className="text-xs text-muted-foreground">Утверждена: {format(new Date(inventory.approved_at), "dd.MM.yyyy HH:mm")}</div>}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))
+                    )}
+                </AnimatePresence>
             </div>
 
             <CreateInventoryDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onInventoryCreated={fetchInventories} />
@@ -361,11 +319,7 @@ export default function Inventories() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Завершить инвентаризацию?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Вы уверены, что хотите завершить инвентаризацию "{completeDialog.title}"?
-                            <br />
-                            После этого нельзя будет редактировать результаты.
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>Вы уверены, что хотите завершить «{completeDialog.title}»? После этого нельзя будет редактировать результаты.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
@@ -378,11 +332,13 @@ export default function Inventories() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Отменить инвентаризацию?</AlertDialogTitle>
-                        <AlertDialogDescription>Вы уверены, что хотите отменить инвентаризацию "{cancelDialog.title}"?</AlertDialogDescription>
+                        <AlertDialogDescription>Вы уверены, что хотите отменить «{cancelDialog.title}»?</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancel}>Отменить</AlertDialogAction>
+                        <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90">
+                            Отменить
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -391,15 +347,13 @@ export default function Inventories() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Удалить инвентаризацию?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Вы уверены, что хотите удалить инвентаризацию "{deleteDialog.title}"?
-                            <br />
-                            Это действие нельзя отменить.
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>Вы уверены, что хотите удалить «{deleteDialog.title}»? Это действие нельзя отменить.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>Удалить</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                            Удалить
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

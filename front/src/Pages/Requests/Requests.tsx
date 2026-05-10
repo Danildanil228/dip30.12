@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Plus, Clock, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-import { Badge } from "@/components/ui/badge";
 import CreateRequestDialog from "@/components/Dialog/CreateRequestDialog";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -20,6 +21,10 @@ export default function Requests() {
     const [currentPage, setCurrentPage] = useState(0);
     const [itemsPerPage] = useState(10);
     const [showAll, setShowAll] = useState(false);
+
+    const pendingCount = requests.filter((r) => r.status === "pending").length;
+    const approvedCount = requests.filter((r) => r.status === "approved").length;
+    const rejectedCount = requests.filter((r) => r.status === "rejected").length;
 
     useEffect(() => {
         fetchRequests(statusFilter !== "all" ? statusFilter : undefined);
@@ -43,21 +48,29 @@ export default function Requests() {
         setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
     };
 
-    const getStatusText = (status: string) => {
+    const getStatusBadge = (status: string) => {
         switch (status) {
             case "pending":
-                return "На рассмотрении";
+                return <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-0">На рассмотрении</Badge>;
             case "approved":
-                return "Подтверждена";
+                return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">Подтверждена</Badge>;
             case "rejected":
-                return "Отклонена";
+                return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">Отклонена</Badge>;
             default:
-                return status;
+                return <Badge>{status}</Badge>;
         }
     };
 
-    const getTypeText = (type: string) => {
-        return type === "incoming" ? "Приход" : "Расход";
+    const getTypeBadge = (type: string) => {
+        return type === "incoming" ? (
+            <Badge variant="outline" className="border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400">
+                Приход
+            </Badge>
+        ) : (
+            <Badge variant="outline" className="border-orange-300 text-orange-600 dark:border-orange-700 dark:text-orange-400">
+                Расход
+            </Badge>
+        );
     };
 
     if (loading) {
@@ -65,92 +78,91 @@ export default function Requests() {
     }
 
     return (
-        <div>
+        <div className="space-y-6">
             <ScrollToTop />
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold bg-background z-10">Заявки</h1>
-                <Button className="z-10" onClick={() => setShowCreateDialog(true)}>
-                    Создать
+
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Заявки</h1>
+                    <p className="text-muted-foreground mt-1">Приход и расход материалов</p>
+                </div>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Создать заявку
                 </Button>
+            </motion.div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="text-sm text-muted-foreground">Всего</div>
+                    <div className="text-2xl font-bold mt-1">{requests.length}</div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4 text-yellow-500" /> На рассмотрении
+                    </div>
+                    <div className="text-2xl font-bold mt-1 text-yellow-600 dark:text-yellow-400">{pendingCount}</div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle className="h-4 w-4 text-green-500" /> Подтверждены
+                    </div>
+                    <div className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">{approvedCount}</div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <XCircle className="h-4 w-4 text-red-500" /> Отклонены
+                    </div>
+                    <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">{rejectedCount}</div>
+                </motion.div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
                 <div className="flex-1 relative w-full">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Поиск..."
+                        placeholder="Поиск по названию или создателю..."
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
                             setCurrentPage(0);
                         }}
-                        className="pl-10 bg-background! z-10"
+                        className="pl-10"
                     />
                 </div>
-                <div className="flex-wrap flex gap-2">
-                    <Button
-                        className="z-10"
-                        variant={statusFilter === "all" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("all");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Все
-                    </Button>
-                    <Button
-                        className="z-10"
-                        variant={statusFilter === "pending" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("pending");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        На рассмотрении
-                    </Button>
-                    <Button
-                        className="z-10"
-                        variant={statusFilter === "approved" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("approved");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Подтверждены
-                    </Button>
-                    <Button
-                        className="z-10"
-                        variant={statusFilter === "rejected" ? "default" : "outline"}
-                        onClick={() => {
-                            setStatusFilter("rejected");
-                            setCurrentPage(0);
-                        }}
-                    >
-                        Отклонены
-                    </Button>
+                <div className="flex flex-wrap gap-2">
+                    {["all", "pending", "approved", "rejected"].map((status) => (
+                        <Button
+                            key={status}
+                            variant={statusFilter === status ? "default" : "outline"}
+                            onClick={() => {
+                                setStatusFilter(status);
+                                setCurrentPage(0);
+                            }}
+                        >
+                            {status === "all" ? "Все" : status === "pending" ? "На рассмотрении" : status === "approved" ? "Подтверждены" : "Отклонены"}
+                        </Button>
+                    ))}
                 </div>
             </div>
 
             {filteredRequests.length > itemsPerPage && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                    <div className="text-sm text-muted-foreground bg-background z-10">Всего заявок: {filteredRequests.length}</div>
+                <div className="flex items-center justify-between gap-4">
+                    <div className="text-sm text-muted-foreground">Найдено: {filteredRequests.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" className="bg-background! z-10" size="sm" onClick={handleToggleShowAll}>
+                        <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
                             {showAll ? "Свернуть" : "Развернуть"}
                         </Button>
                         {!showAll && (
                             <>
-                                <div className="flex items-center gap-2 bg-background z-10">
-                                    <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
-                                        {"<"}
-                                    </Button>
-                                    <span className="text-sm">
-                                        Стр. {currentPage + 1} из {totalPages}
-                                    </span>
-                                    <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
-                                        {">"}
-                                    </Button>
-                                </div>
+                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
+                                    &lt;
+                                </Button>
+                                <span className="text-sm">
+                                    Стр. {currentPage + 1} из {totalPages}
+                                </span>
+                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
+                                    &gt;
+                                </Button>
                             </>
                         )}
                     </div>
@@ -159,36 +171,50 @@ export default function Requests() {
 
             <div className="grid gap-4">
                 {paginatedRequests.length === 0 ? (
-                    <div className="text-center py-10 text-muted-foreground bg-background z-10">Заявок не найдено</div>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 rounded-xl border bg-card shadow-sm">
+                        <div className="text-4xl mb-3">📋</div>
+                        <p className="text-lg font-medium">Заявок нет</p>
+                        <p className="text-sm text-muted-foreground mt-1">{statusFilter !== "all" ? "Нет заявок с выбранным статусом" : "Создайте первую заявку"}</p>
+                    </motion.div>
                 ) : (
-                    paginatedRequests.map((request) => (
-                        <div key={request.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer bg-background z-10" onClick={() => (window.location.href = `/requests/${request.id}`)}>
-                            <div className="flex justify-between items-start mb-3">
-                                <div className="flex-1">
-                                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                                        <h3 className="text-lg font-semibold">{request.title}</h3>
-                                        <Badge variant="outline">{getStatusText(request.status)}</Badge>
-                                        <Badge variant="outline">{getTypeText(request.request_type)}</Badge>
-                                        {!request.is_public && isAdmin && <Badge variant="outline">Приватная</Badge>}
-                                    </div>
-                                    <div className="text-sm mb-2 text-muted-foreground">
-                                        Создал: {request.created_by_username} • {format(new Date(request.created_at), "dd MMM yyyy, HH:mm", { locale: ru })}
-                                    </div>
-                                    {request.items_preview && request.items_preview.length > 0 && (
-                                        <div className="text-sm">
-                                            <span className="font-medium">Товары:</span>{" "}
-                                            {request.items_preview.map((item, idx) => (
-                                                <span key={idx}>
-                                                    {item.name} ({item.quantity}){idx < (request.items_preview?.length ?? 0) - 1 && ", "}
-                                                </span>
-                                            ))}
-                                            {(request.items_preview?.length ?? 0) >= 3 && " ..."}
-                                        </div>
+                    paginatedRequests.map((request, index) => (
+                        <motion.div
+                            key={request.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.05 * index }}
+                            className="rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => (window.location.href = `/requests/${request.id}`)}
+                        >
+                            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="font-semibold text-base">{request.title}</h3>
+                                    {getStatusBadge(request.status)}
+                                    {getTypeBadge(request.request_type)}
+                                    {!request.is_public && isAdmin && (
+                                        <Badge variant="outline" className="text-xs">
+                                            Приватная
+                                        </Badge>
                                     )}
-                                    {request.rejection_reason && request.status === "rejected" && <div className="text-sm text-red-500 mt-2">Причина отклонения: {request.rejection_reason}</div>}
                                 </div>
                             </div>
-                        </div>
+                            <div className="text-sm text-muted-foreground mb-3">
+                                Создал: <span className="font-medium text-foreground">{request.created_by_username}</span> • {format(new Date(request.created_at), "dd MMM yyyy, HH:mm", { locale: ru })}
+                            </div>
+                            {request.items_preview && request.items_preview.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {request.items_preview.map((item, idx) => (
+                                        <span key={idx} className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-full">
+                                            {item.name} <span className="font-medium">×{item.quantity}</span>
+                                        </span>
+                                    ))}
+                                    {(request.items_preview?.length ?? 0) >= 3 && <span className="text-xs text-muted-foreground self-center">+ ещё</span>}
+                                </div>
+                            )}
+                            {request.rejection_reason && request.status === "rejected" && (
+                                <div className="mt-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">Причина: {request.rejection_reason}</div>
+                            )}
+                        </motion.div>
                     ))
                 )}
             </div>
