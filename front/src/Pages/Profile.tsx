@@ -12,6 +12,8 @@ import ChangePasswordDialog from "@/components/Dialog/ChangePasswordDialog";
 import { useUser } from "@/hooks/useUser";
 import { userService } from "@/services/userService";
 import type { UserProfile } from "@/types/user.types";
+import { avatarService } from "@/services/avatarService";
+import { AvatarUploadMenu } from "@/components/AvatarUploadMenu";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -47,6 +49,25 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [editOpen, setEditOpen] = useState(false);
     const [passwordOpen, setPasswordOpen] = useState(false);
+
+    const [avatarBlobUrl, setAvatarBlobUrl] = useState<string | null>(null);
+
+    const loadAvatar = useCallback(async () => {
+        if (!user) return;
+        try {
+            const url = await avatarService.getAvatarUrl(user.id);
+            if (url) setAvatarBlobUrl(url);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (user) loadAvatar();
+        return () => {
+            if (avatarBlobUrl) URL.revokeObjectURL(avatarBlobUrl);
+        };
+    }, [user, loadAvatar]);
 
     const fetchUserProfile = useCallback(async () => {
         if (!targetUserId) {
@@ -121,10 +142,30 @@ export default function Profile() {
             )}
 
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center">
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl mx-auto mb-4">
-                    {user.name?.charAt(0)}
-                    {user.secondname?.charAt(0)}
-                </div>
+                <AvatarUploadMenu
+                    userId={user.id}
+                    currentAvatar={user.avatar}
+                    onAvatarUpdate={(newAvatar) => {
+                        if (newAvatar) {
+                            loadAvatar();
+                            if (isOwnProfile) window.dispatchEvent(new Event("profile-updated"));
+                        } else {
+                            setAvatarBlobUrl(null);
+                            if (isOwnProfile) window.dispatchEvent(new Event("profile-updated"));
+                        }
+                    }}
+                >
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl mx-auto mb-4 overflow-hidden cursor-pointer">
+                        {avatarBlobUrl ? (
+                            <img src={avatarBlobUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            <span>
+                                {user.name?.charAt(0)}
+                                {user.secondname?.charAt(0)}
+                            </span>
+                        )}
+                    </div>
+                </AvatarUploadMenu>
                 {!isOwnProfile && (
                     <h1 className="text-3xl font-bold">
                         {user.name} {user.secondname}

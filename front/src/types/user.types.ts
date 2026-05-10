@@ -1,7 +1,7 @@
 export interface User {
     id: number;
     username: string;
-    role: 'admin' | 'accountant' | 'storekeeper'; 
+    role: "admin" | "accountant" | "storekeeper";
     name: string;
     secondname: string;
     email?: string;
@@ -9,6 +9,7 @@ export interface User {
     birthday?: string | null;
     created_at?: string;
     updated_at?: string;
+    avatar?: string | null;
 }
 
 export interface UserProfile extends User {
@@ -18,5 +19,5 @@ export interface UserProfile extends User {
 export interface LoginResponse {
     message: string;
     user: User;
-    accessToken: string;  
+    accessToken: string;
 }

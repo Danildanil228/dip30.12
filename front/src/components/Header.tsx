@@ -8,17 +8,51 @@ import { useUser } from "@/hooks/useUser";
 import { useState, useEffect } from "react";
 import { authService } from "@/services/authService";
 import { motion } from "framer-motion";
+import apiClient from "@/services/api";
 
 export default function Header() {
     const { user, isAdmin } = useUser();
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [_, setUpdateKey] = useState(0);
 
+    const loadAvatar = async () => {
+        if (!user?.id) {
+            setAvatarUrl(null);
+            return;
+        }
+        try {
+            // Используем apiClient, но для blob нужно указать responseType
+            const response = await apiClient.get(`/avatar/${user.id}`, {
+                responseType: "blob",
+            });
+            if (response.data) {
+                const url = URL.createObjectURL(response.data);
+                setAvatarUrl(url);
+            } else {
+                setAvatarUrl(null);
+            }
+        } catch (error) {
+            console.error("Ошибка загрузки аватара:", error);
+            setAvatarUrl(null);
+        }
+    };
+
     useEffect(() => {
-        const handleProfileUpdate = () => setUpdateKey((prev) => prev + 1);
+        loadAvatar();
+        return () => {
+            if (avatarUrl) URL.revokeObjectURL(avatarUrl);
+        };
+    }, [user?.id]);
+
+    useEffect(() => {
+        const handleProfileUpdate = () => {
+            loadAvatar();
+            setUpdateKey((prev) => prev + 1);
+        };
         window.addEventListener("profile-updated", handleProfileUpdate);
         return () => window.removeEventListener("profile-updated", handleProfileUpdate);
-    }, []);
+    }, [user?.id]);
 
     if (!user) return null;
 
@@ -44,9 +78,15 @@ export default function Header() {
             >
                 <div className="flex items-center gap-4">
                     <Link to="/profile" className="flex items-center gap-2 group">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm group-hover:bg-primary/20 transition-colors">
-                            {user.name?.charAt(0)}
-                            {user.secondname?.charAt(0)}
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm overflow-hidden">
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <span>
+                                    {user.name?.charAt(0)}
+                                    {user.secondname?.charAt(0)}
+                                </span>
+                            )}
                         </div>
                         <div className="hidden sm:block">
                             <p className="text-sm font-semibold leading-none">
