@@ -119,7 +119,7 @@ export default function Login() {
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
                         <div className="flex items-center gap-3 mb-8">
                             <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                                <img src="/boxes.png" className="w-8 h-8 brightness-0 invert" alt="Logo" />
+                                <img src="/boxes.png" className="w-8 h-8" alt="Logo" />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold tracking-tight">Material House</h1>
@@ -159,7 +159,7 @@ export default function Login() {
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
                     <div className="lg:hidden text-center mb-8">
                         <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            {isFirst ? <Shield className="w-8 h-8 text-primary" /> : <img src="/boxes.png" className="w-8 h-8 icon" alt="Logo" />}
+                            {isFirst ? <Shield className="w-8 h-8 text-primary" /> : <img src="/boxes.png" className="w-8 h-8" alt="Logo" />}
                         </div>
                         <h1 className="text-2xl font-bold">Material House</h1>
                     </div>
@@ -186,7 +186,7 @@ export default function Login() {
                                             <div className="relative">
                                                 <input
                                                     type="text"
-                                                    placeholder={isFirst ? "Придумайте логин" : "Введите ваш логин"}
+                                                    placeholder={isFirst ? "Придумайте логин" : "Введите логин"}
                                                     value={username}
                                                     onChange={(e) => setUsername(e.target.value)}
                                                     className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
@@ -217,7 +217,7 @@ export default function Login() {
                                             <div className="relative">
                                                 <input
                                                     type={showPassword ? "text" : "password"}
-                                                    placeholder={isFirst ? "Придумайте пароль" : "Введите ваш пароль"}
+                                                    placeholder={isFirst ? "Придумайте пароль" : "Введите пароль"}
                                                     value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
                                                     className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary pr-12 transition-all"
@@ -299,7 +299,7 @@ export default function Login() {
                                 )}
                             </AnimatePresence>
 
-                            <div className="flex gap-3 pt-2">
+                            <div className="flex gap-3 pt-2 items-center">
                                 {isFirst && step === 2 && (
                                     <button type="button" onClick={() => setStep(1)} disabled={loading} className="px-6 py-3 rounded-xl border font-medium hover:bg-accent transition-colors disabled:opacity-50">
                                         Назад

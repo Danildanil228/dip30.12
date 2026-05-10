@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { CapitalizedInput } from "../CapitalizedInput";
 import { materialService } from "@/services/materialService";
 import type { Category, Material } from "@/types/material.types";
+import { SearchableSelect } from "../ui/SearchableSelect";
 
 interface EditMaterialDialogProps {
     materialId: number;
@@ -154,7 +155,7 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                                 <div className="grid gap-2">
                                     <Label htmlFor="edit-material-unit">Единица измерения</Label>
                                     <Select value={unit} onValueChange={setUnit} disabled={loading}>
@@ -185,21 +186,14 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
 
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-material-category">Категория</Label>
-                                <Select value={categoryId} onValueChange={setCategoryId} disabled={loading}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Выберите категорию">
-                                            {categoryId !== "0" ? categories.find((c) => c.id.toString() === categoryId)?.name : "Без категории"}
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="0">Без категории</SelectItem>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category.id} value={category.id.toString()}>
-                                                {category.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <SearchableSelect
+                                                                value={categoryId}
+                                                                onChange={setCategoryId}
+                                                                options={[{ value: "no-category", label: "Без категории" }, ...categories.map((c) => ({ value: c.id.toString(), label: c.name }))]}
+                                                                placeholder="Выберите категорию"
+                                                                emptyText="Категории не найдены"
+                                                                disabled={loading || loadingData}
+                                                            />
                             </div>
 
                             {error && <div className="text-red-500 text-sm">{error}</div>}

@@ -102,7 +102,7 @@ export function DataTable<TData extends { id: number }>({
 
                 {showCheckboxes && onDeleteSelected && selectedCount > 0 && (
                     <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground bg-background z-10">Выбрано: {selectedCount}</span>
+                        <span className="text-sm text-muted-foreground">Выбрано: {selectedCount}</span>
                         <Button variant="destructive" className="z-10" onClick={handleDeleteSelected}>
                             Удалить выбранные
                         </Button>
@@ -148,20 +148,20 @@ export function DataTable<TData extends { id: number }>({
                     <div className="text-sm text-muted-foreground z-10">Всего: {table.getFilteredRowModel().rows.length} записей</div>
                     <div className="flex items-center space-x-2">
                         {data.length > 10 && (
-                            <Button variant="outline" onClick={handleToggleShowAll} className="z-10">
+                            <Button variant="default" onClick={handleToggleShowAll} className="z-10">
                                 {showAll ? "Свернуть" : "Развернуть"}
                             </Button>
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
                             <div className="flex items-center space-x-2  z-10">
-                                <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                                <Button className="border" variant="default" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                                     {"<"}
                                 </Button>
                                 <span className="text-sm">
                                     Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
                                 </span>
-                                <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                                <Button className="border" variant="default" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                                     {">"}
                                 </Button>
                             </div>

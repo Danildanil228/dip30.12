@@ -101,7 +101,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                 description: description.trim() || null,
                 unit,
                 quantity: quantityNum,
-                category_id: categoryIdToSend
+                category_id: categoryIdToSend,
             });
 
             setName("");
@@ -138,7 +138,9 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
 
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
-            <AlertDialogTrigger asChild className="z-10">{triggerButton || <Button>Добавить</Button>}</AlertDialogTrigger>
+            <AlertDialogTrigger asChild className="z-10">
+                {triggerButton || <Button>Добавить</Button>}
+            </AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Добавить новый материал</AlertDialogTitle>
@@ -198,9 +200,10 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                                 onChange={setCategoryId}
                                 options={[{ value: "no-category", label: "Без категории" }, ...categories.map((c) => ({ value: c.id.toString(), label: c.name }))]}
                                 placeholder="Выберите категорию"
+                                emptyText="Категории не найдены"
                                 disabled={loading || loadingCategories}
                             />
-                            {loadingCategories && <p className="text-sm text-gray-500">Загрузка категорий...</p>}
+                            {loadingCategories && <p className="text-sm text-muted-foreground">Загрузка категорий...</p>}
                         </div>
 
                         {error && <div className="text-red-500 text-sm">{error}</div>}

@@ -191,7 +191,7 @@ export default function Materials() {
                         <CreateMaterialDialog
                             onMaterialCreated={fetchMaterials}
                             triggerButton={
-                                <Button>
+                                <Button className="btn">
                                     <Plus className="h-4 w-4 mr-1" /> Добавить
                                 </Button>
                             }

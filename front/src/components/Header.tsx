@@ -35,7 +35,7 @@ export default function Header() {
         }[user.role] || "Неизвестная роль";
 
     return (
-        <header className="sticky top-0 z-40 w-full">
+        <header className="sticky top-0 z-40 w-full mb-4">
             <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}

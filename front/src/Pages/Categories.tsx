@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/useUser";
 import { useMaterials } from "@/hooks/useMaterials";
 import EditCategoryDialog from "@/components/Dialog/EditCategoryDialog";
@@ -30,69 +30,103 @@ export default function Categories() {
     const { isAdmin } = useUser();
     const { categories, loading, deleteCategory, fetchCategories } = useMaterials();
 
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [_categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+    const [singleDeleteTarget, setSingleDeleteTarget] = useState<Category | null>(null);
+    const [multiDeleteIds, setMultiDeleteIds] = useState<number[]>([]);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [isChecking, setIsChecking] = useState(false);
 
-    const checkAndDelete = async (category: Category) => {
+    const checkCategories = async (ids: number[]): Promise<{ blocked: Category[]; allowed: Category[] }> => {
+        const blocked: Category[] = [];
+        const allowed: Category[] = [];
+
+        for (const id of ids) {
+            const category = categories.find((c) => c.id === id);
+            if (!category) continue;
+
+            try {
+                const response = await fetch(`/api/categories/${id}/check`, { method: "HEAD" });
+                if (!response.ok) {
+                    blocked.push(category);
+                } else {
+                    allowed.push(category);
+                }
+            } catch {
+                allowed.push(category);
+            }
+        }
+
+        return { blocked, allowed };
+    };
+
+    const executeSingleDelete = async () => {
+        if (!singleDeleteTarget) return;
         setIsChecking(true);
+        setDeleteError(null);
+
         try {
-            await deleteCategory(category.id);
+            await deleteCategory(singleDeleteTarget.id);
             fetchCategories();
+            setSingleDeleteTarget(null);
         } catch (error: any) {
             const materialCount = error.response?.data?.materialCount;
             if (materialCount) {
-                setDeleteError(`В категории "${category.name}" находится ${materialCount} материалов. Сначала удалите или переместите их.`);
-                setDeleteDialogOpen(true);
+                setDeleteError(`В категории "${singleDeleteTarget.name}" находится ${materialCount} материалов. Сначала удалите или переместите их.`);
             } else {
                 setDeleteError(error.response?.data?.error || "Не удалось удалить категорию");
-                setDeleteDialogOpen(true);
             }
+            setSingleDeleteTarget(null);
         } finally {
             setIsChecking(false);
         }
     };
 
-    const handleDeleteClick = (category: Category) => {
-        setCategoryToDelete(category);
-        setDeleteError(null);
-        setDeleteDialogOpen(false);
-        checkAndDelete(category);
-    };
-
-    const handleDeleteSelected = async (selectedIds: number[]) => {
+    const executeMultiDelete = async () => {
         setIsChecking(true);
-        let hasError = false;
-        let errorMessage = "";
+        setDeleteError(null);
 
-        for (const id of selectedIds) {
+        const { blocked } = await checkCategories(multiDeleteIds);
+
+        if (blocked.length > 0) {
+            const blockedNames = blocked.map((c) => `"${c.name}"`).join(", ");
+            setDeleteError(`Невозможно удалить категории, в которых есть материалы: ${blockedNames}. Сначала удалите или переместите материалы из этих категорий.`);
+            setMultiDeleteIds([]);
+            setIsChecking(false);
+            return;
+        }
+
+        for (const id of multiDeleteIds) {
             try {
                 await deleteCategory(id);
             } catch (error: any) {
-                hasError = true;
                 const materialCount = error.response?.data?.materialCount;
                 const category = categories.find((c) => c.id === id);
                 if (materialCount) {
-                    errorMessage = `В категории "${category?.name}" находится ${materialCount} материалов. Сначала удалите или переместите их.`;
+                    setDeleteError(`В категории "${category?.name}" находится ${materialCount} материалов. Сначала удалите или переместите их.`);
                 } else {
-                    errorMessage = error.response?.data?.error || "Не удалось удалить категорию";
+                    setDeleteError(error.response?.data?.error || "Не удалось удалить категорию");
                 }
-                break;
+                setMultiDeleteIds([]);
+                setIsChecking(false);
+                return;
             }
         }
 
-        if (hasError) {
-            setDeleteError(errorMessage);
-            setDeleteDialogOpen(true);
-        } else {
-            fetchCategories();
-        }
+        setMultiDeleteIds([]);
+        fetchCategories();
         setIsChecking(false);
     };
 
-    const closeDialog = () => {
-        setDeleteDialogOpen(false);
+    const handleSingleDeleteClick = (category: Category) => {
+        setDeleteError(null);
+        setSingleDeleteTarget(category);
+    };
+
+    const handleDeleteSelected = (selectedIds: number[]) => {
+        setDeleteError(null);
+        setMultiDeleteIds(selectedIds);
+    };
+
+    const closeErrorDialog = () => {
         setDeleteError(null);
     };
 
@@ -162,7 +196,7 @@ export default function Categories() {
                                 </Button>
                             }
                         />
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteClick(category)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSingleDeleteClick(category)}>
                             <img src="/trash.png" className="icon w-4" alt="Удалить" />
                         </Button>
                     </div>
@@ -210,7 +244,49 @@ export default function Categories() {
                 />
             </motion.div>
 
-            <AlertDialog open={deleteDialogOpen} onOpenChange={closeDialog}>
+            <AlertDialog
+                open={singleDeleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) setSingleDeleteTarget(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить категорию?</AlertDialogTitle>
+                        <AlertDialogDescription>Вы уверены, что хотите удалить категорию "{singleDeleteTarget?.name}"? Это действие нельзя отменить.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isChecking}>Отмена</AlertDialogCancel>
+                        <AlertDialogAction disabled={isChecking} onClick={executeSingleDelete}>
+                            {isChecking ? "Удаление..." : "Удалить"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={multiDeleteIds.length > 0}
+                onOpenChange={(open) => {
+                    if (!open) setMultiDeleteIds([]);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить выбранные категории?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Вы уверены, что хотите удалить {multiDeleteIds.length} выбранных категорий? Это действие нельзя отменить. Категории, содержащие материалы, удалены не будут.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isChecking}>Отмена</AlertDialogCancel>
+                        <AlertDialogAction disabled={isChecking} onClick={executeMultiDelete}>
+                            {isChecking ? "Удаление..." : "Удалить"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={deleteError !== null} onOpenChange={closeErrorDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Невозможно удалить</AlertDialogTitle>
@@ -219,7 +295,7 @@ export default function Categories() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={closeDialog}>Закрыть</AlertDialogCancel>
+                        <AlertDialogCancel onClick={closeErrorDialog}>Закрыть</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
