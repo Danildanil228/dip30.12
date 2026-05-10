@@ -126,12 +126,12 @@ export default function Requests() {
                             setSearchTerm(e.target.value);
                             setCurrentPage(0);
                         }}
-                        className="pl-10"
+                        className="pl-10 bg-background!"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {["all", "pending", "approved", "rejected"].map((status) => (
-                        <Button
+                        <Button className="dark:bg-"
                             key={status}
                             variant={statusFilter === status ? "default" : "outline"}
                             onClick={() => {
@@ -149,18 +149,18 @@ export default function Requests() {
                 <div className="flex items-center justify-between gap-4">
                     <div className="text-sm text-muted-foreground">Найдено: {filteredRequests.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
+                        <Button className="dark:bg-" variant="outline" size="sm" onClick={handleToggleShowAll}>
                             {showAll ? "Свернуть" : "Развернуть"}
                         </Button>
                         {!showAll && (
                             <>
-                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
+                                <Button variant="outline" className="dark:bg-" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>
                                     &lt;
                                 </Button>
                                 <span className="text-sm">
                                     Стр. {currentPage + 1} из {totalPages}
                                 </span>
-                                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
+                                <Button variant="outline" className="dark:bg-" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
                                     &gt;
                                 </Button>
                             </>
