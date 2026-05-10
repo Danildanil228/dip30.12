@@ -218,11 +218,11 @@ export default function RequestDetails() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[100px]">Код</TableHead>
+                                            <TableHead className="w-25">Код</TableHead>
                                             <TableHead>Название</TableHead>
-                                            <TableHead className="text-center w-[80px]">Ед.</TableHead>
-                                            <TableHead className="text-center w-[100px]">Остаток на момент</TableHead>
-                                            <TableHead className="text-center w-[100px]">{currentRequest.request_type === "incoming" ? "Поступит" : "Спишется"}</TableHead>
+                                            <TableHead className="text-center w-20">Ед.</TableHead>
+                                            <TableHead className="text-center w-25">Остаток на момент</TableHead>
+                                            <TableHead className="text-center w-25">{currentRequest.request_type === "incoming" ? "Поступит" : "Спишется"}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>

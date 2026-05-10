@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { authService } from "@/services/authService";
 import DarkModeButtonToggle from "@/components/DarkModeButtonToggle";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LogIn, UserPlus, Shield, Package, BarChart3, Users, CheckCircle2, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, LogIn, Shield, Package, BarChart3, Users, CheckCircle2, ArrowRight } from "lucide-react";
 import type { LoginResponse } from "@/types/user.types";
 
 export default function Login() {
@@ -102,15 +102,15 @@ export default function Login() {
 
     if (isFirst === null) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10">
+            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary/5 via-background to-primary/10">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex bg-gradient-to-br from-primary/5 via-background to-primary/10">
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary to-primary/80">
+        <div className="min-h-screen flex bg-linear-to-br from-primary/5 via-background to-primary/10">
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-linear-to-br from-primary to-primary/80">
                 <div className="absolute inset-0 bg-black/10" />
                 <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
                 <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-white/5 blur-3xl" />

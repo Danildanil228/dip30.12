@@ -6,7 +6,6 @@ import { BookOpen, Package, BarChart3, UserCog, ArrowRight, ClipboardList, FileT
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { Button } from "@/components/ui/button";
 
-// Компонент-обёртка для анимации появления при скролле
 const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-80px" });
@@ -32,12 +31,11 @@ export default function Main() {
         <div className="space-y-8 pb-8">
             <ScrollToTop />
 
-            {/* Приветственный баннер */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-background p-8 border"
+                className="relative overflow-hidden rounded-2xl bg-linear-to-r from-primary/10 via-primary/5 to-background p-8 border"
             >
                 <div className="relative z-10">
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -50,7 +48,6 @@ export default function Main() {
                 </div>
             </motion.div>
 
-            {/* Блок 1: О программе */}
             <RevealBlock>
                 <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
                     <div className="flex items-center gap-3 mb-4">
@@ -115,7 +112,6 @@ export default function Main() {
                 </div>
             </RevealBlock>
 
-            {/* Блоки с инструкциями для ролей */}
             {(user?.role === "storekeeper" || isAdmin) && (
                 <RevealBlock>
                     <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
