@@ -15,9 +15,8 @@ export interface UserProfile extends User {
     created_at: string;
     updated_at: string;
 }
-
 export interface LoginResponse {
     message: string;
     user: User;
-    token: string;
+    accessToken: string;  
 }

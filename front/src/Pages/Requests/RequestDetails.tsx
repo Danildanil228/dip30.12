@@ -110,12 +110,10 @@ export default function RequestDetails() {
 
     return (
         <div className="space-y-6">
-            {/* Кнопка назад */}
             <Button variant="ghost" onClick={() => navigate("/requests")} className="mb-2">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Назад к заявкам
             </Button>
 
-            {/* Основная информация */}
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 <Card className="shadow-sm">
                     <CardHeader>
@@ -135,7 +133,6 @@ export default function RequestDetails() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Информация о создателе и датах */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-start gap-3">
                                 <User className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -174,7 +171,6 @@ export default function RequestDetails() {
                             )}
                         </div>
 
-                        {/* Примечания */}
                         {currentRequest.notes && (
                             <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl">
                                 <FileText className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -190,7 +186,6 @@ export default function RequestDetails() {
                             </div>
                         )}
 
-                        {/* Причина отклонения */}
                         {currentRequest.rejection_reason && (
                             <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                                 <XCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
@@ -204,7 +199,6 @@ export default function RequestDetails() {
                 </Card>
             </motion.div>
 
-            {/* Товары в заявке */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 <Card className="shadow-sm">
                     <CardHeader>
@@ -250,8 +244,6 @@ export default function RequestDetails() {
                                 </Table>
                             </div>
                         )}
-
-                        {/* Кнопки действий */}
                         {canApprove && (
                             <div className="flex flex-wrap gap-3 justify-end mt-6 pt-6 border-t">
                                 <AlertDialog>
@@ -293,7 +285,6 @@ export default function RequestDetails() {
                 </Card>
             </motion.div>
 
-            {/* Диалог отклонения */}
             <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
