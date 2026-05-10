@@ -1,10 +1,9 @@
 import { useMemo, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
-import { Link } from "react-router-dom";
-import { BookOpen, Package, BarChart3, UserCog, ArrowRight, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search } from "lucide-react";
+import { BookOpen, Package, BarChart3, UserCog, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search } from "lucide-react";
 import { ScrollToTop } from "@/components/ScrollToTop";
-import { Button } from "@/components/ui/button";
+
 
 const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
     const ref = useRef(null);

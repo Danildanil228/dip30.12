@@ -18,10 +18,10 @@ const pool = new Pool({
 
     // SSl для VPS
     
-    // ssl: {
-    //     require: true,
-    //     rejectUnauthorized: false
-    // }
+    ssl: {
+        require: true,
+        rejectUnauthorized: false
+    }
 });
 
 module.exports = pool;

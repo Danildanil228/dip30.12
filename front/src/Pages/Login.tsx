@@ -4,7 +4,6 @@ import { authService } from "@/services/authService";
 import DarkModeButtonToggle from "@/components/DarkModeButtonToggle";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Shield, Package, BarChart3, Users, CheckCircle2, ArrowRight } from "lucide-react";
-import type { LoginResponse } from "@/types/user.types";
 
 export default function Login() {
     const [username, setUsername] = useState("");
@@ -74,11 +73,10 @@ export default function Login() {
         setLoading(true);
 
         try {
-            let response: LoginResponse;
             if (isFirst) {
-                response = await authService.registerFirst(username.trim(), password.trim());
+                await authService.registerFirst(username.trim(), password.trim());
             } else {
-                response = await authService.login(username.trim(), password.trim());
+                await authService.login(username.trim(), password.trim());
             }
 
             if (rememberMe) {
