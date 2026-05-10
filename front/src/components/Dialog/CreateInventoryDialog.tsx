@@ -343,7 +343,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                                     <ChevronLeft className="h-4 w-4" />
                                                 </Button>
                                                 <span className="text-sm">
-                                                    {currentPage + 1} / {totalPages}
+                                                    Стр. {currentPage + 1} из {totalPages}
                                                 </span>
                                                 <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                                                     <ChevronRight className="h-4 w-4" />
