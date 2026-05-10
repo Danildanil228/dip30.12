@@ -32,17 +32,19 @@ export function MetricCard({ title, value, change, changeText, icon, description
                 {icon && <div className="h-4 w-4 text-muted-foreground">{icon}</div>}
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{value}</div>
-                {(change !== undefined || changeText) && (
-                    <div className="flex items-center gap-1 mt-1">
-                        {getChangeIcon()}
-                        <span className={`text-xs ${getChangeColor()}`}>
-                            {change !== undefined && `${change > 0 ? "+" : ""}${change}%`}
-                            {changeText && ` ${changeText}`}
-                        </span>
-                        {description && <span className="text-xs text-muted-foreground ml-1">{description}</span>}
-                    </div>
-                )}
+                <div className="flex gap-2">
+                    <div className="text-2xl font-bold">{value}</div>
+                    {(change !== undefined || changeText) && (
+                        <div className="flex items-center gap-1 mt-1">
+                            {getChangeIcon()}
+                            <span className={`text-xs  ${getChangeColor()}`}>
+                                {change !== undefined && `${change > 0 ? "+" : ""}${change}%`}
+                                {changeText && ` ${changeText}`}
+                            </span>
+                            {description && <span className="text-xs text-muted-foreground ml-1">{description}</span>}
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );

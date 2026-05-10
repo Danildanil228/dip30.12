@@ -179,20 +179,6 @@ export default function InventoryConduct() {
                             </div>
                         )}
 
-                        {error && (
-                            <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                                <AlertCircle className="h-4 w-4 shrink-0" />
-                                <span className="text-sm">{error}</span>
-                            </div>
-                        )}
-
-                        {successMessage && (
-                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                                <Save className="h-4 w-4" />
-                                <span className="text-sm">{successMessage}</span>
-                            </motion.div>
-                        )}
-
                         <div>
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="text-muted-foreground">Прогресс</span>
@@ -200,18 +186,34 @@ export default function InventoryConduct() {
                                     {progress.percent}% ({progress.checked}/{progress.total})
                                 </span>
                             </div>
-                            <div className="w-full bg-muted rounded-full h-2.5">
+                            <div className="w-full bg-muted rounded-full h-2.5 border">
                                 <motion.div className="bg-primary h-2.5 rounded-full" initial={{ width: 0 }} animate={{ width: `${progress.percent}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
                             </div>
                         </div>
+                        <div className="flex justify-between items-center">
+                            <div className="justify-start">
+                                {error && (
+                                    <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
+                                        <AlertCircle className="h-4 w-4 shrink-0" />
+                                        <span className="text-sm">{error}</span>
+                                    </div>
+                                )}
 
-                        <div className="flex flex-wrap gap-3 justify-end">
-                            <Button onClick={handleSave} disabled={saving || currentInventory.status !== "in_progress" || !isResponsible()} variant="outline" className="gap-2">
-                                <Save className="h-4 w-4" /> Сохранить
-                            </Button>
-                            <Button onClick={handleCompleteClick} disabled={saving || currentInventory.status !== "in_progress" || !isResponsible()} className="gap-2">
-                                <Send className="h-4 w-4" /> Завершить
-                            </Button>
+                                {successMessage && (
+                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
+                                        <Save className="h-4 w-4" />
+                                        <span className="text-sm">{successMessage}</span>
+                                    </motion.div>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap gap-3 justify-end">
+                                <Button onClick={handleSave} disabled={saving || currentInventory.status !== "in_progress" || !isResponsible()} variant="outline" className="gap-2">
+                                    <Save className="h-4 w-4" /> Сохранить
+                                </Button>
+                                <Button onClick={handleCompleteClick} disabled={saving || currentInventory.status !== "in_progress" || !isResponsible()} className="gap-2">
+                                    <Send className="h-4 w-4" /> Завершить
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -252,6 +254,7 @@ export default function InventoryConduct() {
                                             <div>
                                                 <Label className="text-sm mb-1.5 block">Фактическое количество</Label>
                                                 <Input
+                                                    className="dark:bg-background"
                                                     type="number"
                                                     min="0"
                                                     placeholder="Введите количество"
@@ -270,6 +273,7 @@ export default function InventoryConduct() {
                                             <div>
                                                 <Label className="text-sm mb-1.5 block">Причина расхождения</Label>
                                                 <Input
+                                                    className="dark:bg-background"
                                                     placeholder="Укажите причину"
                                                     value={item.reason || ""}
                                                     onChange={(e) => handleReasonChange(item.material_id, e.target.value)}

@@ -82,7 +82,7 @@ export function MovementChart() {
                     <CardTitle>Движение товаров</CardTitle>
                     <div className="flex flex-wrap gap-2">
                         {quickRanges.map((range) => (
-                            <Button key={range.days} variant="outline" size="sm" onClick={() => handleQuickRange(range.days)}>
+                            <Button key={range.days} variant="outline" className="bg-background!" size="sm" onClick={() => handleQuickRange(range.days)}>
                                 {range.label}
                             </Button>
                         ))}

@@ -207,7 +207,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction onClick={deleteAllLogs} className="bg-destructive hover:bg-destructive/90">
+                                        <AlertDialogAction onClick={deleteAllLogs}>
                                             Удалить
                                         </AlertDialogAction>
                                     </AlertDialogFooter>

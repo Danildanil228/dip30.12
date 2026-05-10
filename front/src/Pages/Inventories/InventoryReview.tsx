@@ -145,11 +145,11 @@ export default function InventoryReview() {
                         </div>
 
                      
-                        <div className="flex flex-wrap gap-3 justify-end">
-                            <Button onClick={() => setShowApproveDialog(true)} disabled={processing} className="gap-2">
+                        <div className="flex flex-wrap gap-3 justify-end items-center">
+                            <Button onClick={() => setShowApproveDialog(true)} disabled={processing} className="gap-2 p-2!">
                                 <CheckCircle className="h-4 w-4" /> Подтвердить
                             </Button>
-                            <Button onClick={() => setShowCancelDialog(true)} disabled={processing} variant="outline" className="gap-2">
+                            <Button onClick={() => setShowCancelDialog(true)} disabled={processing} variant="outline" className="gap-2 border dark:bg-">
                                 <XCircle className="h-4 w-4" /> Отменить
                             </Button>
                         </div>
@@ -242,7 +242,7 @@ export default function InventoryReview() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={handleCancel}>
                             Отменить
                         </AlertDialogAction>
                     </AlertDialogFooter>

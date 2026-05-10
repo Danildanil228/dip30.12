@@ -162,12 +162,12 @@ export default function Inventories() {
                             setSearchTerm(e.target.value);
                             setCurrentPage(0);
                         }}
-                        className="pl-10"
+                        className="pl-10 bg-background!"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {["all", "draft", "in_progress", "completed", "approved", "cancelled"].map((s) => (
-                        <Button
+                        <Button className="dark:bg-"
                             key={s}
                             variant={statusFilter === s ? "default" : "outline"}
                             onClick={() => {
@@ -186,7 +186,7 @@ export default function Inventories() {
                 <div className="flex items-center justify-between gap-4">
                     <div className="text-sm text-muted-foreground">Найдено: {filteredInventories.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button
+                        <Button className="dark:bg-"
                             variant="outline"
                             size="sm"
                             onClick={() => {
@@ -198,13 +198,13 @@ export default function Inventories() {
                         </Button>
                         {!showAll && totalPages > 1 && (
                             <>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
+                                <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
                                     &lt;
                                 </Button>
                                 <span className="text-sm">
                                     Стр. {currentPage + 1} из {totalPages}
                                 </span>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} disabled={currentPage === totalPages - 1}>
+                                <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} disabled={currentPage === totalPages - 1}>
                                     &gt;
                                 </Button>
                             </>
@@ -296,8 +296,8 @@ export default function Inventories() {
                                                     <span className="text-muted-foreground">Прогресс</span>
                                                     <span className="font-medium">{getProgress(inventory)}%</span>
                                                 </div>
-                                                <div className="w-full bg-muted rounded-full h-2">
-                                                    <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${getProgress(inventory)}%` }} />
+                                                <div className="w-full bg-muted rounded-full h-2 border">
+                                                    <div className="bg-primary h-2 rounded-full transition-all " style={{ width: `${getProgress(inventory)}%` }} />
                                                 </div>
                                             </div>
                                         )}

@@ -114,7 +114,7 @@ export default function Dashboard() {
                         title="Завершено за период"
                         value={metrics?.completed_requests || 0}
                         change={metrics?.completed_change}
-                        changeText="к прошлому периоду"
+                        changeText=""
                         icon={<CheckCircle className="h-5 w-5 text-purple-500" />}
                     />
                 </motion.div>

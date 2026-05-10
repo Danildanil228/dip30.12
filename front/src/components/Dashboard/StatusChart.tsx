@@ -119,7 +119,7 @@ export function StatusChart() {
                     <CardTitle>Статус {getEntityLabel()}</CardTitle>
                     <div className="flex flex-wrap gap-2">
                         <Select value={entityType} onValueChange={(v) => setEntityType(v as EntityType)}>
-                            <SelectTrigger className="w-50">
+                            <SelectTrigger className="w-50 bg-background!">
                                 <SelectValue placeholder="Выберите тип" />
                             </SelectTrigger>
                             <SelectContent>
