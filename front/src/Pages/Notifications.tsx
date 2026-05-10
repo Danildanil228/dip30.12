@@ -156,7 +156,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                     <div className="sm:flex grid gap-2">
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" className="gap-2">
+                                <Button variant="default" className="gap-2">
                                     <FunnelPlus className="h-4 w-4" />
                                     Фильтры{" "}
                                     {selectedTypes.length > 0 && (
@@ -188,7 +188,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                         </Popover>
 
                         {selectedTypes.length > 0 && (
-                            <Button variant="outline" size="icon" onClick={handleResetFilters} title="Сбросить фильтры">
+                            <Button variant="default" size="icon" onClick={handleResetFilters} title="Сбросить фильтры">
                                 <FunnelX className="h-4 w-4" />
                             </Button>
                         )}
@@ -196,7 +196,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                         {logs.length > 1 && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="outline" className="gap-2">
+                                    <Button variant="default" className="gap-2" >
                                         <Trash2 className="h-4 w-4" />
                                         Удалить все ({logs.length})
                                     </Button>
@@ -222,7 +222,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-sm text-muted-foreground">Всего записей: {filteredLogs.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button
+                        <Button className="dark:bg-"
                             variant="outline"
                             size="sm"
                             onClick={() => {
@@ -234,13 +234,13 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                         </Button>
                         {!showAll && totalPages > 1 && (
                             <>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
+                                <Button variant="outline" size="sm" className="dark:bg-" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
                                     &lt;
                                 </Button>
                                 <span className="text-sm">
                                     Стр. {currentPage + 1} из {totalPages}
                                 </span>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
+                                <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                                     &gt;
                                 </Button>
                             </>

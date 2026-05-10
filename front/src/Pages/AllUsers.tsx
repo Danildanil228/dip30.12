@@ -176,14 +176,6 @@ export default function AllUsers() {
     const customToolbar = (
         <div className="flex items-center gap-2">
             <ExportDropdown data={users} columns={exportColumns} filename="users" title="Пользователи" />
-            <AddUserDialog
-                onUserCreated={fetchUsers}
-                triggerButton={
-                    <Button>
-                        <Plus className="h-4 w-4 mr-1" /> Добавить
-                    </Button>
-                }
-            />
         </div>
     );
 
