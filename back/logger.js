@@ -16,7 +16,7 @@ class Logger {
             await pool.query(
                 `INSERT INTO notifications (user_id, type, title, message) 
                  VALUES ($1, $2, $3, $4)`,
-                [userId, type, title, message]
+                [userId, type, title, message],
             );
         } catch (error) {
             console.error("Ошибка записи лога:", error);

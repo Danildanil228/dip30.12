@@ -35,8 +35,8 @@ app.use(
         },
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"]
-    })
+        allowedHeaders: ["Content-Type", "Authorization"],
+    }),
 );
 app.use(express.json());
 app.use("/backups", backupRoutes);
@@ -48,7 +48,7 @@ setInterval(
             console.log(`Очищено ${cleaned} просроченных сессий`);
         }
     },
-    60 * 60 * 1000
+    60 * 60 * 1000,
 );
 
 // ============= ОБНОВЛЕНИЕ ТОКЕНОВ =============
@@ -78,7 +78,7 @@ app.post("/refresh", async (req, res) => {
         username: user.username,
         role: user.role,
         name: user.name,
-        secondname: user.secondname
+        secondname: user.secondname,
     };
 
     const newTokens = generateTokens(userPayload);
@@ -92,7 +92,7 @@ app.post("/refresh", async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.json({ accessToken: newTokens.accessToken });
@@ -153,7 +153,7 @@ app.post("/registerFirst", async (req, res) => {
             "admin",
             "",
             "",
-            null
+            null,
         ]);
 
         const user = result.rows[0];
@@ -162,7 +162,7 @@ app.post("/registerFirst", async (req, res) => {
             username: user.username,
             role: user.role,
             name: user.name,
-            secondname: user.secondname
+            secondname: user.secondname,
         };
 
         const tokens = generateTokens(userPayload);
@@ -174,13 +174,13 @@ app.post("/registerFirst", async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.json({
             message: "Первый пользователь создан",
             user: userPayload,
-            accessToken: tokens.accessToken
+            accessToken: tokens.accessToken,
         });
     } catch (error) {
         console.error(error);
@@ -214,7 +214,7 @@ app.post("/login", async (req, res) => {
             username: user.username,
             role: user.role,
             name: user.name,
-            secondname: user.secondname
+            secondname: user.secondname,
         };
 
         const tokens = generateTokens(userPayload);
@@ -226,7 +226,7 @@ app.post("/login", async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         await Logger.login(user.id, user.username);
@@ -234,7 +234,7 @@ app.post("/login", async (req, res) => {
         res.json({
             message: "Совершен вход",
             user: userPayload,
-            accessToken: tokens.accessToken
+            accessToken: tokens.accessToken,
         });
     } catch (error) {
         console.error(error);
@@ -244,8 +244,15 @@ app.post("/login", async (req, res) => {
 
 app.post("/logout", authenticateAndCheckDB, async (req, res) => {
     try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (refreshToken) {
+            const hashedToken = require("crypto").createHash("sha256").update(refreshToken).digest("hex");
+            await pool.query("DELETE FROM user_sessions WHERE refresh_token_hash = $1", [hashedToken]);
+        }
+
         res.clearCookie("refreshToken", { httpOnly: true, sameSite: "strict" });
-        await Logger.log(req.user.id, "logout", "Выход из системы", `Пользователь ${req.user.username} вышел из системы`);
+        await Logger.logout(req.user.id, req.user.username);
         res.json({ message: "Выход выполнен" });
     } catch (error) {
         console.error(error);
@@ -272,7 +279,7 @@ app.post("/createUser", authenticateAndCheckDB, checkAdmin, async (req, res) => 
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
              RETURNING id, username, role, name, secondname`,
-            [username, hashedPassword, role, name, secondname, "", "", null]
+            [username, hashedPassword, role, name, secondname, "", "", null],
         );
 
         const user = result.rows[0];
@@ -281,7 +288,7 @@ app.post("/createUser", authenticateAndCheckDB, checkAdmin, async (req, res) => 
 
         res.json({
             message: "Пользователь успешно создан",
-            user: user
+            user: user,
         });
     } catch (error) {
         console.error("Ошибка при создании пользователя:", error);
@@ -337,7 +344,7 @@ app.delete("/users/:id", authenticateAndCheckDB, checkAdmin, async (req, res) =>
 
         res.json({
             message: "Пользователь удален",
-            deletedUser: result.rows[0]
+            deletedUser: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при удалении пользователя:", error);
@@ -358,7 +365,7 @@ app.get("/users/:id", authenticateAndCheckDB, async (req, res) => {
             `SELECT id, username, role, name, secondname, email, phone, 
                     birthday, created_at, updated_at 
              FROM users WHERE id = $1`,
-            [userId]
+            [userId],
         );
 
         if (result.rows.length === 0) {
@@ -398,7 +405,7 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
             email: email || oldUser.email,
             phone: phone || oldUser.phone,
             birthday: birthday || oldUser.birthday,
-            updated_at: new Date()
+            updated_at: new Date(),
         };
 
         let roleChanged = false;
@@ -445,7 +452,12 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
 
         if (roleChanged) {
             const revokedCount = await revokeAllUserSessions(userId);
-            await Logger.log(currentUser.id, "security_sessions_revoked", "Отзыв сессий", `Администратор ${currentUser.username} изменил роль пользователя ${oldUser.username} с ${oldUser.role} на ${role}. Отозвано ${revokedCount} сессий.`);
+            await Logger.log(
+                currentUser.id,
+                "security_sessions_revoked",
+                "Отзыв сессий",
+                `Администратор ${currentUser.username} изменил роль пользователя ${oldUser.username} с ${oldUser.role} на ${role}. Отозвано ${revokedCount} сессий.`,
+            );
         }
 
         const changedFields = {};
@@ -472,7 +484,7 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
             if (normalizedNewValue !== normalizedOldValue && key !== "updated_at") {
                 changedFields[key] = {
                     old: normalizedOldValue,
-                    new: normalizedNewValue
+                    new: normalizedNewValue,
                 };
             }
         });
@@ -487,7 +499,7 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
 
         res.json({
             message: "Данные обновлены",
-            user: updatedUser
+            user: updatedUser,
         });
     } catch (error) {
         console.error("Ошибка при обновлении пользователя:", error);
@@ -627,7 +639,7 @@ app.post("/categories", authenticateAndCheckDB, checkAdmin, async (req, res) => 
 
         res.json({
             message: "Категория создана",
-            category: result.rows[0]
+            category: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при создании категории:", error);
@@ -655,7 +667,12 @@ app.put("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) 
 
         const oldCategory = oldCategoryResult.rows[0];
 
-        const result = await pool.query(`UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`, [name, description || null, req.user.id, categoryId]);
+        const result = await pool.query(`UPDATE materialCategories SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`, [
+            name,
+            description || null,
+            req.user.id,
+            categoryId,
+        ]);
 
         const changes = [];
         if (name !== oldCategory.name) changes.push(`название: "${oldCategory.name}" → "${name}"`);
@@ -667,7 +684,7 @@ app.put("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) 
 
         res.json({
             message: "Категория обновлена",
-            category: result.rows[0]
+            category: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при обновлении категории:", error);
@@ -688,7 +705,7 @@ app.delete("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, re
         if (materialCount > 0) {
             return res.status(400).json({
                 error: `Невозможно удалить категорию: в ней находится ${materialCount} материал(ов)`,
-                materialCount: materialCount
+                materialCount: materialCount,
             });
         }
 
@@ -706,7 +723,7 @@ app.delete("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, re
 
         res.json({
             message: "Категория удалена",
-            deletedCategory: result.rows[0]
+            deletedCategory: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при удалении категории:", error);
@@ -757,7 +774,7 @@ app.get("/materials", async (req, res) => {
 
         res.json({
             materials: result.rows,
-            stats: statsResult.rows[0]
+            stats: statsResult.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при получении материалов:", error);
@@ -781,7 +798,7 @@ app.get("/materials/:id", async (req, res) => {
             LEFT JOIN users uu ON m.updated_by = uu.id 
             WHERE m.id = $1
         `,
-            [materialId]
+            [materialId],
         );
 
         if (result.rows.length === 0) {
@@ -823,14 +840,14 @@ app.post("/materials", authenticateAndCheckDB, checkAdmin, async (req, res) => {
             `INSERT INTO materials (name, code, description, unit, category_id, quantity, created_by) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [name, code, description || null, unit, category_id || null, quantity || 0, req.user.id]
+            [name, code, description || null, unit, category_id || null, quantity || 0, req.user.id],
         );
 
         await Logger.materialCreated(req.user.id, req.user.username, name);
 
         res.json({
             message: "Материал создан",
-            material: result.rows[0]
+            material: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при создании материала:", error);
@@ -875,7 +892,7 @@ app.put("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) =
                  category_id = $5, updated_by = $6, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $7 
              RETURNING *`,
-            [name, code || null, description || null, unit, category_id || null, req.user.id, materialId]
+            [name, code || null, description || null, unit, category_id || null, req.user.id, materialId],
         );
 
         const changes = [];
@@ -890,7 +907,7 @@ app.put("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) =
 
         res.json({
             message: "Материал обновлен",
-            material: result.rows[0]
+            material: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при обновлении материала:", error);
@@ -912,7 +929,7 @@ app.delete("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res
 
         if (material.quantity > 0) {
             return res.status(400).json({
-                error: `Невозможно удалить материал: на складе осталось ${material.quantity} ед.`
+                error: `Невозможно удалить материал: на складе осталось ${material.quantity} ед.`,
             });
         }
 
@@ -922,7 +939,7 @@ app.delete("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res
 
         res.json({
             message: "Материал удален",
-            deletedMaterial: result.rows[0]
+            deletedMaterial: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка при удалении материала:", error);
@@ -991,7 +1008,7 @@ app.get("/requests/:id", authenticateAndCheckDB, async (req, res) => {
              LEFT JOIN users u1 ON r.created_by = u1.id
              LEFT JOIN users u2 ON r.reviewed_by = u2.id
              WHERE r.id = $1`,
-            [requestId]
+            [requestId],
         );
 
         if (requestResult.rows.length === 0) {
@@ -1014,12 +1031,12 @@ app.get("/requests/:id", authenticateAndCheckDB, async (req, res) => {
              LEFT JOIN materials m ON ri.material_id = m.id
              WHERE ri.request_id = $1
              ORDER BY ri.id`,
-            [requestId]
+            [requestId],
         );
 
         res.json({
             request: request,
-            items: itemsResult.rows
+            items: itemsResult.rows,
         });
     } catch (error) {
         console.error("Ошибка получения заявки:", error);
@@ -1063,7 +1080,7 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
                 const material = materialsMap.get(item.material_id);
                 if (material.quantity < item.quantity) {
                     return res.status(400).json({
-                        error: `Недостаточно товара "${material.name}". Остаток: ${material.quantity}, запрошено: ${item.quantity}`
+                        error: `Недостаточно товара "${material.name}". Остаток: ${material.quantity}, запрошено: ${item.quantity}`,
                     });
                 }
             }
@@ -1083,7 +1100,7 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
                 `INSERT INTO material_requests (title, request_type, status, created_by, notes, is_public, reviewed_by, reviewed_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                  RETURNING *`,
-                [title, request_type, status, currentUser.id, notes || null, publicStatus, isApproved ? currentUser.id : null, isApproved ? new Date() : null]
+                [title, request_type, status, currentUser.id, notes || null, publicStatus, isApproved ? currentUser.id : null, isApproved ? new Date() : null],
             );
 
             const newRequest = requestResult.rows[0];
@@ -1095,7 +1112,7 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
                 await client.query(
                     `INSERT INTO material_requests_items (request_id, material_id, quantity, current_quantity_at_request)
                      VALUES ($1, $2, $3, $4)`,
-                    [newRequest.id, item.material_id, item.quantity, material.quantity]
+                    [newRequest.id, item.material_id, item.quantity, material.quantity],
                 );
             }
 
@@ -1124,13 +1141,13 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
                 res.json({
                     message: "Заявка создана и подтверждена",
                     request: newRequest,
-                    autoApproved: true
+                    autoApproved: true,
                 });
             } else {
                 res.json({
                     message: "Заявка создана",
                     request: newRequest,
-                    autoApproved: false
+                    autoApproved: false,
                 });
             }
         } catch (err) {
@@ -1157,7 +1174,7 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
              LEFT JOIN material_requests_items ri ON r.id = ri.request_id
              WHERE r.id = $1 AND r.status = 'pending'
              GROUP BY r.id`,
-            [requestId]
+            [requestId],
         );
 
         if (requestResult.rows.length === 0) {
@@ -1173,7 +1190,7 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
 
                 if (currentMaterial.rows[0].quantity < item.quantity) {
                     return res.status(400).json({
-                        error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`
+                        error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`,
                     });
                 }
             }
@@ -1190,7 +1207,7 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
                 `UPDATE material_requests 
                  SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
                  WHERE id = $2`,
-                [currentUser.id, requestId]
+                [currentUser.id, requestId],
             );
 
             for (const item of items) {
@@ -1241,7 +1258,7 @@ app.put("/requests/:id/reject", authenticateAndCheckDB, checkAdminOrAccountant, 
             `UPDATE material_requests 
              SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
              WHERE id = $3`,
-            [currentUser.id, rejection_reason, requestId]
+            [currentUser.id, rejection_reason, requestId],
         );
 
         await Logger.requestRejected(currentUser.id, currentUser.username, request.title, request.request_type, rejection_reason);
@@ -1354,7 +1371,7 @@ app.put("/requests/:id", authenticateAndCheckDB, async (req, res) => {
                 await pool.query(
                     `INSERT INTO material_requests_items (request_id, material_id, quantity, current_quantity_at_request)
                      VALUES ($1, $2, $3, $4)`,
-                    [requestId, item.material_id, item.quantity, currentQuantity]
+                    [requestId, item.material_id, item.quantity, currentQuantity],
                 );
             }
             changes.push("состав заявки изменён");
@@ -1428,7 +1445,7 @@ app.get("/inventories/:id", authenticateAndCheckDB, async (req, res) => {
              LEFT JOIN users u2 ON i.responsible_person = u2.id
              LEFT JOIN users u3 ON i.approved_by = u3.id
              WHERE i.id = $1`,
-            [inventoryId]
+            [inventoryId],
         );
 
         if (inventoryResult.rows.length === 0) {
@@ -1447,7 +1464,7 @@ app.get("/inventories/:id", authenticateAndCheckDB, async (req, res) => {
              FROM inventory_categories ic
              LEFT JOIN materialcategories c ON ic.category_id = c.id
              WHERE ic.inventory_id = $1`,
-            [inventoryId]
+            [inventoryId],
         );
 
         const materialsResult = await pool.query(
@@ -1455,7 +1472,7 @@ app.get("/inventories/:id", authenticateAndCheckDB, async (req, res) => {
              FROM inventory_materials im
              LEFT JOIN materials m ON im.material_id = m.id
              WHERE im.inventory_id = $1`,
-            [inventoryId]
+            [inventoryId],
         );
 
         const resultsResult = await pool.query(
@@ -1464,14 +1481,14 @@ app.get("/inventories/:id", authenticateAndCheckDB, async (req, res) => {
              LEFT JOIN materials m ON ir.material_id = m.id
              WHERE ir.inventory_id = $1
              ORDER BY m.name`,
-            [inventoryId]
+            [inventoryId],
         );
 
         res.json({
             inventory: inventory,
             categories: categoriesResult.rows,
             selected_materials: materialsResult.rows,
-            results: resultsResult.rows
+            results: resultsResult.rows,
         });
     } catch (error) {
         console.error("Ошибка получения инвентаризации:", error);
@@ -1501,7 +1518,7 @@ app.post("/inventories", authenticateAndCheckDB, checkAdminOrAccountant, async (
                 `INSERT INTO inventories (title, created_by, responsible_person, start_date, end_date, description, status)
                  VALUES ($1, $2, $3, $4, $5, $6, 'draft')
                  RETURNING *`,
-                [title, currentUser.id, responsible_person, start_date, end_date, description || null]
+                [title, currentUser.id, responsible_person, start_date, end_date, description || null],
             );
 
             const inventory = inventoryResult.rows[0];
@@ -1542,7 +1559,7 @@ app.post("/inventories", authenticateAndCheckDB, checkAdminOrAccountant, async (
                 await client.query(
                     `INSERT INTO inventory_results (inventory_id, material_id, system_quantity)
                      VALUES ($1, $2, $3)`,
-                    [newInventoryId, material.id, material.quantity]
+                    [newInventoryId, material.id, material.quantity],
                 );
             }
 
@@ -1552,7 +1569,7 @@ app.post("/inventories", authenticateAndCheckDB, checkAdminOrAccountant, async (
 
             res.json({
                 message: "Инвентаризация создана",
-                inventory: inventory
+                inventory: inventory,
             });
         } catch (err) {
             await client.query("ROLLBACK");
@@ -1621,7 +1638,7 @@ app.put("/inventories/:id", authenticateAndCheckDB, checkAdmin, async (req, res)
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $6
              RETURNING *`,
-            [title, responsible_person, start_date, end_date, description, inventoryId]
+            [title, responsible_person, start_date, end_date, description, inventoryId],
         );
 
         if (changes.length > 0) {
@@ -1631,7 +1648,7 @@ app.put("/inventories/:id", authenticateAndCheckDB, checkAdmin, async (req, res)
 
         res.json({
             message: "Инвентаризация обновлена",
-            inventory: result.rows[0]
+            inventory: result.rows[0],
         });
     } catch (error) {
         console.error("Ошибка обновления инвентаризации:", error);
@@ -1695,7 +1712,7 @@ app.put("/inventories/:id/results", authenticateAndCheckDB, async (req, res) => 
                 `UPDATE inventory_results 
                  SET actual_quantity = $1, reason = $2, updated_at = CURRENT_TIMESTAMP
                  WHERE inventory_id = $3 AND material_id = $4`,
-                [result.actual_quantity, result.reason || null, inventoryId, result.material_id]
+                [result.actual_quantity, result.reason || null, inventoryId, result.material_id],
             );
         }
 
@@ -1770,7 +1787,7 @@ app.put("/inventories/:id/approve", authenticateAndCheckDB, checkAdminOrAccounta
                  FROM inventory_results ir
                  LEFT JOIN materials m ON ir.material_id = m.id
                  WHERE ir.inventory_id = $1 AND ir.actual_quantity IS NOT NULL AND ir.actual_quantity != ir.system_quantity`,
-                [inventoryId]
+                [inventoryId],
             );
 
             for (const result of results.rows) {
@@ -1781,7 +1798,7 @@ app.put("/inventories/:id/approve", authenticateAndCheckDB, checkAdminOrAccounta
                 `UPDATE inventories 
                  SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = $1, updated_at = CURRENT_TIMESTAMP
                  WHERE id = $2`,
-                [currentUser.id, inventoryId]
+                [currentUser.id, inventoryId],
             );
 
             await client.query("COMMIT");
@@ -1879,7 +1896,7 @@ app.get("/dashboard/metrics", authenticateAndCheckDB, async (req, res) => {
         const pendingRequests = {
             total: parseInt(pendingRequestsResult.rows[0].total),
             incoming: parseInt(pendingRequestsResult.rows[0].incoming),
-            outgoing: parseInt(pendingRequestsResult.rows[0].outgoing)
+            outgoing: parseInt(pendingRequestsResult.rows[0].outgoing),
         };
 
         const completedRequestsResult = await pool.query(
@@ -1889,7 +1906,7 @@ app.get("/dashboard/metrics", authenticateAndCheckDB, async (req, res) => {
             WHERE status = 'approved' 
             AND created_at::date BETWEEN $1 AND $2
         `,
-            [start, end]
+            [start, end],
         );
         const completedRequests = parseInt(completedRequestsResult.rows[0].total);
 
@@ -1905,7 +1922,7 @@ app.get("/dashboard/metrics", authenticateAndCheckDB, async (req, res) => {
             WHERE status = 'approved' 
             AND created_at::date BETWEEN $1 AND $2
         `,
-            [previousMonthStart.toISOString().split("T")[0], previousMonthEnd.toISOString().split("T")[0]]
+            [previousMonthStart.toISOString().split("T")[0], previousMonthEnd.toISOString().split("T")[0]],
         );
         const previousMonthCompleted = parseInt(previousMonthResult.rows[0].total);
 
@@ -1916,7 +1933,7 @@ app.get("/dashboard/metrics", authenticateAndCheckDB, async (req, res) => {
             total_quantity: totalQuantity,
             pending_requests: pendingRequests,
             completed_requests: completedRequests,
-            completed_change: completedChange
+            completed_change: completedChange,
         });
     } catch (error) {
         console.error("Ошибка получения метрик:", error);
@@ -1945,7 +1962,7 @@ app.get("/dashboard/movement", authenticateAndCheckDB, async (req, res) => {
             GROUP BY r.created_at::date, r.request_type
             ORDER BY date ASC
         `,
-            [startDate, endDate]
+            [startDate, endDate],
         );
 
         const dateMap = new Map();
@@ -2004,7 +2021,7 @@ app.get("/dashboard/inventory-status", authenticateAndCheckDB, async (req, res) 
             in_progress: { name: "В процессе", count: 0, color: "#3b82f6" },
             completed: { name: "Завершены", count: 0, color: "#8b5cf6" },
             approved: { name: "Утверждены", count: 0, color: "#10b981" },
-            cancelled: { name: "Отменены", count: 0, color: "#ef4444" }
+            cancelled: { name: "Отменены", count: 0, color: "#ef4444" },
         };
 
         result.rows.forEach((row) => {
@@ -2047,7 +2064,7 @@ app.get("/dashboard/requests-status", authenticateAndCheckDB, async (req, res) =
         const statusMap = {
             pending: { name: "На рассмотрении", count: 0, color: "#f59e0b" },
             approved: { name: "Подтверждены", count: 0, color: "#10b981" },
-            rejected: { name: "Отклонены", count: 0, color: "#ef4444" }
+            rejected: { name: "Отклонены", count: 0, color: "#ef4444" },
         };
 
         result.rows.forEach((row) => {
@@ -2134,8 +2151,8 @@ app.get("/reports/material-movement", authenticateAndCheckDB, async (req, res) =
             summary: {
                 incoming: totalIncoming,
                 outgoing: totalOutgoing,
-                turnover: totalIncoming + totalOutgoing
-            }
+                turnover: totalIncoming + totalOutgoing,
+            },
         });
     } catch (error) {
         console.error("Ошибка получения отчета движения материалов:", error);
@@ -2207,7 +2224,7 @@ app.get("/reports/requests", authenticateAndCheckDB, async (req, res) => {
 
         res.json({
             data: result.rows,
-            summary: { pending, approved, rejected, total: result.rows.length }
+            summary: { pending, approved, rejected, total: result.rows.length },
         });
     } catch (error) {
         console.error("Ошибка получения отчета заявок:", error);
@@ -2259,7 +2276,7 @@ app.get("/reports/turnover-balance", authenticateAndCheckDB, async (req, res) =>
                 AND r.status = 'approved'
                 AND r.created_at::date < $2
             `,
-                [material.id, startDate]
+                [material.id, startDate],
             );
 
             const changeBefore = parseInt(startQuantityResult.rows[0].change_before);
@@ -2275,7 +2292,7 @@ app.get("/reports/turnover-balance", authenticateAndCheckDB, async (req, res) =>
                 AND r.request_type = 'incoming'
                 AND r.created_at::date BETWEEN $2 AND $3
             `,
-                [material.id, startDate, endDate]
+                [material.id, startDate, endDate],
             );
 
             const outgoingResult = await pool.query(
@@ -2288,7 +2305,7 @@ app.get("/reports/turnover-balance", authenticateAndCheckDB, async (req, res) =>
                 AND r.request_type = 'outgoing'
                 AND r.created_at::date BETWEEN $2 AND $3
             `,
-                [material.id, startDate, endDate]
+                [material.id, startDate, endDate],
             );
 
             const incoming = parseInt(incomingResult.rows[0].total);
@@ -2304,7 +2321,7 @@ app.get("/reports/turnover-balance", authenticateAndCheckDB, async (req, res) =>
                 opening_balance: openingBalance,
                 incoming: incoming,
                 outgoing: outgoing,
-                closing_balance: closingBalance
+                closing_balance: closingBalance,
             });
         }
 
@@ -2313,7 +2330,7 @@ app.get("/reports/turnover-balance", authenticateAndCheckDB, async (req, res) =>
             total_opening: filteredResults.reduce((sum, r) => sum + r.opening_balance, 0),
             total_incoming: filteredResults.reduce((sum, r) => sum + r.incoming, 0),
             total_outgoing: filteredResults.reduce((sum, r) => sum + r.outgoing, 0),
-            total_closing: filteredResults.reduce((sum, r) => sum + r.closing_balance, 0)
+            total_closing: filteredResults.reduce((sum, r) => sum + r.closing_balance, 0),
         };
 
         res.json({ data: filteredResults, summary });
@@ -2365,7 +2382,7 @@ app.get("/reports/user-activity", authenticateAndCheckDB, async (req, res) => {
             FROM users u
             ORDER BY requests_created DESC
         `,
-            [startDate, endDate]
+            [startDate, endDate],
         );
 
         res.json({ data: result.rows });

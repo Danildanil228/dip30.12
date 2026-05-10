@@ -183,7 +183,7 @@ export default function Inventories() {
             </div>
 
             {filteredInventories.length > itemsPerPage && (
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div className="text-sm text-muted-foreground">Найдено: {filteredInventories.length}</div>
                     <div className="flex items-center gap-2">
                         <Button className="dark:bg-"
@@ -201,8 +201,7 @@ export default function Inventories() {
                                 <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
                                     &lt;
                                 </Button>
-                                <span className="text-sm">
-                                    Стр. {currentPage + 1} из {totalPages}
+                                <span className="text-sm">{currentPage + 1} из {totalPages}
                                 </span>
                                 <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} disabled={currentPage === totalPages - 1}>
                                     &gt;

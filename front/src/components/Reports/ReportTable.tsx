@@ -63,7 +63,7 @@ export function ReportTable({ columns, data, onRowClick, itemsPerPage = 10 }: Re
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <span className="text-sm">
-                            Стр. {currentPage + 1} из {totalPages}
+                            {currentPage + 1} из {totalPages}
                         </span>
                         <Button variant="default" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                             <ChevronRight className="h-4 w-4" />

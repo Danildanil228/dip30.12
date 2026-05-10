@@ -146,7 +146,7 @@ export default function Requests() {
             </div>
 
             {filteredRequests.length > itemsPerPage && (
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div className="text-sm text-muted-foreground">Найдено: {filteredRequests.length}</div>
                     <div className="flex items-center gap-2">
                         <Button className="dark:bg-" variant="outline" size="sm" onClick={handleToggleShowAll}>
@@ -158,7 +158,7 @@ export default function Requests() {
                                     &lt;
                                 </Button>
                                 <span className="text-sm">
-                                    Стр. {currentPage + 1} из {totalPages}
+                                    {currentPage + 1} из {totalPages}
                                 </span>
                                 <Button variant="outline" className="dark:bg-" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1}>
                                     &gt;

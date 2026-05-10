@@ -62,10 +62,10 @@ export function ReportFilters({
     onSearchChange,
     onApply,
     onReset,
-    loading = false
+    loading = false,
 }: ReportFiltersProps) {
     return (
-        <div className="space-y-4 p-4 border rounded-lg">
+        <div className="space-y-4 p-4 border rounded-lg mt-15 sm:mt-0 lg:mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ">
                 <div>
                     <Label className="text-sm mb-2 block">Период</Label>
@@ -143,7 +143,7 @@ export function ReportFilters({
             </div>
 
             <div className="flex flex-wrap justify-between gap-2">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <Button onClick={onApply} disabled={loading}>
                         <Search className="mr-2 h-4 w-4" />
                         Применить

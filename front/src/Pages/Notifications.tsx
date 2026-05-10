@@ -154,49 +154,56 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                     </div>
 
                     <div className="sm:flex grid gap-2">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="default" className="gap-2">
-                                    <FunnelPlus className="h-4 w-4" />
-                                    Фильтры{" "}
-                                    {selectedTypes.length > 0 && (
-                                        <Badge variant="secondary" className="ml-1 text-xs">
-                                            {selectedTypes.length}
-                                        </Badge>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-4 max-h-96 overflow-y-auto">
-                                <div className="space-y-4">
-                                    {filterGroups.map((group) => (
-                                        <div key={group.title}>
-                                            <h3 className="font-semibold text-sm mb-2 text-muted-foreground">{group.title}</h3>
-                                            <div className="grid gap-2 pl-2">
-                                                {group.types.map((type) => (
-                                                    <div key={type.value} className="flex items-center gap-2">
-                                                        <Checkbox id={`type-${type.value}`} checked={selectedTypes.includes(type.value)} onCheckedChange={(checked) => handleTypeChange(type.value, checked as boolean)} />
-                                                        <label htmlFor={`type-${type.value}`} className="text-sm leading-none cursor-pointer">
-                                                            {type.label}
-                                                        </label>
-                                                    </div>
-                                                ))}
+                        <div className="flex justify-between gap-2">
+                            <Popover>
+                                <PopoverTrigger asChild className="w-max-50">
+                                    <Button variant="default" className="gap-2">
+                                        <FunnelPlus className="h-4 w-4" />
+                                        Фильтры{" "}
+                                        {selectedTypes.length > 0 && (
+                                            <Badge variant="secondary" className="ml-1 text-xs">
+                                                {selectedTypes.length}
+                                            </Badge>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-4 max-h-96 overflow-y-auto">
+                                    <div className="space-y-4">
+                                        {filterGroups.map((group) => (
+                                            <div key={group.title}>
+                                                <h3 className="font-semibold text-sm mb-2 text-muted-foreground">{group.title}</h3>
+                                                <div className="grid gap-2 pl-2">
+                                                    {group.types.map((type) => (
+                                                        <div key={type.value} className="flex items-center gap-2">
+                                                            <Checkbox
+                                                                className="bg-blue-400!"
+                                                                id={`type-${type.value}`}
+                                                                checked={selectedTypes.includes(type.value)}
+                                                                onCheckedChange={(checked) => handleTypeChange(type.value, checked as boolean)}
+                                                            />
+                                                            <label htmlFor={`type-${type.value}`} className="text-sm leading-none cursor-pointer">
+                                                                {type.label}
+                                                            </label>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                                        ))}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
 
-                        {selectedTypes.length > 0 && (
-                            <Button variant="default" size="icon" onClick={handleResetFilters} title="Сбросить фильтры">
-                                <FunnelX className="h-4 w-4" />
-                            </Button>
-                        )}
+                            {selectedTypes.length > 0 && (
+                                <Button variant="default" size="icon" onClick={handleResetFilters} title="Сбросить фильтры">
+                                    <FunnelX className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
 
                         {logs.length > 1 && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="default" className="gap-2" >
+                                    <Button variant="default" className="gap-2">
                                         <Trash2 className="h-4 w-4" />
                                         Удалить все ({logs.length})
                                     </Button>
@@ -207,9 +214,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction onClick={deleteAllLogs}>
-                                            Удалить
-                                        </AlertDialogAction>
+                                        <AlertDialogAction onClick={deleteAllLogs}>Удалить</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -222,7 +227,8 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-sm text-muted-foreground">Всего записей: {filteredLogs.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button className="dark:bg-"
+                        <Button
+                            className="dark:bg-"
                             variant="outline"
                             size="sm"
                             onClick={() => {
@@ -238,7 +244,7 @@ export default function Notifications({ onVisited }: NotificationsProps) {
                                     &lt;
                                 </Button>
                                 <span className="text-sm">
-                                    Стр. {currentPage + 1} из {totalPages}
+                                    {currentPage + 1} из {totalPages}
                                 </span>
                                 <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                                     &gt;

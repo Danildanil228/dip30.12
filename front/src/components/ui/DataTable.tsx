@@ -154,12 +154,12 @@ export function DataTable<TData extends { id: number }>({
                         )}
 
                         {!showAll && table.getPageCount() > 1 && (
-                            <div className="flex items-center space-x-2  z-10">
+                            <div className="flex items-center space-x-2 z-10">
                                 <Button className="border" variant="default" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                                     {"<"}
                                 </Button>
-                                <span className="text-sm">
-                                    Стр. {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
+                                <span className="text-sm text-wrap flex-wrap">
+                                   {table.getState().pagination.pageIndex + 1} из {table.getPageCount()}
                                 </span>
                                 <Button className="border" variant="default" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                                     {">"}
