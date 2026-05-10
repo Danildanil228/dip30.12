@@ -1,55 +1,56 @@
 import { useUser } from "@/hooks/useUser";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Home, Package, ClipboardList, Users, User, Bell, Tag } from "lucide-react";
 
 export default function DesktopNavigation() {
     const location = useLocation();
-    const navigate = useNavigate();
     const { isAdmin } = useUser();
-    const navItems = [
-        { path: "/main", label: "Главная", adminOnly: false },
-        { path: "/materials", label: "Материалы", adminOnly: false, hasDrop: true },
-        { path: "/requests", label: "Заявки", adminOnly: false },
-        { path: "/allusers", label: "Все пользователи", adminOnly: true },
-        { path: "/profile", label: "Профиль", adminOnly: false },
-        { path: "/notifications", label: "Журнал", adminOnly: true }
+
+    const mainItems = [
+        { path: "/main", label: "Главная", icon: Home, adminOnly: false },
+        { path: "/materials", label: "Материалы", icon: Package, adminOnly: false },
+        { path: "/category", label: "Категории", icon: Tag, adminOnly: false },
+        { path: "/requests", label: "Заявки", icon: ClipboardList, adminOnly: false },
+        { path: "/allusers", label: "Пользователи", icon: Users, adminOnly: true },
+        { path: "/profile", label: "Профиль", icon: User, adminOnly: false },
+        { path: "/notifications", label: "Журнал", icon: Bell, adminOnly: true },
     ];
-    const materialItem = [
-        { path: "/materials", label: "Материалы", adminOnly: false },
-        { path: "/category", label: "Категории", adminOnly: false }
-    ];
-    const filItems = navItems.filter((item) => !item.adminOnly || (item.adminOnly && isAdmin));
+
+    const visibleItems = mainItems.filter((item) => !item.adminOnly || isAdmin);
 
     return (
-        <div className="container hidden lg:block border rounded-2xl my-4! bg-background z-10">
-            <div className="">
-                <div className="flex justify-between py-4">
-                    {filItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+        <nav className="hidden lg:block container my-4!">
+            <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center justify-between bg-background/80 backdrop-blur border rounded-2xl px-6 py-3 shadow-sm"
+            >
+                {visibleItems.map((item) => {
+                    const isActive = location.pathname === item.path;
 
-                        if (item.path === "/materials" && item.hasDrop) {
-                            return (
-                                <DropdownMenu key={item.path}>
-                                    <DropdownMenuTrigger className={`text-lg ${isActive ? "opacity-50" : "hover:opacity-50"}`}>{item.label}</DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {materialItem.map((material) => (
-                                            <DropdownMenuItem key={material.path} onClick={() => navigate(material.path)} className={`cursor-pointer ${location.pathname === material.path ? "" : ""}`}>
-                                                {material.label}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            );
-                        }
-
-                        return (
-                            <Link key={item.path} to={item.path} className={`text-lg relative ${isActive ? "opacity-50" : "hover:opacity-50"}`}>
-                                {item.label}
-                            </Link>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
+                    return (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-accent ${
+                                isActive ? "text-primary" : "text-muted-foreground"
+                            }`}
+                        >
+                            <item.icon className="h-4 w-4" />
+                            {item.label}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="desktop-active-tab"
+                                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full"
+                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                />
+                            )}
+                        </Link>
+                    );
+                })}
+            </motion.div>
+        </nav>
     );
 }

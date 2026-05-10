@@ -21,9 +21,9 @@ export const ScrollToTop: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-8 right-8 z-50">
+        <div className="fixed bottom-0 right-8 z-50">
             {isVisible && (
-                <Button onClick={scrollToTop} className="w-12 h-12 rounded-full border-none cursor-pointer flex text-xl font-semibold mb-12 lg:mb-0" aria-label="Наверх">
+                <Button onClick={scrollToTop} className="w-12 h-12 rounded-full border bg-transparent cursor-pointer flex text-xl font-semibold mb-12 lg:mb-0" aria-label="Наверх">
                     ↑
                 </Button>
             )}

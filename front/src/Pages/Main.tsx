@@ -1,350 +1,237 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { motion, useInView } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
-import { ChevronDown, ClipboardList, ChevronUp, BookOpen, UserCog, Package, BarChart3, FileText, Users, Database, PlusCircle, Search, CheckCircle, Edit } from "lucide-react";
+import { Link } from "react-router-dom";
+import { BookOpen, Package, BarChart3, UserCog, ArrowRight, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search } from "lucide-react";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { Button } from "@/components/ui/button";
 
-interface Section {
-    id: string;
-    title: string;
-    icon: React.ReactNode;
-    isOpen: boolean;
-}
+// Компонент-обёртка для анимации появления при скролле
+const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-80px" });
+
+    return (
+        <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, ease: "easeOut" }} className={className}>
+            {children}
+        </motion.div>
+    );
+};
 
 export default function Main() {
     const { user, isAdmin } = useUser();
-    const [_hideInstructions, setHideInstructions] = useState(false);
 
-    const allSections = useMemo<Section[]>(() => {
-        const base: Section[] = [
-            { id: "welcome", title: "Добро пожаловать", icon: <BookOpen className="h-4 w-4" />, isOpen: true },
-            { id: "overview", title: "О программе", icon: <BookOpen className="h-4 w-4" />, isOpen: false },
-            { id: "navigation", title: "Навигация по системе", icon: <BookOpen className="h-4 w-4" />, isOpen: false }
-        ];
-
-        if (user?.role === "storekeeper" || isAdmin) {
-            base.push({ id: "storekeeper", title: "Инструкция для кладовщика", icon: <Package className="h-4 w-4" />, isOpen: false });
-        }
-        if (user?.role === "accountant" || isAdmin) {
-            base.push({ id: "accountant", title: "Инструкция для бухгалтера", icon: <BarChart3 className="h-4 w-4" />, isOpen: false });
-        }
-        if (isAdmin) {
-            base.push({ id: "admin", title: "Инструкция для администратора", icon: <UserCog className="h-4 w-4" />, isOpen: false });
-        }
-
-        return base;
-    }, [user, isAdmin]);
-
-    const [sections, setSections] = useState<Section[]>(allSections);
-
-    useEffect(() => {
-        setSections(allSections);
-    }, [allSections]);
-
-    useEffect(() => {
-        const saved = localStorage.getItem("hideInstructions");
-        if (saved === "true") {
-            setHideInstructions(true);
-        }
-    }, []);
-
-    const toggleSection = (id: string) => {
-        setSections((prev) => prev.map((section) => (section.id === id ? { ...section, isOpen: !section.isOpen } : section)));
-    };
+    const roleName = useMemo(() => {
+        if (user?.role === "admin") return "Администратор";
+        if (user?.role === "accountant") return "Бухгалтер";
+        if (user?.role === "storekeeper") return "Кладовщик";
+        return "";
+    }, [user]);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-8 pb-8">
             <ScrollToTop />
-            <div className="border rounded-lg p-6 bg-background z-10">
-                <h1 className="text-xl font-semibold mb-1">
-                    Добро пожаловать, {user?.name} {user?.secondname}
-                </h1>
-                <p className="text-lg text-muted-foreground">{user?.role === "admin" ? "Администратор" : user?.role === "accountant" ? "Бухгалтер" : "Кладовщик"}</p>
-            </div>
 
-            {sections.map((section) => (
-                <div key={section.id} className="border rounded-lg overflow-hidden bg-background z-10">
-                    <button onClick={() => toggleSection(section.id)} className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left">
-                        <div className="flex items-center gap-2">
-                            {section.icon}
-                            <span className="text-lg font-medium">{section.title}</span>
-                        </div>
-                        {section.isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
-
-                    {section.isOpen && (
-                        <div className="px-4 pb-4 pt-0 space-y-4">
-                            {section.id === "welcome" && (
-                                <div className="space-y-3 text-lg text-muted-foreground">
-                                    <p>Это система управления складскими запасами. Здесь вы можете управлять материалами, создавать заявки, проводить инвентаризации и формировать отчёты.</p>
-                                    <p>Ниже представлены подробные инструкции по работе с системой. Выберите интересующий раздел, чтобы узнать больше.</p>
-                                </div>
-                            )}
-
-                            {section.id === "overview" && (
-                                <div className="space-y-4 text-lg">
-                                    <div>
-                                        <h3 className="font-medium mb-2">Что такое Material House?</h3>
-                                        <p className="text-muted-foreground">
-                                            Система учёта материалов на складе, которая позволяет отслеживать движение товаров, создавать заявки на приход и расход, проводить инвентаризации и формировать отчёты.
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="font-medium mb-2">Основные возможности</h3>
-                                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-1 list-disc list-inside text-muted-foreground text-sm">
-                                            <li>Управление материалами и категориями</li>
-                                            <li>Создание заявок на приход и расход</li>
-                                            <li>Автоматическое обновление остатков</li>
-                                            <li>Проведение инвентаризаций</li>
-                                            <li>Формирование отчётов</li>
-                                            <li>Автоматическое логирование действий</li>
-                                            <li>Резервное копирование базы данных</li>
-                                        </ul>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="font-medium mb-2">Роли пользователей</h3>
-                                        <div className="space-y-2">
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <UserCog className="h-3 w-3" />
-                                                    <span className="text-sm font-medium">Администратор</span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground pl-5">Полный контроль: управление пользователями, бэкапы, логи.</p>
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <BarChart3 className="h-3 w-3" />
-                                                    <span className="text-sm font-medium">Бухгалтер</span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground pl-5">Аналитика: отчёты, подтверждение заявок, инвентаризации.</p>
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Package className="h-3 w-3" />
-                                                    <span className="text-sm font-medium">Кладовщик</span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground pl-5">Оперативная работа: заявки, инвентаризации, остатки.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {section.id === "navigation" && (
-                                <div className="space-y-3 text-lg">
-                                    <p className="text-muted-foreground text-sm">В верхнем меню (на компьютере) или нижней панели (на телефоне) расположены разделы системы:</p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        <div className="text-sm">
-                                            <div className="font-medium">Материалы</div>
-                                            <div className="text-muted-foreground">Просмотр и управление товарами</div>
-                                        </div>
-                                        <div className="text-sm">
-                                            <div className="font-medium">Категории</div>
-                                            <div className="text-muted-foreground">Группировка материалов</div>
-                                        </div>
-                                        <div className="text-sm">
-                                            <div className="font-medium">Заявки</div>
-                                            <div className="text-muted-foreground">Приход/расход товаров</div>
-                                        </div>
-                                        <div className="text-sm">
-                                            <div className="font-medium">Инвентаризация</div>
-                                            <div className="text-muted-foreground">Проверка склада</div>
-                                        </div>
-                                        <div className="text-sm">
-                                            <div className="font-medium">Дашборд</div>
-                                            <div className="text-muted-foreground">Графики и метрики</div>
-                                        </div>
-                                        <div className="text-sm">
-                                            <div className="font-medium">Отчёты</div>
-                                            <div className="text-muted-foreground">Аналитика и экспорт</div>
-                                        </div>
-                                        {isAdmin && (
-                                            <>
-                                                <div className="text-sm">
-                                                    <div className="font-medium">Все пользователи</div>
-                                                    <div className="text-muted-foreground">Управление учётными записями</div>
-                                                </div>
-                                                <div className="text-sm">
-                                                    <div className="font-medium">Бэкапы</div>
-                                                    <div className="text-muted-foreground">Резервное копирование</div>
-                                                </div>
-                                                <div className="text-sm">
-                                                    <div className="font-medium">Журнал</div>
-                                                    <div className="text-muted-foreground">Логи действий</div>
-                                                </div>
-                                            </>
-                                        )}
-                                        <div className="text-sm">
-                                            <div className="font-medium">Профиль</div>
-                                            <div className="text-muted-foreground">Личные данные</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {section.id === "storekeeper" && (
-                                <div className="space-y-4 text-lg">
-                                    <div className="border-l-2 pl-3">
-                                        <p className="text-sm text-muted-foreground">Как кладовщик, вы отвечаете за оперативную работу со складом.</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <PlusCircle className="h-3 w-3" />
-                                            Создание заявки
-                                        </h3>
-                                        <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>Перейдите в раздел «Заявки»</li>
-                                            <li>Нажмите кнопку «Создать»</li>
-                                            <li>Выберите тип: Приход (поступление) или Расход (отгрузка)</li>
-                                            <li>Укажите название и выберите товары</li>
-                                            <li>Укажите количество для каждого товара</li>
-                                            <li>Нажмите «Создать заявку»</li>
-                                        </ol>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2">Статусы заявок</h3>
-                                        <ul className="space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>• На рассмотрении — ожидает подтверждения</li>
-                                            <li>• Подтверждена — одобрена, остатки обновлены</li>
-                                            <li>• Отклонена — отказано, указана причина</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <ClipboardList className="h-3 w-3" />
-                                            Проведение инвентаризации
-                                        </h3>
-                                        <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>Перейдите в раздел «Инвентаризация»</li>
-                                            <li>Выберете инвентаризацию</li>
-                                            <li>Нажмите «Начать»</li>
-                                            <li>Введите фактическое количество для каждого товара</li>
-                                            <li>При расхождениях укажите причину</li>
-                                            <li>Сохраняйте результаты (черновик)</li>
-                                            <li>По окончании нажмите «Завершить»</li>
-                                        </ol>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <Search className="h-3 w-3" />
-                                            Просмотр остатков
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">Раздел «Материалы» — полный список товаров с текущим количеством, поиском и фильтрацией по категориям.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {section.id === "accountant" && (
-                                <div className="space-y-4 text-lg">
-                                    <div className="border-l-2 pl-3">
-                                        <p className="text-sm text-muted-foreground">Как бухгалтер, вы контролируете движение товаров и формируете отчётность.</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <CheckCircle className="h-3 w-3" />
-                                            Подтверждение заявок
-                                        </h3>
-                                        <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>Раздел «Заявки» → фильтр «На рассмотрении»</li>
-                                            <li>Откройте заявку, проверьте товары и количество</li>
-                                            <li>Нажмите «Подтвердить» (остатки обновятся автоматически)</li>
-                                            <li>Или «Отклонить» (обязательно укажите причину)</li>
-                                        </ol>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <FileText className="h-3 w-3" />
-                                            Формирование отчётов
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-1">Раздел «Отчёты» — доступны 4 типа:</p>
-                                        <ul className="space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>• Движение материалов — все операции за период</li>
-                                            <li>• Заявки — список с фильтрацией по статусу</li>
-                                            <li>• Оборотно-сальдовая ведомость — остатки и движение</li>
-                                            <li>• Активность пользователей — статистика по каждому</li>
-                                        </ul>
-                                        <p className="text-sm text-muted-foreground mt-1">Все отчёты можно экспортировать в Excel, CSV и PDF.</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <ClipboardList className="h-3 w-3" />
-                                            Проверка инвентаризаций
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            После завершения инвентаризации кладовщиком, она появляется в списке со статусом «Завершена, ожидает проверки». Откройте, проверьте расхождения и подтвердите (остатки обновятся) или отмените.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <BarChart3 className="h-3 w-3" />
-                                            Дашборд
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">Раздел «Дашборд» — ключевые метрики, график движения товаров и статусы заявок/инвентаризаций за выбранный период.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {section.id === "admin" && (
-                                <div className="space-y-4 text-lg">
-                                    <div className="border-l-2 pl-3">
-                                        <p className="text-sm text-muted-foreground">Как администратор, вы имеете полный доступ ко всем функциям системы.</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <Users className="h-3 w-3" />
-                                            Управление пользователями
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-1">Раздел «Все пользователи»:</p>
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>Создание, редактирование, удаление пользователей</li>
-                                            <li>Изменение ролей (админ, бухгалтер, кладовщик)</li>
-                                            <li>Сброс паролей</li>
-                                            <li>Массовое удаление через чекбоксы</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <Database className="h-3 w-3" />
-                                            Резервное копирование
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-1">Раздел «Бэкапы»:</p>
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>Создание бэкапов с описанием</li>
-                                            <li>Скачивание бэкапов на компьютер</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <Edit className="h-3 w-3" />
-                                            Управление категориями и материалами
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Только администратор может создавать, редактировать и удалять категории. При удалении категории с материалами или материала с ненулевым остатком система заблокирует удаление.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-1">
-                                            <FileText className="h-3 w-3" />
-                                            Просмотр журнала
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">Раздел «Журнал» — все действия пользователей с фильтрацией по типу события.</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-sm mb-2">Дополнительные возможности</h3>
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                            <li>Редактирование любых инвентаризаций (название, даты, ответственный)</li>
-                                            <li>Отмена активных инвентаризаций</li>
-                                            <li>Создание приватных заявок (видны только создателю и админам)</li>
-                                            <li>Мгновенное подтверждение заявок при создании</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+            {/* Приветственный баннер */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-background p-8 border"
+            >
+                <div className="relative z-10">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                        Добро пожаловать, {user?.name} {user?.secondname}
+                    </h1>
+                    <p className="mt-2 text-lg text-muted-foreground">{roleName}</p>
+                    <p className="mt-4 text-sm text-muted-foreground max-w-xl">
+                        Material House — система управления складскими запасами. Выберите интересующий раздел ниже, чтобы изучить возможности.
+                    </p>
                 </div>
-            ))}
+            </motion.div>
+
+            {/* Блок 1: О программе */}
+            <RevealBlock>
+                <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <BookOpen className="h-5 w-5 text-primary" />
+                        </div>
+                        <h2 className="text-xl font-semibold">О программе</h2>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-6">
+                        <div>
+                            <h3 className="font-medium mb-2">Основные возможности</h3>
+                            <ul className="space-y-1 text-sm text-muted-foreground">
+                                <li>• Управление материалами и категориями</li>
+                                <li>• Заявки на приход и расход</li>
+                                <li>• Инвентаризации</li>
+                                <li>• Отчёты и аналитика</li>
+                                <li>• Журнал действий</li>
+                                <li>• Резервное копирование</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="font-medium mb-2">Для кого</h3>
+                            <p className="text-sm text-muted-foreground">Система рассчитана на три роли: администратор, бухгалтер и кладовщик. Каждая роль имеет свой набор инструментов.</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                
+                            </div>
+                        </div>
+                        <div className="grid w-fit h-fit space-y-2">
+                            <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                    <UserCog className="h-3 w-3" /> Админ
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full">
+                                    <BarChart3 className="h-3 w-3" /> Бухгалтер
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-full">
+                                    <Package className="h-3 w-3" /> Кладовщик
+                                </span>
+                        </div>
+                        {/* <div>
+                            <h3 className="font-medium mb-2">Быстрый старт</h3>
+                            <div className="flex flex-col gap-2">
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link to="/materials">
+                                        <Package className="h-4 w-4 mr-2" /> Материалы
+                                    </Link>
+                                </Button>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link to="/requests">
+                                        <ClipboardList className="h-4 w-4 mr-2" /> Заявки
+                                    </Link>
+                                </Button>
+                                {isAdmin && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link to="/allusers">
+                                            <Users className="h-4 w-4 mr-2" /> Пользователи
+                                        </Link>
+                                    </Button>
+                                )}
+                            </div>
+                        </div> */}
+                    </div>
+                </div>
+            </RevealBlock>
+
+            {/* Блоки с инструкциями для ролей */}
+            {(user?.role === "storekeeper" || isAdmin) && (
+                <RevealBlock>
+                    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                                <Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                            </div>
+                            <h2 className="text-xl font-semibold">Инструкция для кладовщика</h2>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-6">
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <PlusCircle className="h-4 w-4 text-primary" /> Создание заявки
+                                </h3>
+                                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                                    <li>Перейдите в раздел «Заявки»</li>
+                                    <li>Нажмите «Создать»</li>
+                                    <li>Выберите тип заявки и товары</li>
+                                    <li>Укажите количество</li>
+                                    <li>Сохраните заявку</li>
+                                </ol>
+                            </div>
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <Search className="h-4 w-4 text-primary" /> Просмотр остатков
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Раздел «Материалы» показывает актуальные остатки с поиском и фильтрами.</p>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <ClipboardList className="h-4 w-4 text-primary" /> Инвентаризация
+                                </h3>
+                                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                                    <li>Откройте раздел «Инвентаризация»</li>
+                                    <li>Выберите назначенную вам инвентаризацию</li>
+                                    <li>Нажмите «Начать» и вносите фактические остатки</li>
+                                    <li>Сохраняйте результаты и завершите инвентаризацию</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </RevealBlock>
+            )}
+
+            {(user?.role === "accountant" || isAdmin) && (
+                <RevealBlock>
+                    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h2 className="text-xl font-semibold">Инструкция для бухгалтера</h2>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-6">
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <CheckCircle className="h-4 w-4 text-primary" /> Подтверждение заявок
+                                </h3>
+                                <p className="text-sm text-muted-foreground">В разделе «Заявки» вы можете подтверждать (товары спишутся/поступят) или отклонять заявки с указанием причины.</p>
+                            </div>
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <FileText className="h-4 w-4 text-primary" /> Отчёты
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Раздел «Отчёты» — движение материалов, заявки, ОСВ, активность пользователей. Все отчёты можно экспортировать в Excel/PDF.
+                                </p>
+                                <Button variant="outline" size="sm" className="mt-2" asChild>
+                                    <Link to="/reports">
+                                        <ArrowRight className="h-4 w-4 mr-2" /> Перейти к отчётам
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </RevealBlock>
+            )}
+
+            {isAdmin && (
+                <RevealBlock>
+                    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <UserCog className="h-5 w-5 text-primary" />
+                            </div>
+                            <h2 className="text-xl font-semibold">Инструкция для администратора</h2>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-6">
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <Users className="h-4 w-4 text-primary" /> Управление пользователями
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Создание, редактирование, удаление пользователей и смена ролей в разделе «Пользователи».</p>
+                            </div>
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <Database className="h-4 w-4 text-primary" /> Бэкапы
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Создание и скачивание резервных копий базы данных в разделе «Бэкапы».</p>
+                            </div>
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <Bell className="h-4 w-4 text-primary" /> Журнал
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Просмотр всех действий пользователей с фильтрацией в разделе «Журнал».</p>
+                            </div>
+                            <div>
+                                <h3 className="font-medium flex items-center gap-2 mb-2">
+                                    <FileText className="h-4 w-4 text-primary" /> Полный контроль
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Редактирование материалов, категорий, инвентаризаций и приватных заявок.</p>
+                            </div>
+                        </div>
+                    </div>
+                </RevealBlock>
+            )}
         </div>
     );
 }
