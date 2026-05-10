@@ -175,11 +175,11 @@ export default function Profile() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-wrap gap-4 justify-center">
-                <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+                <Button variant="default" className="gap-2" onClick={() => setEditOpen(true)}>
                     <Edit3 className="h-4 w-4" />
                     Изменить данные
                 </Button>
-                <Button variant="outline" className="gap-2" onClick={() => setPasswordOpen(true)}>
+                <Button variant="default" className="gap-2" onClick={() => setPasswordOpen(true)}>
                     <Key className="h-4 w-4" />
                     Сменить пароль
                 </Button>
