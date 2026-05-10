@@ -179,11 +179,6 @@ export default function Main() {
                                 <p className="text-sm text-muted-foreground">
                                     Раздел «Отчёты» — движение материалов, заявки, ОСВ, активность пользователей. Все отчёты можно экспортировать в Excel/PDF.
                                 </p>
-                                <Button variant="outline" size="sm" className="mt-2" asChild>
-                                    <Link to="/reports">
-                                        <ArrowRight className="h-4 w-4 mr-2" /> Перейти к отчётам
-                                    </Link>
-                                </Button>
                             </div>
                         </div>
                     </div>
