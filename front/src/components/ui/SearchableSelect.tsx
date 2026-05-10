@@ -21,7 +21,7 @@ export function SearchableSelect({ value, onChange, options, placeholder = "Вы
 
     return (
         <Popover open={open} onOpenChange={setOpen} modal={false}>
-            <PopoverTrigger asChild className="z-100">
+            <PopoverTrigger asChild className="bg-background!">
                 <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal" disabled={disabled}>
                     <span className="truncate">{selectedLabel}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

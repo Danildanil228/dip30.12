@@ -42,9 +42,9 @@ export default function Reports() {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border bg-card shadow-sm p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 mb-8">
+                    <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 mb-8 justify-between w-full">
                         {tabs.map((tab) => (
-                            <TabsTrigger key={tab.value} value={tab.value} className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-2 transition-all">
+                            <TabsTrigger key={tab.value} value={tab.value} className="data-[state=active]:bg-[#3b82f6] data-[state=active]:text-primary-foreground rounded-lg px-4 py-2 transition-all dark:data-[state=active]:bg-{#3b82f6} border!">
                                 <tab.icon className="h-4 w-4 mr-2" />
                                 <span className="hidden sm:inline">{tab.label}</span>
                                 <span className="sm:hidden">

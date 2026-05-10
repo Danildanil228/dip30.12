@@ -55,17 +55,17 @@ export function ReportTable({ columns, data, onRowClick, itemsPerPage = 10 }: Re
 
             {totalPages > 1 && (
                 <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground bg-background! z-10">
+                    <div className="text-sm text-muted-foreground">
                         Показано {startIndex + 1}-{Math.min(startIndex + itemsPerPage, data.length)} из {data.length}
                     </div>
-                    <div className="flex items-center gap-2 bg-background! z-10">
-                        <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
+                    <div className="flex items-center gap-2">
+                        <Button variant="default" size="sm" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <span className="text-sm">
-                            {currentPage + 1} / {totalPages}
+                            Стр. {currentPage + 1} из {totalPages}
                         </span>
-                        <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
+                        <Button variant="default" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))} disabled={currentPage === totalPages - 1}>
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

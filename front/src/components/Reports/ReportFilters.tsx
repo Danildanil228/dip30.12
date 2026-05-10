@@ -65,7 +65,7 @@ export function ReportFilters({
     loading = false
 }: ReportFiltersProps) {
     return (
-        <div className="space-y-4 p-4 border rounded-lg bg-background! z-10">
+        <div className="space-y-4 p-4 border rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ">
                 <div>
                     <Label className="text-sm mb-2 block">Период</Label>
@@ -90,7 +90,7 @@ export function ReportFilters({
                     <div>
                         <Label className="text-sm mb-2 block">Тип операции</Label>
                         <Select value={type || "all"} onValueChange={onTypeChange} disabled={loading}>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-background!">
                                 <SelectValue placeholder="Все" />
                             </SelectTrigger>
                             <SelectContent>
@@ -109,7 +109,7 @@ export function ReportFilters({
                     <div>
                         <Label className="text-sm mb-2 block">Статус</Label>
                         <Select value={status || "all"} onValueChange={onStatusChange} disabled={loading}>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-background!">
                                 <SelectValue placeholder="Все" />
                             </SelectTrigger>
                             <SelectContent>
@@ -148,8 +148,8 @@ export function ReportFilters({
                         <Search className="mr-2 h-4 w-4" />
                         Применить
                     </Button>
-                    <Button variant="outline" onClick={onReset} disabled={loading}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
+                    <Button variant="outline" onClick={onReset} disabled={loading} className="dark:bg-">
+                        <RotateCcw className="mr-2 h-4 w-4 " />
                         Сбросить
                     </Button>
                 </div>
