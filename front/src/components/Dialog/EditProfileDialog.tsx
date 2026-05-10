@@ -79,8 +79,13 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
 
     const validateEmail = (value: string): string => {
         if (!value.trim()) return "";
+        const russianLettersRegex = /[А-Яа-яЁё]/;
+        if (russianLettersRegex.test(value)) {
+            return "Email не должен содержать русские буквы";
+        }
         const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
         if (!emailRegex.test(value)) return "Введите корректный email (пример: user@example.com)";
+
         if (value.length > 30) return "Email не должен превышать 30 символов";
         return "";
     };
@@ -135,6 +140,14 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
         setEditData({ ...editData, username: filtered });
         if (fieldErrors.username && touched.username) {
             setFieldErrors((prev) => ({ ...prev, username: undefined }));
+        }
+    };
+    
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setEditData({ ...editData, email: value });
+        if (fieldErrors.email && touched.email) {
+            setFieldErrors((prev) => ({ ...prev, email: undefined }));
         }
     };
 
@@ -299,7 +312,7 @@ export default function EditProfileDialog({ open, onOpenChange, user, isOwnProfi
                                 type="email"
                                 placeholder="example@mail.com"
                                 value={editData.email}
-                                onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                                onChange={handleEmailChange}
                                 onBlur={() => {
                                     setTouched((prev) => ({ ...prev, email: true }));
                                     const emailError = validateEmail(editData.email);
