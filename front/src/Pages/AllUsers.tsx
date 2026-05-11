@@ -146,7 +146,12 @@ export default function AllUsers() {
             },
             {
                 accessorKey: "created_at",
-                header: "Дата создания",
+                header: ({ column }) => (
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                        Дата создания
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                ),
                 cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDate(row.original.created_at)}</span>,
             },
             {
@@ -226,17 +231,14 @@ export default function AllUsers() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Удаление пользователя</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Вы уверены, что хотите удалить пользователя{" "}
-                            {deleteSingleUser?.username}?
+                            Вы уверены, что хотите удалить пользователя {deleteSingleUser?.username}?
                             <br />
                             <span>Пользователи будет перемещен в корзину для дальнейшего удаления.</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmSingleDelete}>
-                            Удалить
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={confirmSingleDelete}>Удалить</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -255,9 +257,7 @@ export default function AllUsers() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmMultipleDelete}>
-                            Удалить
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={confirmMultipleDelete}>Удалить</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
