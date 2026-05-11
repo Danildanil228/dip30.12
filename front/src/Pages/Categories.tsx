@@ -176,7 +176,12 @@ export default function Categories() {
         },
         {
             accessorKey: "created_at",
-            header: "Создана",
+            header: ({ column }) => (
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                        Дата создания
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                ),
             cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDate(row.original.created_at)}</span>,
         },
         {
