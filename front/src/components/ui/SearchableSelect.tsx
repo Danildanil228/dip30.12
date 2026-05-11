@@ -20,14 +20,14 @@ export function SearchableSelect({ value, onChange, options, placeholder = "Вы
     const selectedLabel = options.find((opt) => opt.value === value)?.label || placeholder;
 
     return (
-        <Popover open={open} onOpenChange={setOpen} modal={false}>
+        <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild className="bg-background!">
                 <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal" disabled={disabled}>
                     <span className="truncate">{selectedLabel}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-(--radix-popover-trigger-width) p-0 z-50" sideOffset={5} align="start" avoidCollisions={false}>
+            <PopoverContent className="w-(--radix-popover-trigger-width) p-0 z-50" sideOffset={5} align="start" avoidCollisions={true}>
                 <Command>
                     <CommandInput placeholder={placeholder} className="h-9" />
                     <CommandList className="max-h-50 overflow-y-auto">
