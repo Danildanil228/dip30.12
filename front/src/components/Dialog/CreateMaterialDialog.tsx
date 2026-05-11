@@ -86,6 +86,15 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                 setError("Код материала обязателен");
                 return;
             }
+            if (code.length < 3) {
+                setError("Код материала должен минимум состоять из 3 символов");
+                return;
+            }
+            const allowedRegex = /^[A-Za-z0-9А-Яа-яЁё]+$/;
+            if (!allowedRegex.test(code)) {
+                setError("Код материала не должен содержать спец. символы");
+                return;
+            }
 
             const quantityNum = parseInt(quantity);
             if (isNaN(quantityNum) || quantityNum < 0) {
