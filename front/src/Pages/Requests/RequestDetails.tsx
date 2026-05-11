@@ -47,7 +47,7 @@ export default function RequestDetails() {
         } catch (error: any) {
             const message = error.response?.data?.error || "Ошибка подтверждения заявки";
             setErrorOpen(true);
-            setErrorMessage(message + " аываыва");
+            setErrorMessage(message);
         } finally {
             setProcessing(false);
         }
