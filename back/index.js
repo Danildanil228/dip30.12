@@ -83,7 +83,7 @@ app.post("/refresh", async (req, res) => {
         role: user.role,
         name: user.name,
         secondname: user.secondname,
-        avatar: avatar,
+        avatar: user.avatar,
     };
 
     const newTokens = generateTokens(userPayload);
