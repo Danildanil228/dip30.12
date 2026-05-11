@@ -1,7 +1,7 @@
 import { useUser } from "@/hooks/useUser";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Home, Package, ClipboardList, Users, User, Bell, Tag } from "lucide-react";
+import { Home, Package, ClipboardList, Users, User, Bell, Tag, Trash2 } from "lucide-react";
 
 export default function DesktopNavigation() {
     const location = useLocation();
@@ -15,6 +15,7 @@ export default function DesktopNavigation() {
         { path: "/allusers", label: "Пользователи", icon: Users, adminOnly: true },
         { path: "/profile", label: "Профиль", icon: User, adminOnly: false },
         { path: "/notifications", label: "Журнал", icon: Bell, adminOnly: true },
+        { path: "/trash", label: "Корзина", icon: Trash2, adminOnly: true }
     ];
 
     const visibleItems = mainItems.filter((item) => !item.adminOnly || isAdmin);
