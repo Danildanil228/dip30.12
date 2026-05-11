@@ -14,12 +14,14 @@ import { ru } from "date-fns/locale/ru";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRequests } from "@/hooks/useRequests";
 import { useUser } from "@/hooks/useUser";
+import { useMaterials } from "@/hooks/useMaterials";
 
 export default function RequestDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { user, isAdmin } = useUser();
     const { currentRequest, currentRequestItems, loading, fetchRequestById, approveRequest, rejectRequest } = useRequests();
+    const { fetchMaterials } = useMaterials();
     const [rejectionReason, setRejectionReason] = useState("");
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -38,8 +40,11 @@ export default function RequestDetails() {
         setProcessing(true);
         try {
             await approveRequest(parseInt(id!));
-        } catch (error) {
-            alert("Ошибка подтверждения заявки");
+           
+            await fetchMaterials();
+        } catch (error: any) {
+            const message = error.response?.data?.error || "Ошибка подтверждения заявки";
+            alert(message);
         } finally {
             setProcessing(false);
         }
@@ -55,8 +60,9 @@ export default function RequestDetails() {
             await rejectRequest(parseInt(id!), rejectionReason.trim());
             setShowRejectDialog(false);
             setRejectionReason("");
-        } catch (error) {
-            alert("Ошибка отклонения заявки");
+        } catch (error: any) {
+            const message = error.response?.data?.error || "Ошибка отклонения заявки";
+            alert(message);
         } finally {
             setProcessing(false);
         }

@@ -75,8 +75,12 @@ export default function CreateRequestDialog({ open, onOpenChange, onRequestCreat
             onOpenChange(false);
             onRequestCreated();
         } catch (error: any) {
-            console.error("Ошибка создания заявки:", error);
-            setError(error.response?.data?.error || "Ошибка создания заявки");
+            const serverError = error.response?.data?.error;
+            if (serverError && serverError.includes("недостаточно")) {
+                setError(serverError);
+            } else {
+                setError(serverError || "Ошибка создания заявки");
+            }
         } finally {
             setLoading(false);
         }
