@@ -113,7 +113,7 @@ export default function Header() {
                                     <Link to="/backups">Бэкапы</Link>
                                 </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link to="/profile">Профиль</Link>
                             </DropdownMenuItem>
                             {isAdmin && (

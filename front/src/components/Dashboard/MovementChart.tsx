@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format, subDays, subMonths } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingUp } from "lucide-react";
 import { useReports } from "@/hooks/useReports";
 
 interface MovementData {
@@ -62,7 +62,7 @@ export function MovementChart() {
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-background border rounded-lg p-3 shadow-lg">
+                <div className="bg-background rounded-lg p-3 shadow-lg">
                     <p className="font-semibold mb-2">{label}</p>
                     {payload.map((p: any, idx: number) => (
                         <p key={idx} className="text-sm" style={{ color: p.color }}>
@@ -76,43 +76,63 @@ export function MovementChart() {
     };
 
     return (
-        <Card className="col-span-2 z-10">
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <CardTitle>Движение товаров</CardTitle>
-                    <div className="flex flex-wrap gap-2">
-                        {quickRanges.map((range) => (
-                            <Button key={range.days} variant="outline" className="bg-background!" size="sm" onClick={() => handleQuickRange(range.days)}>
-                                {range.label}
-                            </Button>
-                        ))}
-                        <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+        <Card className="col-span-2 z-10 border-0">
+            <div className="mobile-portrait-only grid text-wrap px-6">
+                <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
+                    <h2 className="text-lg font-semibold">Движение товаров</h2>
                 </div>
-            </CardHeader>
-            <CardContent>
-                {loading ? (
-                    <div className="flex justify-center items-center h-80">
-                        <Loader2 className="h-8 w-8 animate-spin" />
+                <p className="text-center mt-2">График движения товаров будет хорошо виден в альбомном положении устройства</p>
+            </div>
+            <div className="landscape-only">
+                <CardHeader className="flex justify-between mb-5">
+                    <div className="flex gap-2 items-center">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h2 className="text-lg font-semibold">Движение товаров</h2>
                     </div>
-                ) : error ? (
-                    <div className="flex justify-center items-center h-80 text-red-500">{error}</div>
-                ) : data.length === 0 ? (
-                    <div className="flex justify-center items-center h-80 text-muted-foreground">Нет данных за выбранный период</div>
-                ) : (
-                    <ResponsiveContainer width="100%" height={350}>
-                        <LineChart data={data}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                            <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 12 }} />
-                            <YAxis tick={{ fontSize: 12 }} label={{ value: "Количество", angle: -90, position: "insideLeft", fontSize: 12 }} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Line type="monotone" dataKey="incoming" name="Приход" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-                            <Line type="monotone" dataKey="outgoing" name="Расход" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                )}
-            </CardContent>
+                    <div className="flex flex-col sm:flex-row justify-end! items-start gap-4">
+                        <div className="flex gap-2">
+                            <div className="grid grid-cols-2 gap-1 sm:flex">
+                                {quickRanges.map((range) => (
+                                    <Button key={range.days} variant="outline" className="bg-background!" size="sm" onClick={() => handleQuickRange(range.days)}>
+                                        {range.label}
+                                    </Button>
+                                ))}
+                            </div>
+                            
+
+                            <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <div className="flex justify-center items-center h-80">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                        </div>
+                    ) : error ? (
+                        <div className="flex justify-center items-center h-80 text-red-500">{error}</div>
+                    ) : data.length === 0 ? (
+                        <div className="flex justify-center items-center h-80 text-muted-foreground">Нет данных за выбранный период</div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height={350}>
+                            <LineChart data={data}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                                <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} label={{ value: "Количество", angle: -90, position: "insideLeft", fontSize: 12 }} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend />
+                                <Line type="monotone" dataKey="incoming" name="Приход" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+                                <Line type="monotone" dataKey="outgoing" name="Расход" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    )}
+                </CardContent>
+            </div>
         </Card>
     );
 }

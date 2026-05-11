@@ -5,7 +5,7 @@ import { MovementChart } from "@/components/Dashboard/MovementChart";
 import { StatusChart } from "@/components/Dashboard/StatusChart";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { Package, Boxes, Clock, CheckCircle, RefreshCw, TrendingUp } from "lucide-react";
+import { Package, Boxes, Clock, CheckCircle, RefreshCw } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -110,30 +110,13 @@ export default function Dashboard() {
                     />
                 </motion.div>
                 <motion.div variants={itemVariants}>
-                    <MetricCard
-                        title="Завершено за период"
-                        value={metrics?.completed_requests || 0}
-                        change={metrics?.completed_change}
-                        changeText=""
-                        icon={<CheckCircle className="h-5 w-5 text-purple-500" />}
-                    />
+                    <MetricCard title="Завершено за период" value={metrics?.completed_requests || 0} change={metrics?.completed_change} changeText="" icon={<CheckCircle className="h-5 w-5 text-purple-500" />} />
                 </motion.div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-6">
-                <div className="rounded-xl border bg-card shadow-sm p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <h2 className="text-lg font-semibold">Движение товаров</h2>
-                    </div>
-                    <MovementChart />
-                </div>
-
-                <div className="rounded-xl border bg-card shadow-sm p-6">
-                    <StatusChart />
-                </div>
+                <MovementChart />
+                <StatusChart />
             </motion.div>
         </div>
     );

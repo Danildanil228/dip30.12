@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { format, subMonths } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { ChartPie, Loader2 } from "lucide-react";
 import { reportService } from "@/services/reportService";
 
 interface StatusData {
@@ -113,10 +113,17 @@ export function StatusChart() {
     }
 
     return (
-        <Card className="z-10">
+        <Card className="z-10 border-0">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <CardTitle>Статус {getEntityLabel()}</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <ChartPie className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                            <span className="text-lg">Статус {getEntityLabel()}</span>
+                        </div>
+                    </CardTitle>
                     <div className="flex flex-wrap gap-2">
                         <Select value={entityType} onValueChange={(v) => setEntityType(v as EntityType)}>
                             <SelectTrigger className="w-50 bg-background!">

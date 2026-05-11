@@ -207,3 +207,22 @@ select:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
     caret-color: var(--foreground);
 }
+
+.mobile-portrait-only {
+    display: block;
+}
+
+@media (orientation: landscape) {
+    .mobile-portrait-only {
+        display: none;
+    }
+}
+.landscape-only {
+    display: none;
+}
+
+@media (orientation: landscape) {
+    .landscape-only {
+        display: block;
+    }
+}
