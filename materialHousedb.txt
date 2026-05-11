@@ -10,6 +10,7 @@ create table users(
 	email VARCHAR(100),
 	phone VARCHAR(20),
 	birthday DATE,
+    avatar TEXT NULL,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -140,3 +141,5 @@ CREATE TABLE inventory_results (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+

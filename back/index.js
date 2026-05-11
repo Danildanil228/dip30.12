@@ -9,6 +9,8 @@ const backupRoutes = require("./backup");
 const { generateTokens, saveRefreshToken, revokeAllUserSessions, verifyRefreshToken, cleanupExpiredSessions, ACCESS_TOKEN_SECRET } = require("./utils/tokens");
 const { authenticate, checkUserInDB, authenticateAndCheckDB, checkAdmin, checkAdminOrAccountant } = require("./middleware/auth");
 require("dotenv").config();
+const path = require("path");
+const fs = require("fs-extra");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +42,8 @@ app.use(
 );
 app.use(express.json());
 app.use("/backups", backupRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/avatar", require("./avatar"));
 
 setInterval(
     async () => {
@@ -64,7 +68,7 @@ app.post("/refresh", async (req, res) => {
         return res.status(401).json({ error: error || "Invalid refresh token" });
     }
 
-    const userResult = await pool.query("SELECT id, username, role, name, secondname FROM users WHERE id = $1", [userId]);
+    const userResult = await pool.query("SELECT id, username, role, name, secondname, avatar FROM users WHERE id = $1", [userId]);
 
     if (userResult.rows.length === 0) {
         await revokeAllUserSessions(userId);
@@ -79,6 +83,7 @@ app.post("/refresh", async (req, res) => {
         role: user.role,
         name: user.name,
         secondname: user.secondname,
+        avatar: avatar,
     };
 
     const newTokens = generateTokens(userPayload);
@@ -145,16 +150,10 @@ app.post("/registerFirst", async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const result = await pool.query("INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname", [
-            username,
-            hashedPassword,
-            "admin",
-            "admin",
-            "admin",
-            "",
-            "",
-            null,
-        ]);
+        const result = await pool.query(
+            "INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, name, secondname, avatar",
+            [username, hashedPassword, "admin", "admin", "admin", "", "", null],
+        );
 
         const user = result.rows[0];
         const userPayload = {
@@ -196,7 +195,7 @@ app.post("/login", async (req, res) => {
             return res.status(400).json({ error: "Заполните все поля" });
         }
 
-        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        const result = await pool.query("SELECT id, username, password, role, name, secondname, email, phone, birthday, created_at, updated_at, avatar FROM users WHERE username = $1", [username]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({ error: "Неверные данные" });
@@ -215,6 +214,7 @@ app.post("/login", async (req, res) => {
             role: user.role,
             name: user.name,
             secondname: user.secondname,
+            avatar: user.avatar,
         };
 
         const tokens = generateTokens(userPayload);
@@ -277,8 +277,8 @@ app.post("/createUser", authenticateAndCheckDB, checkAdmin, async (req, res) => 
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-             RETURNING id, username, role, name, secondname`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+     RETURNING id, username, role, name, secondname, avatar`,
             [username, hashedPassword, role, name, secondname, "", "", null],
         );
 
@@ -302,7 +302,7 @@ app.post("/createUser", authenticateAndCheckDB, checkAdmin, async (req, res) => 
 app.get("/users", authenticateAndCheckDB, async (req, res) => {
     try {
         const currentUserRole = req.user.role;
-        let query = "SELECT id, username, role, name, secondname, created_at FROM users";
+        let query = "SELECT id, username, role, name, secondname, created_at, avatar FROM users";
         const params = [];
 
         if (currentUserRole === "admin") {
@@ -363,8 +363,8 @@ app.get("/users/:id", authenticateAndCheckDB, async (req, res) => {
 
         const result = await pool.query(
             `SELECT id, username, role, name, secondname, email, phone, 
-                    birthday, created_at, updated_at 
-             FROM users WHERE id = $1`,
+            birthday, created_at, updated_at, avatar 
+     FROM users WHERE id = $1`,
             [userId],
         );
 
@@ -440,14 +440,13 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
 
         values.push(userId);
 
-        const query = `
-            UPDATE users 
-            SET ${setClauses.join(", ")} 
-            WHERE id = $${paramIndex} 
-            RETURNING id, username, role, name, secondname, email, phone, birthday, created_at, updated_at
-        `;
-
         const result = await pool.query(query, values);
+        const query = `
+    UPDATE users 
+    SET ${setClauses.join(", ")} 
+    WHERE id = $${paramIndex} 
+    RETURNING id, username, role, name, secondname, email, phone, birthday, created_at, updated_at, avatar
+`;
         const updatedUser = result.rows[0];
 
         if (roleChanged) {

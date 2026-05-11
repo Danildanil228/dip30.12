@@ -28,7 +28,7 @@ const checkUserInDB = async (req, res, next) => {
             return res.status(401).json({ error: "Не авторизован" });
         }
 
-        const result = await pool.query("SELECT id, username, role, name, secondname, email, phone, birthday FROM users WHERE id = $1", [req.userFromToken.id]);
+        const result = await pool.query("SELECT id, username, role, name, secondname, email, phone, birthday, avatar FROM users WHERE id = $1", [req.userFromToken.id]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({ error: "Пользователь не найден в системе" });
