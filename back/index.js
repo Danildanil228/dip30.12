@@ -11,7 +11,7 @@ const { authenticate, checkUserInDB, authenticateAndCheckDB, checkAdmin, checkAd
 require("dotenv").config();
 const path = require("path");
 const fs = require("fs-extra");
-
+const multer = require("multer");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -325,10 +325,17 @@ app.delete("/users/:id", authenticateAndCheckDB, checkAdmin, async (req, res) =>
     try {
         const userId = parseInt(req.params.id);
 
-        const userToDeleteResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
+        const userToDeleteResult = await pool.query("SELECT username, avatar FROM users WHERE id = $1", [userId]);
 
         if (userToDeleteResult.rows.length === 0) {
             return res.status(404).json({ error: "Пользователь не найден" });
+        }
+
+        if (userToDelete.avatar) {
+            const avatarPath = path.join(AVATAR_DIR, path.basename(userToDelete.avatar));
+            if (await fs.pathExists(avatarPath)) {
+                await fs.unlink(avatarPath);
+            }
         }
 
         const userToDelete = userToDeleteResult.rows[0];
