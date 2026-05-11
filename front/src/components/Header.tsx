@@ -17,7 +17,7 @@ export default function Header() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [_, setUpdateKey] = useState(0);
 
-    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    const [currentVersion, setCurrentVersion] = useState("");
     useEffect(() => {
         versionService
             .getVersions()

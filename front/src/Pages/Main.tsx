@@ -19,7 +19,7 @@ const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; 
 
 export default function Main() {
     const { user, isAdmin } = useUser();
-    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    const [currentVersion, setCurrentVersion] = useState("");
     useEffect(() => {
         versionService
             .getVersions()
