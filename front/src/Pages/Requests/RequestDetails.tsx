@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, XCircle, Package, User, Calendar, FileText, CheckCircle, AlertTriangle } from "lucide-react";
@@ -29,6 +29,8 @@ export default function RequestDetails() {
     const canApprove = (isAdmin || isAccountant) && currentRequest?.status === "pending";
     const [notesExpanded, setNotesExpanded] = useState(false);
     const { loading: userLoading } = useUser();
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     useEffect(() => {
         if (!userLoading && id) {
@@ -40,11 +42,12 @@ export default function RequestDetails() {
         setProcessing(true);
         try {
             await approveRequest(parseInt(id!));
-           
+
             await fetchMaterials();
         } catch (error: any) {
             const message = error.response?.data?.error || "Ошибка подтверждения заявки";
-            alert(message);
+            setErrorOpen(true);
+            setErrorMessage(message + " аываыва");
         } finally {
             setProcessing(false);
         }
@@ -227,7 +230,7 @@ export default function RequestDetails() {
                                             <TableHead className="w-25">Код</TableHead>
                                             <TableHead>Название</TableHead>
                                             <TableHead className="text-center w-20">Ед.</TableHead>
-                                            <TableHead className="text-center w-25">Остаток на момент</TableHead>
+                                            <TableHead className="text-center w-25">Остаток на момент создания</TableHead>
                                             <TableHead className="text-center w-25">{currentRequest.request_type === "incoming" ? "Поступит" : "Спишется"}</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -307,6 +310,17 @@ export default function RequestDetails() {
                         <AlertDialogAction onClick={handleReject} disabled={processing || !rejectionReason.trim()} className="bg-destructive hover:bg-destructive/90">
                             {processing ? "Отклонение..." : "Отклонить"}
                         </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={errorOpen} onOpenChange={setErrorOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Ошибка</AlertDialogTitle>
+                        <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Закрыть</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
