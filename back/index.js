@@ -44,6 +44,7 @@ app.use(express.json());
 app.use("/backups", backupRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/avatar", require("./avatar"));
+app.use("/trash", require("./trash"));
 
 setInterval(
     async () => {
@@ -68,7 +69,7 @@ app.post("/refresh", async (req, res) => {
         return res.status(401).json({ error: error || "Invalid refresh token" });
     }
 
-    const userResult = await pool.query("SELECT id, username, role, name, secondname, avatar FROM users WHERE id = $1", [userId]);
+    const userResult = await pool.query("SELECT id, username, role, name, secondname, avatar FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
 
     if (userResult.rows.length === 0) {
         await revokeAllUserSessions(userId);
@@ -195,7 +196,7 @@ app.post("/login", async (req, res) => {
             return res.status(400).json({ error: "Заполните все поля" });
         }
 
-        const result = await pool.query("SELECT id, username, password, role, name, secondname, email, phone, birthday, created_at, updated_at, avatar FROM users WHERE username = $1", [username]);
+        const result = await pool.query("SELECT id, username, password, role, name, secondname, email, phone, birthday, created_at, updated_at, avatar FROM users WHERE username = $1 AND deleted_at IS NULL", [username]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({ error: "Неверные данные" });
@@ -306,9 +307,9 @@ app.get("/users", authenticateAndCheckDB, async (req, res) => {
         const params = [];
 
         if (currentUserRole === "admin") {
-            query += " ORDER BY name, secondname";
+            query += " WHERE deleted_at IS NULL ORDER BY name, secondname";
         } else if (currentUserRole === "accountant") {
-            query += " WHERE role IN ('storekeeper', 'accountant') ORDER BY name, secondname";
+            query += " WHERE role IN ('storekeeper', 'accountant') AND deleted_at IS NULL ORDER BY name, secondname";
         } else {
             return res.json({ users: [] });
         }
@@ -384,7 +385,7 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
             return res.status(403).json({ error: "Недостаточно прав" });
         }
 
-        const oldUserResult = await pool.query("SELECT *, birthday::text as birthday_text FROM users WHERE id = $1", [userId]);
+        const oldUserResult = await pool.query("SELECT *, birthday::text as birthday_text FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
 
         if (oldUserResult.rows.length === 0) {
             return res.status(404).json({ error: "Пользователь не найден" });
@@ -511,7 +512,7 @@ app.put("/users/:id/password", authenticateAndCheckDB, async (req, res) => {
             return res.status(403).json({ error: "Недостаточно прав" });
         }
 
-        const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+        const userResult = await pool.query("SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
 
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: "Пользователь не найден" });
@@ -602,14 +603,13 @@ app.delete("/logs", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 app.get("/categories", async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT DISTINCT c.*, 
-                   uc.username as created_by_username, 
-                   uu.username as updated_by_username
-            FROM materialcategories c
-            LEFT JOIN users uc ON c.created_by = uc.id
-            LEFT JOIN users uu ON c.updated_by = uu.id
-            ORDER BY c.name
-        `);
+    SELECT DISTINCT c.*, uc.username as created_by_username, uu.username as updated_by_username
+    FROM materialcategories c
+    LEFT JOIN users uc ON c.created_by = uc.id
+    LEFT JOIN users uu ON c.updated_by = uu.id
+    WHERE c.deleted_at IS NULL
+    ORDER BY c.name
+`);
         res.json({ categories: result.rows });
     } catch (error) {
         console.error("Ошибка при получении категорий:", error);
@@ -651,7 +651,7 @@ app.put("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) 
             return res.status(400).json({ error: "Название категории обязательно" });
         }
 
-        const oldCategoryResult = await pool.query("SELECT * FROM materialCategories WHERE id = $1", [categoryId]);
+        const oldCategoryResult = await pool.query("SELECT * FROM materialCategories WHERE id = $1 AND deleted_at IS NULL", [categoryId]);
 
         if (oldCategoryResult.rows.length === 0) {
             return res.status(404).json({ error: "Категория не найдена" });
@@ -690,33 +690,25 @@ app.put("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) 
 app.delete("/categories/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const categoryId = parseInt(req.params.id);
-
-        const materialsCheck = await pool.query("SELECT COUNT(*) FROM materials WHERE category_id = $1", [categoryId]);
-
+        const materialsCheck = await pool.query("SELECT COUNT(*) FROM materials WHERE category_id = $1 AND deleted_at IS NULL", [categoryId]);
         const materialCount = parseInt(materialsCheck.rows[0].count);
         if (materialCount > 0) {
             return res.status(400).json({
-                error: `Невозможно удалить категорию: в ней находится ${materialCount} материал(ов)`,
+                error: `Невозможно удалить категорию: в ней находится ${materialCount} материал(ов). Сначала удалите или переместите их.`,
                 materialCount: materialCount,
             });
         }
 
-        const categoryResult = await pool.query("SELECT name FROM materialCategories WHERE id = $1", [categoryId]);
-
+        const categoryResult = await pool.query("SELECT name FROM materialCategories WHERE id = $1 AND deleted_at IS NULL", [categoryId]);
         if (categoryResult.rows.length === 0) {
             return res.status(404).json({ error: "Категория не найдена" });
         }
-
         const categoryName = categoryResult.rows[0].name;
 
-        const result = await pool.query("DELETE FROM materialCategories WHERE id = $1 RETURNING id, name", [categoryId]);
+        await pool.query("UPDATE materialCategories SET deleted_at = NOW(), deleted_by = $1 WHERE id = $2", [req.user.id, categoryId]);
 
         await Logger.categoryDeleted(req.user.id, req.user.username, categoryName);
-
-        res.json({
-            message: "Категория удалена",
-            deletedCategory: result.rows[0],
-        });
+        res.json({ message: "Категория перемещена в корзину", deletedCategory: { id: categoryId, name: categoryName } });
     } catch (error) {
         console.error("Ошибка при удалении категории:", error);
         res.status(500).json({ error: "Ошибка сервера" });
@@ -730,13 +722,13 @@ app.get("/materials", async (req, res) => {
         const { category_id, search, low_stock } = req.query;
 
         let query = `
-            SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username
-            FROM materials m
-            LEFT JOIN materialCategories c ON m.category_id = c.id 
-            LEFT JOIN users uc ON m.created_by = uc.id 
-            LEFT JOIN users uu ON m.updated_by = uu.id 
-            WHERE 1=1
-        `;
+    SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username
+    FROM materials m
+    LEFT JOIN materialCategories c ON m.category_id = c.id 
+    LEFT JOIN users uc ON m.created_by = uc.id 
+    LEFT JOIN users uu ON m.updated_by = uu.id 
+    WHERE m.deleted_at IS NULL
+`;
         const params = [];
         let paramIndex = 1;
 
@@ -779,17 +771,12 @@ app.get("/materials/:id", async (req, res) => {
         const materialId = parseInt(req.params.id);
 
         const result = await pool.query(
-            `
-            SELECT m.*, 
-                   c.name as category_name, 
-                   uc.username as created_by_username, 
-                   uu.username as updated_by_username 
-            FROM materials m 
-            LEFT JOIN materialCategories c ON m.category_id = c.id 
-            LEFT JOIN users uc ON m.created_by = uc.id 
-            LEFT JOIN users uu ON m.updated_by = uu.id 
-            WHERE m.id = $1
-        `,
+            `SELECT m.*, c.name as category_name, uc.username as created_by_username, uu.username as updated_by_username 
+     FROM materials m 
+     LEFT JOIN materialCategories c ON m.category_id = c.id 
+     LEFT JOIN users uc ON m.created_by = uc.id 
+     LEFT JOIN users uu ON m.updated_by = uu.id 
+     WHERE m.id = $1 AND m.deleted_at IS NULL`,
             [materialId],
         );
 
@@ -856,7 +843,7 @@ app.put("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) =
             return res.status(400).json({ error: "Название и единица измерения обязательны" });
         }
 
-        const oldMaterialResult = await pool.query("SELECT * FROM materials WHERE id = $1", [materialId]);
+        const oldMaterialResult = await pool.query("SELECT * FROM materials WHERE id = $1 AND deleted_at IS NULL", [materialId]);
 
         if (oldMaterialResult.rows.length === 0) {
             return res.status(404).json({ error: "Материал не найден" });
@@ -910,29 +897,21 @@ app.put("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) =
 app.delete("/materials/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const materialId = parseInt(req.params.id);
-
-        const materialResult = await pool.query("SELECT name, quantity FROM materials WHERE id = $1", [materialId]);
-
+        const materialResult = await pool.query("SELECT name, quantity FROM materials WHERE id = $1 AND deleted_at IS NULL", [materialId]);
         if (materialResult.rows.length === 0) {
             return res.status(404).json({ error: "Материал не найден" });
         }
-
         const material = materialResult.rows[0];
-
         if (material.quantity > 0) {
             return res.status(400).json({
                 error: `Невозможно удалить материал: на складе осталось ${material.quantity} ед.`,
             });
         }
 
-        const result = await pool.query("DELETE FROM materials WHERE id = $1 RETURNING id, name, code", [materialId]);
+        await pool.query("UPDATE materials SET deleted_at = NOW(), deleted_by = $1 WHERE id = $2", [req.user.id, materialId]);
 
         await Logger.materialDeleted(req.user.id, req.user.username, material.name);
-
-        res.json({
-            message: "Материал удален",
-            deletedMaterial: result.rows[0],
-        });
+        res.json({ message: "Материал перемещён в корзину", deletedMaterial: { id: materialId, name: material.name } });
     } catch (error) {
         console.error("Ошибка при удалении материала:", error);
         res.status(500).json({ error: "Ошибка сервера" });
@@ -1871,10 +1850,10 @@ app.get("/dashboard/metrics", authenticateAndCheckDB, async (req, res) => {
             end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
         }
 
-        const materialsResult = await pool.query("SELECT COUNT(*) as total FROM materials");
+        const materialsResult = await pool.query("SELECT COUNT(*) as total FROM materials WHERE deleted_at IS NULL");
         const totalMaterials = parseInt(materialsResult.rows[0].total);
 
-        const quantityResult = await pool.query("SELECT COALESCE(SUM(quantity), 0) as total FROM materials");
+        const quantityResult = await pool.query("SELECT COALESCE(SUM(quantity), 0) as total FROM materials WHERE deleted_at IS NULL");
         const totalQuantity = parseInt(quantityResult.rows[0].total);
 
         const pendingRequestsResult = await pool.query(`
@@ -2387,10 +2366,11 @@ app.get("/reports/user-activity", authenticateAndCheckDB, async (req, res) => {
 app.get("/reports/materials-list", authenticateAndCheckDB, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, name, code, category_id
-            FROM materials
-            ORDER BY name
-        `);
+    SELECT id, name, code, category_id
+    FROM materials
+    WHERE deleted_at IS NULL
+    ORDER BY name
+`);
 
         res.json({ materials: result.rows });
     } catch (error) {
