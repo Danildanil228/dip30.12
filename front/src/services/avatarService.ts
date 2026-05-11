@@ -22,4 +22,12 @@ export const avatarService = {
             return null;
         }
     },
+    async getAvatarBlob(userId: number): Promise<Blob | null> {
+        try {
+            const response = await apiClient.get(`/avatar/${userId}`, { responseType: "blob" });
+            return response.data;
+        } catch {
+            return null;
+        }
+    },
 };

@@ -154,6 +154,11 @@ export default function Profile() {
                             if (isOwnProfile) window.dispatchEvent(new Event("profile-updated"));
                         }
                     }}
+                    onSuccess={() => {
+                        fetchUserProfile();
+                        loadAvatar();
+                        window.dispatchEvent(new Event("profile-updated"));
+                    }}
                 >
                     <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl mx-auto mb-4 overflow-hidden cursor-pointer">
                         {avatarBlobUrl ? (
