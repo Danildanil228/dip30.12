@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
-import { BookOpen, Package, BarChart3, UserCog, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search, ArrowRight } from "lucide-react";
+import { BookOpen, Package, BarChart3, UserCog, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search } from "lucide-react";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { versionService } from "@/services/versionService";
 import { Link } from "react-router-dom";

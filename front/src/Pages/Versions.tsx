@@ -24,7 +24,6 @@ import {
     Database,
     ArrowRightLeft,
     Rocket,
-    ArrowLeft,
     Tag,
     Calendar,
     ChevronLeft,
