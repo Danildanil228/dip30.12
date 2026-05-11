@@ -6,7 +6,6 @@ const fs = require("fs-extra");
 
 const router = express.Router();
 
-// Список удаленных записей
 router.get("/:entity", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     const { entity } = req.params;
     let table, idField, nameField;
@@ -37,11 +36,11 @@ router.get("/:entity", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     }
 
     try {
-        let query = `SELECT ${idField}, ${nameField} as name, deleted_at, deleted_by, u.username as deleted_by_username
-                     FROM ${table}
-                     LEFT JOIN users u ON ${table}.deleted_by = u.id
-                     WHERE deleted_at IS NOT NULL
-                     ORDER BY deleted_at DESC`;
+        const query = `SELECT ${table}.${idField}, ${table}.${nameField} as name, ${table}.deleted_at, ${table}.deleted_by, u.username as deleted_by_username
+                       FROM ${table}
+                       LEFT JOIN users u ON ${table}.deleted_by = u.id
+                       WHERE ${table}.deleted_at IS NOT NULL
+                       ORDER BY ${table}.deleted_at DESC`;
         const result = await pool.query(query);
         res.json({ data: result.rows });
     } catch (error) {
@@ -50,7 +49,6 @@ router.get("/:entity", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     }
 });
 
-// Восстановление
 router.put("/:entity/:id/restore", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     const { entity, id } = req.params;
     let table;
@@ -77,7 +75,7 @@ router.put("/:entity/:id/restore", authenticateAndCheckDB, checkAdmin, async (re
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Запись не найдена" });
         }
-        await Logger.log(req.user.id, "restore", "Восстановление из корзины", `[user:${req.user.id}:${req.user.username}] восстановил ${entity.substr(0, -1)} ID:${id}`);
+        await Logger.log(req.user.id, "restore", "Восстановление из корзины", `[user:${req.user.id}:${req.user.username}] восстановил ${entity.slice(0, -1)} ID:${id}`);
         res.json({ message: "Запись восстановлена" });
     } catch (error) {
         console.error("Ошибка восстановления:", error);
@@ -85,7 +83,6 @@ router.put("/:entity/:id/restore", authenticateAndCheckDB, checkAdmin, async (re
     }
 });
 
-// Полное удаление
 router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     const { entity, id } = req.params;
     let table,
@@ -124,7 +121,7 @@ router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, asyn
         if (result.rowCount === 0) {
             return res.status(404).json({ error: "Запись не найдена" });
         }
-        await Logger.log(req.user.id, "permanent_delete", "Полное удаление", `[user:${req.user.id}:${req.user.username}] навсегда удалил ${entity.substr(0, -1)} ID:${id}`);
+        await Logger.log(req.user.id, "permanent_delete", "Полное удаление", `[user:${req.user.id}:${req.user.username}] навсегда удалил ${entity.slice(0, -1)} ID:${id}`);
         res.json({ message: "Запись удалена навсегда" });
     } catch (error) {
         console.error("Ошибка полного удаления:", error);

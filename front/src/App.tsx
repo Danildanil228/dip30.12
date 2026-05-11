@@ -28,16 +28,7 @@ function App() {
                 <Route path="/" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path="/login" element={<Login />} />
-                <Route
-                    path="/trash"
-                    element={
-                        <ProtectedRoute>
-                            <AdminRoute>
-                                <Trash />
-                            </AdminRoute>
-                        </ProtectedRoute>
-                    }
-                />
+
                 <Route
                     element={
                         <ProtectedRoute>
@@ -85,6 +76,16 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <InventoryDetails />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/trash"
+                        element={
+                            <ProtectedRoute>
+                                <AdminRoute>
+                                    <Trash />
+                                </AdminRoute>
                             </ProtectedRoute>
                         }
                     />
