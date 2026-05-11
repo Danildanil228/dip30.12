@@ -3,9 +3,8 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, RotateCcw, AlertTriangle, Loader2, Users, Package, FolderOpen, Database } from "lucide-react";
+import { Trash2, RotateCcw, Loader2, Users, Package, FolderOpen, Database, ChevronLeft, ChevronRight } from "lucide-react";
 import apiClient from "@/services/api";
 import { useUser } from "@/hooks/useUser";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -26,13 +25,18 @@ const tabsConfig = [
     { value: "backups", label: "Бэкапы", icon: Database },
 ];
 
+const ITEMS_PER_PAGE = 4;
+
 export default function Trash() {
     const { isAdmin, loading: authLoading } = useUser();
     const [activeTab, setActiveTab] = useState<"users" | "categories" | "materials" | "backups">("users");
     const [items, setItems] = useState<TrashItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
-    const [confirmOpen, setConfirmOpen] = useState<{ id: number; action: "restore" | "permanent"; name: string } | null>(null);
+    const [restoreDialog, setRestoreDialog] = useState<{ id: number; name: string } | null>(null);
+    const [deleteDialog, setDeleteDialog] = useState<{ id: number; name: string } | null>(null);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [showAll, setShowAll] = useState(false);
 
     const fetchTrash = async () => {
         setLoading(true);
@@ -50,29 +54,31 @@ export default function Trash() {
         if (isAdmin) fetchTrash();
     }, [activeTab, isAdmin]);
 
-    const handleRestore = async (id: number) => {
-        setActionLoading(id);
+    const handleRestoreConfirm = async () => {
+        if (!restoreDialog) return;
+        setActionLoading(restoreDialog.id);
         try {
-            await apiClient.put(`/trash/${activeTab}/${id}/restore`);
+            await apiClient.put(`/trash/${activeTab}/${restoreDialog.id}/restore`);
             await fetchTrash();
         } catch (error) {
             console.error("Ошибка восстановления:", error);
         } finally {
             setActionLoading(null);
-            setConfirmOpen(null);
+            setRestoreDialog(null);
         }
     };
 
-    const handlePermanentDelete = async (id: number) => {
-        setActionLoading(id);
+    const handleDeleteConfirm = async () => {
+        if (!deleteDialog) return;
+        setActionLoading(deleteDialog.id);
         try {
-            await apiClient.delete(`/trash/${activeTab}/${id}/permanent`);
+            await apiClient.delete(`/trash/${activeTab}/${deleteDialog.id}/permanent`);
             await fetchTrash();
         } catch (error) {
             console.error("Ошибка полного удаления:", error);
         } finally {
             setActionLoading(null);
-            setConfirmOpen(null);
+            setDeleteDialog(null);
         }
     };
 
@@ -84,8 +90,15 @@ export default function Trash() {
         return date.toLocaleString("ru-RU");
     };
 
-    const currentIcon = tabsConfig.find((t) => t.value === activeTab)?.icon || Trash2;
     const currentLabel = tabsConfig.find((t) => t.value === activeTab)?.label || "";
+
+    const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+    const paginatedItems = showAll ? items : items.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+
+    const handleToggleShowAll = () => {
+        setShowAll(!showAll);
+        if (!showAll) setCurrentPage(0);
+    };
 
     return (
         <div className="space-y-6">
@@ -103,11 +116,15 @@ export default function Trash() {
 
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-                    <div className="border-b px-4 pt-4">
-                        <TabsList className="flex flex-wrap gap-2 bg-transparent h-auto p-0">
+                    <div className="border-0 sm:border-b px-4 py-2 mb-4 sm:mb-0">
+                        <TabsList className="flex flex-wrap gap-2 bg-transparent h-auto p-0 justify-between w-full">
                             {tabsConfig.map((tab) => (
-                                <TabsTrigger key={tab.value} value={tab.value} className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-2 transition-all">
-                                    <tab.icon className="h-4 w-4 mr-2" />
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    className="data-[state=active]:bg-[#3b82f6] data-[state=active]:text-primary-foreground rounded-lg px-4 py-2 transition-all dark:data-[state=active]:bg-{#3b82f6} border! text-[11px] sm:text-sm"
+                                >
+                                    <tab.icon className="h-4 w-4" />
                                     {tab.label}
                                 </TabsTrigger>
                             ))}
@@ -128,51 +145,76 @@ export default function Trash() {
                                         <p className="text-sm text-muted-foreground mt-1">Нет удалённых {currentLabel.toLowerCase()}</p>
                                     </motion.div>
                                 ) : (
-                                    <div className="space-y-3">
-                                        {items.map((item, index) => (
-                                            <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-                                                <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                                                    <CardContent className="p-5">
-                                                        <div className="flex flex-wrap items-start justify-between gap-4">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2 flex-wrap mb-2">
-                                                                    <h3 className="font-semibold text-base">{item.name}</h3>
-                                                                    <Badge variant="destructive" className="text-xs">
-                                                                        Удалён
-                                                                    </Badge>
+                                    <>
+                                        <div className="space-y-3">
+                                            {paginatedItems.map((item, index) => (
+                                                <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                                                    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+                                                        <CardContent className="p-4 sm:p-5">
+                                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                                                                        <h3 className="font-semibold text-base wrap-break-word">{item.name}</h3>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                                                        <div>ID: {item.id}</div>
+                                                                        <div>Дата удаления: {formatDate(item.deleted_at)}</div>
+                                                                        <div>Кто удалил: {item.deleted_by_username || "—"}</div>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                                                    <div>ID: {item.id}</div>
-                                                                    <div>Дата удаления: {formatDate(item.deleted_at)}</div>
-                                                                    <div>Кто удалил: {item.deleted_by_username || "—"}</div>
+                                                                <div className="sm:flex gap-2 shrink-0 sm:self-center grid">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="dark:bg-background! dark:border"
+                                                                        onClick={() => setDeleteDialog({ id: item.id, name: item.name })}
+                                                                        disabled={actionLoading === item.id}
+                                                                    >
+                                                                        {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+                                                                        Удалить
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="default"
+                                                                        className="py-2!"
+                                                                        onClick={() => setRestoreDialog({ id: item.id, name: item.name })}
+                                                                        disabled={actionLoading === item.id}
+                                                                    >
+                                                                        {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
+                                                                        Восстановить
+                                                                    </Button>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex gap-2 shrink-0">
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    onClick={() => setConfirmOpen({ id: item.id, action: "restore", name: item.name })}
-                                                                    disabled={actionLoading === item.id}
-                                                                >
-                                                                    {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
-                                                                    Восстановить
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="destructive"
-                                                                    onClick={() => setConfirmOpen({ id: item.id, action: "permanent", name: item.name })}
-                                                                    disabled={actionLoading === item.id}
-                                                                >
-                                                                    {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
-                                                                    Удалить навсегда
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            </motion.div>
-                                        ))}
-                                    </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+
+                                        {items.length > ITEMS_PER_PAGE && (
+                                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                                                <div className="text-sm text-muted-foreground">Всего: {items.length} записей</div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button variant="default" size="sm" onClick={handleToggleShowAll}>
+                                                        {showAll ? "Свернуть" : "Развернуть"}
+                                                    </Button>
+                                                    {!showAll && totalPages > 1 && (
+                                                        <>
+                                                            <Button variant="default" size="sm" onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
+                                                                <ChevronLeft className="h-4 w-4" />
+                                                            </Button>
+                                                            <span className="text-sm">
+                                                                {currentPage + 1} из {totalPages}
+                                                            </span>
+                                                            <Button variant="default" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} disabled={currentPage === totalPages - 1}>
+                                                                <ChevronRight className="h-4 w-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </TabsContent>
                         )}
@@ -180,33 +222,34 @@ export default function Trash() {
                 </Tabs>
             </div>
 
-            <AlertDialog open={!!confirmOpen} onOpenChange={() => setConfirmOpen(null)}>
+            <AlertDialog open={!!restoreDialog} onOpenChange={() => setRestoreDialog(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{confirmOpen?.action === "restore" ? "Восстановить запись?" : "Удалить навсегда?"}</AlertDialogTitle>
+                        <AlertDialogTitle>Восстановить запись?</AlertDialogTitle>
+                        <AlertDialogDescription>Вы уверены, что хотите восстановить "{restoreDialog?.name}"?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRestoreConfirm}>Восстановить</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить навсегда?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {confirmOpen?.action === "restore" ? (
-                                <>Вы уверены, что хотите восстановить "{confirmOpen?.name}"?</>
-                            ) : (
-                                <div className="space-y-2">
-                                    <p>Вы уверены, что хотите навсегда удалить "{confirmOpen?.name}"?</p>
-                                    <p className="text-destructive flex items-center gap-1">
-                                        <AlertTriangle className="h-4 w-4" /> Это действие нельзя отменить.
-                                    </p>
-                                </div>
-                            )}
+                            <div className="space-y-2">
+                                <p>Вы уверены, что хотите навсегда удалить "{deleteDialog?.name}"?</p>
+                                <p> Это действие нельзя отменить.</p>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                if (confirmOpen?.action === "restore") handleRestore(confirmOpen.id);
-                                else if (confirmOpen?.action === "permanent") handlePermanentDelete(confirmOpen.id);
-                            }}
-                            className={confirmOpen?.action === "permanent" ? "bg-destructive hover:bg-destructive/90" : ""}
-                        >
-                            {confirmOpen?.action === "restore" ? "Восстановить" : "Удалить навсегда"}
+                        <AlertDialogAction onClick={handleDeleteConfirm}>
+                            Удалить навсегда
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

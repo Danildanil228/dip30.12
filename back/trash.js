@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const pool = require("./config/db");
 const { authenticateAndCheckDB, checkAdmin } = require("./middleware/auth");
 const Logger = require("./logger");
@@ -75,7 +76,7 @@ router.put("/:entity/:id/restore", authenticateAndCheckDB, checkAdmin, async (re
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Запись не найдена" });
         }
-        await Logger.log(req.user.id, "restore", "Восстановление из корзины", `[user:${req.user.id}:${req.user.username}] восстановил ${entity.slice(0, -1)} ID:${id}`);
+        await Logger.log(req.user.id, "restore", "Восстановление из корзины", `[user:${req.user.id}:${req.user.username}] восстановил ${entity.substr(0, -1)} ID:${id}`);
         res.json({ message: "Запись восстановлена" });
     } catch (error) {
         console.error("Ошибка восстановления:", error);
@@ -91,6 +92,13 @@ router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, asyn
     switch (entity) {
         case "users":
             table = "users";
+            const avatarResult = await pool.query("SELECT avatar FROM users WHERE id = $1", [id]);
+            if (avatarResult.rows.length > 0 && avatarResult.rows[0].avatar) {
+                const avatarPath = path.join(__dirname, avatarResult.rows[0].avatar);
+                if (await fs.pathExists(avatarPath)) {
+                    await fs.unlink(avatarPath);
+                }
+            }
             break;
         case "categories":
             table = "materialcategories";
@@ -121,7 +129,7 @@ router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, asyn
         if (result.rowCount === 0) {
             return res.status(404).json({ error: "Запись не найдена" });
         }
-        await Logger.log(req.user.id, "permanent_delete", "Полное удаление", `[user:${req.user.id}:${req.user.username}] навсегда удалил ${entity.slice(0, -1)} ID:${id}`);
+        await Logger.log(req.user.id, "permanent_delete", "Полное удаление", `[user:${req.user.id}:${req.user.username}] навсегда удалил ${entity.substr(0, -1)} ID:${id}`);
         res.json({ message: "Запись удалена навсегда" });
     } catch (error) {
         console.error("Ошибка полного удаления:", error);
