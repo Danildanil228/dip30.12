@@ -157,7 +157,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                 responsible_person: parseInt(responsiblePerson),
                 start_date: format(startDate, "yyyy-MM-dd"),
                 end_date: format(endDate, "yyyy-MM-dd"),
-                description: description.trim() || null
+                description: description.trim() || null,
             };
 
             if (selectionMode === "categories" && selectedCategories.length > 0) {
@@ -277,12 +277,12 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                             </div>
 
                             {selectionMode === "categories" && (
-                                <div className="ml-6">
+                                <div>
                                     <div className="relative mb-2">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                                         <Input placeholder="Поиск категорий..." value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} className="pl-10" />
                                     </div>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2">
+                                    <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
                                         {filteredCategories.length === 0 ? (
                                             <div className="text-center text-gray-500 py-2">Категории не найдены</div>
                                         ) : (
@@ -303,7 +303,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                             </div>
 
                             {selectionMode === "materials" && (
-                                <div className="ml-6">
+                                <div>
                                     <div className="flex flex-col gap-2 mb-3">
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -320,7 +320,7 @@ export default function CreateInventoryDialog({ open, onOpenChange, onInventoryC
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3 max-h-60 overflow-y-auto border rounded p-2">
+                                    <div className="space-y-3 max-h-60 overflow-y-auto border rounded-lg p-2">
                                         {paginatedMaterials.length === 0 ? (
                                             <div className="text-center text-gray-500 py-2">Товары не найдены</div>
                                         ) : (
