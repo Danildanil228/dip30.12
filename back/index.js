@@ -324,35 +324,21 @@ app.get("/users", authenticateAndCheckDB, async (req, res) => {
 app.delete("/users/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
-
-        const userToDeleteResult = await pool.query("SELECT username, avatar FROM users WHERE id = $1", [userId]);
-
+        const userToDeleteResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
         if (userToDeleteResult.rows.length === 0) {
             return res.status(404).json({ error: "Пользователь не найден" });
         }
-
-        if (userToDelete.avatar) {
-            const avatarPath = path.join(AVATAR_DIR, path.basename(userToDelete.avatar));
-            if (await fs.pathExists(avatarPath)) {
-                await fs.unlink(avatarPath);
-            }
-        }
-
         const userToDelete = userToDeleteResult.rows[0];
         if (userId === req.user.id) {
             return res.status(400).json({ error: "Нельзя удалить самого себя" });
         }
 
-        const revokedCount = await revokeAllUserSessions(userId);
-        console.log(`Отозвано ${revokedCount} сессий пользователя ${userToDelete.username}`);
+        await pool.query("UPDATE users SET deleted_at = NOW(), deleted_by = $1 WHERE id = $2", [req.user.id, userId]);
 
-        const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id, username", [userId]);
+        await revokeAllUserSessions(userId);
         await Logger.userDeleted(req.user.id, req.user.username, userToDelete.username, userId);
 
-        res.json({
-            message: "Пользователь удален",
-            deletedUser: result.rows[0],
-        });
+        res.json({ message: "Пользователь перемещён в корзину", deletedUser: { id: userId, username: userToDelete.username } });
     } catch (error) {
         console.error("Ошибка при удалении пользователя:", error);
         res.status(500).json({ error: "Ошибка сервера" });
