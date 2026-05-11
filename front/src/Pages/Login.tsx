@@ -4,6 +4,7 @@ import { authService } from "@/services/authService";
 import DarkModeButtonToggle from "@/components/DarkModeButtonToggle";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Shield, Package, BarChart3, Users, CheckCircle2, ArrowRight } from "lucide-react";
+import { versionService } from "@/services/versionService";
 
 export default function Login() {
     const [username, setUsername] = useState("");
@@ -15,7 +16,15 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [step, setStep] = useState(1);
     const [rememberMe, setRememberMe] = useState(false);
+    const [agreeTerms, setAgreeTerms] = useState(false); 
     const navigate = useNavigate();
+    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+        useEffect(() => {
+            versionService
+                .getVersions()
+                .then((data) => setCurrentVersion(data.currentVersion))
+                .catch((err) => console.error(err));
+        }, []);
 
     useEffect(() => {
         checkFirstRun();
@@ -67,6 +76,12 @@ export default function Login() {
                 }
                 setStep(2);
                 return;
+            } else if (step === 2) {
+              
+                if (!agreeTerms) {
+                    setError("Необходимо принять условия использования и политику конфиденциальности");
+                    return;
+                }
             }
         }
 
@@ -148,7 +163,7 @@ export default function Login() {
                             ))}
                         </div>
 
-                        <p className="text-white/40 text-xs">Версия 1.0 • 2026</p>
+                        <p className="text-white/40 text-xs">Версия {currentVersion} • 2026</p>
                     </motion.div>
                 </div>
             </div>
@@ -280,6 +295,28 @@ export default function Login() {
                                             </div>
                                         </div>
                                         <p className="text-sm text-muted-foreground">Это будет администратор системы с полным доступом. Вы сможете создать других пользователей позже.</p>
+
+                                      
+                                        <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/20">
+                                            <input
+                                                type="checkbox"
+                                                id="agreeTerms"
+                                                checked={agreeTerms}
+                                                onChange={(e) => setAgreeTerms(e.target.checked)}
+                                                className="rounded border-input w-4 h-4 mt-0.5 accent-primary cursor-pointer"
+                                                required
+                                            />
+                                            <label htmlFor="agreeTerms" className="text-sm text-muted-foreground cursor-pointer select-none leading-relaxed">
+                                                Я принимаю{" "}
+                                                <a href="/terms" target="_blank" className="text-primary hover:underline">
+                                                    Условия использования
+                                                </a>{" "}
+                                                и{" "}
+                                                <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                                                    Политику конфиденциальности
+                                                </a>
+                                            </label>
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -321,7 +358,7 @@ export default function Login() {
                                             </>
                                         ) : (
                                             <>
-                                                <Shield className="h-4 w-4" /> Создать администратора
+                                                <Shield className="h-4 w-4" /> Создать
                                             </>
                                         )
                                     ) : (

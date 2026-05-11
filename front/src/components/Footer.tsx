@@ -2,10 +2,19 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, Mail, Phone, MapPin, Github } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
+import { useEffect, useState } from "react";
+import { versionService } from "@/services/versionService";
 
 export default function Footer() {
     const { user } = useUser();
     const isAdmin = user?.role === "admin";
+    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    useEffect(() => {
+        versionService
+            .getVersions()
+            .then((data) => setCurrentVersion(data.currentVersion))
+            .catch((err) => console.error(err));
+    }, []);
 
     const currentYear = new Date().getFullYear();
 
@@ -41,7 +50,6 @@ export default function Footer() {
             >
                 <div className="py-8 px-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -52,9 +60,7 @@ export default function Footer() {
                                     <p className="text-xs text-muted-foreground">Складской учёт</p>
                                 </div>
                             </div>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Профессиональное решение для управления складскими запасами, проведения инвентаризаций и формирования отчётности.
-                            </p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">Профессиональное решение для управления складскими запасами, проведения инвентаризаций и формирования отчётности.</p>
                         </div>
 
                         <div className="space-y-2">
@@ -62,10 +68,7 @@ export default function Footer() {
                             <ul className="space-y-1">
                                 {navigationLinks.map((link) => (
                                     <li key={link.path}>
-                                        <Link
-                                            to={link.path}
-                                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                        >
+                                        <Link to={link.path} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                                             {link.label}
                                         </Link>
                                     </li>
@@ -83,13 +86,14 @@ export default function Footer() {
                                         </Link>
                                     </li>
                                 )}
-                                {isAdmin && adminLinks.map((link) => (
-                                    <li key={link.path}>
-                                        <Link to={link.path} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                                            {link.label}
-                                        </Link>
-                                    </li>
-                                ))}
+                                {isAdmin &&
+                                    adminLinks.map((link) => (
+                                        <li key={link.path}>
+                                            <Link to={link.path} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                                {link.label}
+                                            </Link>
+                                        </li>
+                                    ))}
                                 <li>
                                     <Link to="/profile" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                                         Профиль
@@ -103,10 +107,7 @@ export default function Footer() {
                             <ul className="space-y-1">
                                 {contactInfo.map((item) => (
                                     <li key={item.text}>
-                                        <a
-                                            href={item.href}
-                                            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                        >
+                                        <a href={item.href} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                                             <item.icon className="h-3 w-3 shrink-0" />
                                             <span>{item.text}</span>
                                         </a>
@@ -131,11 +132,16 @@ export default function Footer() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>&copy; {currentYear} Material House.</span>
                             <span>Все права защищены.</span>
+                            <Link to="/versions" className="hover:text-foreground transition-colors">v.{currentVersion}</Link>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>Политика конфиденциальности</span>
+                            <a href="/privacy" target="_blank" className="hover:text-foreground transition-colors">
+                                Политика конфиденциальности
+                            </a>
                             <span className="hidden sm:inline">•</span>
-                            <span>Условия использования</span>
+                            <a href="/terms" target="_blank" className="hover:text-foreground transition-colors">
+                                Условия использования
+                            </a>
                         </div>
                     </div>
                 </div>

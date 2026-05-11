@@ -20,6 +20,9 @@ import InventoryDetails from "./Pages/Inventories/InventoryDetails";
 import Dashboard from "./Pages/Dashboard";
 import Reports from "./Pages/Reports";
 import Trash from "./Pages/Trash";
+import PrivacyPolicy from "./Pages/PrivacyPolicy";
+import TermsOfUse from "./Pages/TermsOfUse";
+import Versions from "./Pages/Versions";
 
 function App() {
     return (
@@ -28,6 +31,8 @@ function App() {
                 <Route path="/" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfUse />} />
 
                 <Route
                     element={
@@ -36,6 +41,7 @@ function App() {
                         </ProtectedRoute>
                     }
                 >
+                   <Route path="/versions" element={<Versions />} />
                     <Route
                         path="/main"
                         element={
