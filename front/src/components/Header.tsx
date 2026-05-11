@@ -22,7 +22,6 @@ export default function Header() {
             return;
         }
         try {
-            // Используем apiClient, но для blob нужно указать responseType
             const response = await apiClient.get(`/avatar/${user.id}`, {
                 responseType: "blob",
             });
@@ -110,7 +109,7 @@ export default function Header() {
                             <DropdownMenuLabel>Инструменты</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             {isAdmin && (
-                                <DropdownMenuItem asChild>
+                                <DropdownMenuItem asChild className="cursor-pointer">
                                     <Link to="/backups">Бэкапы</Link>
                                 </DropdownMenuItem>
                             )}
@@ -118,19 +117,24 @@ export default function Header() {
                                 <Link to="/profile">Профиль</Link>
                             </DropdownMenuItem>
                             {isAdmin && (
-                                <DropdownMenuItem asChild className="lg:hidden">
+                                <DropdownMenuItem asChild className="lg:hidden cursor-pointer">
                                     <Link to="/allusers">Все пользователи</Link>
                                 </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link to="/inventories">Инвентаризация</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link to="/dashboard">Дашборд</Link>
                             </DropdownMenuItem>
                             {user?.role !== "storekeeper" && (
-                                <DropdownMenuItem asChild>
+                                <DropdownMenuItem asChild className="cursor-pointer">
                                     <Link to="/reports">Отчеты</Link>
+                                </DropdownMenuItem>
+                            )}
+                            {isAdmin && (
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                    <Link to="/trash">Корзина</Link>
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuItem
