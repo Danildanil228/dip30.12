@@ -253,7 +253,7 @@ export default function Categories() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Удалить категорию?</AlertDialogTitle>
-                        <AlertDialogDescription>Вы уверены, что хотите удалить категорию "{singleDeleteTarget?.name}"? Это действие нельзя отменить.</AlertDialogDescription>
+                        <AlertDialogDescription>Вы уверены, что хотите удалить категорию "{singleDeleteTarget?.name}"? Категории будут перемещены в корзину для дальнейшего удаления.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isChecking}>Отмена</AlertDialogCancel>
@@ -274,7 +274,7 @@ export default function Categories() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Удалить выбранные категории?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Вы уверены, что хотите удалить {multiDeleteIds.length} выбранных категорий? Это действие нельзя отменить. Категории, содержащие материалы, удалены не будут.
+                            Вы уверены, что хотите удалить {multiDeleteIds.length} выбранных категорий? Выбранные категории будут перемещены в козину. Категории, содержащие материалы, перемещены не будут.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

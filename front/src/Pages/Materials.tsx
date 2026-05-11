@@ -241,9 +241,9 @@ export default function Materials() {
                             ) : deleteError ? (
                                 <span>{deleteError}</span>
                             ) : isMultipleDelete ? (
-                                `Вы уверены, что хотите удалить ${multipleDeleteIds.length} материалов?`
+                                `Вы уверены, что хотите переместить в корзину ${multipleDeleteIds.length} материалов?`
                             ) : (
-                                materialToDelete && `Материал «${materialToDelete.name}» будет удалён безвозвратно.`
+                                materialToDelete && `Материал «${materialToDelete.name}» будет перемещен в корзину.`
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>

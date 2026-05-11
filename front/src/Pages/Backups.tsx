@@ -251,7 +251,7 @@ export default function Backups() {
                             Вы уверены, что хотите удалить бэкап <span>{deleteSingleBackup?.filename}</span>
                             ?
                             <br />
-                            <span>Это действие нельзя отменить.</span>
+                            <span>Бэкап будет перемещен в корзину для дальнейшего удаления.</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -270,7 +270,7 @@ export default function Backups() {
                             {deleteMultipleIds.length === 1 ? "бэкап" : deleteMultipleIds.length >= 2 && deleteMultipleIds.length <= 4 ? "бэкапа" : "бэкапов"}
                             ?
                             <br />
-                            <span>Это действие нельзя отменить.</span>
+                            <span>Выбранные бюкапы будут перемещны в корзину для дальнейшего удаления.</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -229,7 +229,7 @@ export default function AllUsers() {
                             Вы уверены, что хотите удалить пользователя{" "}
                             {deleteSingleUser?.username}?
                             <br />
-                            <span>Это действие нельзя отменить.</span>
+                            <span>Пользователи будет перемещен в корзину для дальнейшего удаления.</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -250,7 +250,7 @@ export default function AllUsers() {
                             {deleteMultipleIds.length === 1 ? "пользователя" : deleteMultipleIds.length >= 2 && deleteMultipleIds.length <= 4 ? "пользователей" : "пользователей"}
                             ?
                             <br />
-                            <span>Это действие нельзя отменить.</span>
+                            <span>Выбранные пользователи будут перемещены в корзину.</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
