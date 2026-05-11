@@ -16,117 +16,43 @@ class Logger {
     static async login(userId, username) {
         await this.log(userId, "login", "Вход в систему", `[user:${userId}:${username}] вошел в систему`);
     }
-
     static async logout(userId, username) {
         await this.log(userId, "logout", "Выход из системы", `[user:${userId}:${username}] вышел из системы`);
     }
-
     static async userCreated(adminId, adminUsername, createdUsername, createdUserId) {
         await this.log(adminId, "user_created", "Создание пользователя", `[user:${adminId}:${adminUsername}] создал пользователя [user:${createdUserId}:${createdUsername}]`);
     }
-
     static async userDeleted(adminId, adminUsername, deletedUsername, deletedUserId) {
         await this.log(adminId, "user_deleted", "Удаление пользователя", `[user:${adminId}:${adminUsername}] удалил пользователя [user:${deletedUserId}:${deletedUsername}]`);
     }
-
     static async profileUpdated(userId, username, changedFields) {
         const changesText = Object.entries(changedFields)
-            .map(([field, values]) => `"${field}": "${values.old}" → "${values.new}"`)
+            .map(([f, v]) => `"${f}": "${v.old}" → "${v.new}"`)
             .join(", ");
         await this.log(userId, "profile_updated", "Изменение профиля", `[user:${userId}:${username}] изменил данные: ${changesText}`);
     }
-
-    static async passwordChanged(userId, username, selfChange = true, targetUserId = null, targetUsername = null) {
+    static async passwordChanged(userId, username, selfChange, targetUserId, targetUsername) {
         if (selfChange) {
             await this.log(userId, "password_changed", "Смена пароля", `[user:${userId}:${username}] сменил свой пароль`);
         } else {
             await this.log(userId, "admin_password_changed", "Админ сменил пароль пользователю", `[user:${userId}:${username}] сменил пароль пользователю [user:${targetUserId}:${targetUsername}]`);
         }
     }
-
     static async userUpdated(adminId, adminUsername, targetUserId, targetUsername, changedFields) {
         const changesText = Object.entries(changedFields)
-            .map(([field, values]) => `"${field}": "${values.old}" → "${values.new}"`)
+            .map(([f, v]) => `"${f}": "${v.old}" → "${v.new}"`)
             .join(", ");
         await this.log(adminId, "admin_user_updated", "Админ изменил данные пользователя", `[user:${adminId}:${adminUsername}] изменил данные пользователя [user:${targetUserId}:${targetUsername}]: ${changesText}`);
     }
-
     static async backupCreated(userId, username, backupName) {
         await this.log(userId, "backup_created", "Создание бэкапа", `[user:${userId}:${username}] создал бэкап: ${backupName}`);
     }
-
     static async backupDownloaded(userId, username, backupName) {
         await this.log(userId, "backup_downloaded", "Скачивание бэкапа", `[user:${userId}:${username}] скачал бэкап: ${backupName}`);
     }
-
     static async backupDeleted(userId, username, backupName) {
         await this.log(userId, "backup_deleted", "Удаление бэкапа", `[user:${userId}:${username}] удалил бэкап: ${backupName}`);
     }
-
-    // =====заявки=====
-    static async requestCreated(userId, username, title, requestType, itemsList, requestId) {
-        const typeText = requestType === "incoming" ? "приход" : "расход";
-        const requestLink = requestId ? `[request:${requestId}]` : "";
-        await this.log(userId, "request_created", "Создание заявки", `[user:${userId}:${username}] создал ${requestLink} "${title}" на ${typeText}`);
-    }
-
-    static async requestApproved(userId, username, title, requestType, itemsList, requestId) {
-        const typeText = requestType === "incoming" ? "приход" : "расход";
-        const requestLink = requestId ? `[request:${requestId}]` : "";
-        await this.log(userId, "request_approved", "Подтверждение заявки", `[user:${userId}:${username}] подтвердил ${requestLink} "${title}" на ${typeText}`);
-    }
-
-    static async requestRejected(userId, username, title, requestType, rejectionReason, requestId) {
-        const typeText = requestType === "incoming" ? "приход" : "расход";
-        const requestLink = requestId ? `[request:${requestId}]` : "";
-        await this.log(userId, "request_rejected", "Отклонение заявки", `[user:${userId}:${username}] отклонил ${requestLink} "${title}" на ${typeText}. Причина: ${rejectionReason}`);
-    }
-
-    static async requestUpdated(userId, username, title, changes, requestId) {
-        const requestLink = requestId ? `[request:${requestId}]` : "";
-        await this.log(userId, "request_updated", "Редактирование заявки", `[user:${userId}:${username}] изменил ${requestLink} "${title}": ${changes}`);
-    }
-
-    static async requestDeleted(userId, username, title, requestId) {
-        const requestLink = requestId ? `[request:${requestId}]` : "";
-        await this.log(userId, "request_deleted", "Удаление заявки", `[user:${userId}:${username}] удалил ${requestLink} "${title}"`);
-    }
-
-    // =====инвентаризация=====
-    static async inventoryCreated(userId, username, title, inventoryId) {
-        await this.log(userId, "inventory_created", "Создание инвентаризации", `[user:${userId}:${username}] создал [inventory:${inventoryId}] "${title}"`);
-    }
-
-    static async inventoryUpdated(userId, username, title, changes, inventoryId) {
-        const inventoryLink = inventoryId ? `[inventory:${inventoryId}]` : "";
-        await this.log(userId, "inventory_updated", "Изменение инвентаризации", `[user:${userId}:${username}] изменил ${inventoryLink} "${title}": ${changes}`);
-    }
-
-    static async inventoryStarted(userId, username, title, inventoryId) {
-        await this.log(userId, "inventory_started", "Начало инвентаризации", `[user:${userId}:${username}] начал [inventory:${inventoryId}] "${title}"`);
-    }
-
-    static async inventorySaved(userId, username, title, inventoryId) {
-        await this.log(userId, "inventory_saved", "Сохранение результатов", `[user:${userId}:${username}] сохранил результаты [inventory:${inventoryId}] "${title}"`);
-    }
-
-    static async inventoryCompleted(userId, username, title, inventoryId) {
-        await this.log(userId, "inventory_completed", "Завершение инвентаризации", `[user:${userId}:${username}] завершил [inventory:${inventoryId}] "${title}" и отправил на проверку`);
-    }
-
-    static async inventoryApproved(userId, username, title, changesCount, inventoryId) {
-        await this.log(userId, "inventory_approved", "Подтверждение инвентаризации", `[user:${userId}:${username}] подтвердил [inventory:${inventoryId}] "${title}", обновлено ${changesCount} позиций`);
-    }
-
-    static async inventoryCancelled(userId, username, title, inventoryId) {
-        await this.log(userId, "inventory_cancelled", "Отмена инвентаризации", `[user:${userId}:${username}] отменил [inventory:${inventoryId}] "${title}"`);
-    }
-
-    static async inventoryDeleted(userId, username, title, inventoryId) {
-        await this.log(userId, "inventory_deleted", "Удаление инвентаризации", `[user:${userId}:${username}] удалил [inventory:${inventoryId}] "${title}"`);
-    }
-
-    // ===== Материалы, категории=====
     static async materialCreated(userId, username, materialName) {
         await this.log(userId, "material_created", "Создание материала", `[user:${userId}:${username}] создал материал: ${materialName}`);
     }
@@ -144,6 +70,58 @@ class Logger {
     }
     static async categoryDeleted(userId, username, categoryName) {
         await this.log(userId, "category_deleted", "Удаление категории", `[user:${userId}:${username}] удалил категорию: ${categoryName}`);
+    }
+
+    //Заявки
+    static async requestCreated(userId, username, title, requestType, itemsList, requestId) {
+        const typeText = requestType === "incoming" ? "приход" : "расход";
+        const requestLink = requestId ? `[request:${requestId}]` : "";
+        await this.log(userId, "request_created", "Создание заявки", `[user:${userId}:${username}] создал ${requestLink} "${title}" на ${typeText}`);
+    }
+    static async requestApproved(userId, username, title, requestType, itemsList, requestId) {
+        const typeText = requestType === "incoming" ? "приход" : "расход";
+        const requestLink = requestId ? `[request:${requestId}]` : "";
+        await this.log(userId, "request_approved", "Подтверждение заявки", `[user:${userId}:${username}] подтвердил ${requestLink} "${title}" на ${typeText}`);
+    }
+    static async requestRejected(userId, username, title, requestType, rejectionReason, requestId) {
+        const typeText = requestType === "incoming" ? "приход" : "расход";
+        const requestLink = requestId ? `[request:${requestId}]` : "";
+        await this.log(userId, "request_rejected", "Отклонение заявки", `[user:${userId}:${username}] отклонил ${requestLink} "${title}" на ${typeText}. Причина: ${rejectionReason}`);
+    }
+    static async requestUpdated(userId, username, title, changes, requestId) {
+        const requestLink = requestId ? `[request:${requestId}]` : "";
+        await this.log(userId, "request_updated", "Редактирование заявки", `[user:${userId}:${username}] изменил ${requestLink} "${title}": ${changes}`);
+    }
+    static async requestDeleted(userId, username, title, requestId) {
+        const requestLink = requestId ? `[request:${requestId}]` : "";
+        await this.log(userId, "request_deleted", "Удаление заявки", `[user:${userId}:${username}] удалил ${requestLink} "${title}"`);
+    }
+
+    //Инвентаризация
+    static async inventoryCreated(userId, username, title, inventoryId) {
+        await this.log(userId, "inventory_created", "Создание инвентаризации", `[user:${userId}:${username}] создал [inventory:${inventoryId}] "${title}"`);
+    }
+    static async inventoryUpdated(userId, username, title, changes, inventoryId) {
+        const invLink = inventoryId ? `[inventory:${inventoryId}]` : "";
+        await this.log(userId, "inventory_updated", "Изменение инвентаризации", `[user:${userId}:${username}] изменил ${invLink} "${title}": ${changes}`);
+    }
+    static async inventoryStarted(userId, username, title, inventoryId) {
+        await this.log(userId, "inventory_started", "Начало инвентаризации", `[user:${userId}:${username}] начал [inventory:${inventoryId}] "${title}"`);
+    }
+    static async inventorySaved(userId, username, title, inventoryId) {
+        await this.log(userId, "inventory_saved", "Сохранение результатов", `[user:${userId}:${username}] сохранил результаты [inventory:${inventoryId}] "${title}"`);
+    }
+    static async inventoryCompleted(userId, username, title, inventoryId) {
+        await this.log(userId, "inventory_completed", "Завершение инвентаризации", `[user:${userId}:${username}] завершил [inventory:${inventoryId}] "${title}" и отправил на проверку`);
+    }
+    static async inventoryApproved(userId, username, title, changesCount, inventoryId) {
+        await this.log(userId, "inventory_approved", "Подтверждение инвентаризации", `[user:${userId}:${username}] подтвердил [inventory:${inventoryId}] "${title}", обновлено ${changesCount} позиций`);
+    }
+    static async inventoryCancelled(userId, username, title, inventoryId) {
+        await this.log(userId, "inventory_cancelled", "Отмена инвентаризации", `[user:${userId}:${username}] отменил [inventory:${inventoryId}] "${title}"`);
+    }
+    static async inventoryDeleted(userId, username, title, inventoryId) {
+        await this.log(userId, "inventory_deleted", "Удаление инвентаризации", `[user:${userId}:${username}] удалил [inventory:${inventoryId}] "${title}"`);
     }
 }
 

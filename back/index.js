@@ -1077,8 +1077,6 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
 
             const newRequest = requestResult.rows[0];
 
-            Logger.setCurrentRequestId(newRequest.id);
-
             for (const item of items) {
                 const material = materialsMap.get(item.material_id);
                 await client.query(
@@ -1106,10 +1104,10 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
                 })
                 .join(", ");
 
-            await Logger.requestCreated(currentUser.id, currentUser.username, title, request_type, itemsList);
+            await Logger.requestCreated(currentUser.id, currentUser.username, title, request_type, itemsList, newRequest.id);
 
             if (isApproved) {
-                await Logger.requestApproved(currentUser.id, currentUser.username, title, request_type, itemsList);
+                await Logger.requestApproved(currentUser.id, currentUser.username, title, request_type, itemsList, newRequest.id);
                 res.json({
                     message: "Заявка создана и подтверждена",
                     request: newRequest,
@@ -1184,9 +1182,8 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
 
             await client.query("COMMIT");
 
-            Logger.setCurrentRequestId(requestId);
             const itemsList = items.map((i) => `ID:${i.material_id} (${i.quantity})`).join(", ");
-            await Logger.requestApproved(currentUser.id, currentUser.username, request.title, request.request_type, itemsList);
+            await Logger.requestApproved(currentUser.id, currentUser.username, request.title, request.request_type, itemsList, requestId);
 
             res.json({ message: "Заявка подтверждена" });
         } catch (err) {
@@ -1219,8 +1216,6 @@ app.put("/requests/:id/reject", authenticateAndCheckDB, checkAdminOrAccountant, 
 
         const request = requestResult.rows[0];
 
-        Logger.setCurrentRequestId(requestId);
-
         await pool.query(
             `UPDATE material_requests 
              SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
@@ -1228,7 +1223,7 @@ app.put("/requests/:id/reject", authenticateAndCheckDB, checkAdminOrAccountant, 
             [currentUser.id, rejection_reason, requestId],
         );
 
-        await Logger.requestRejected(currentUser.id, currentUser.username, request.title, request.request_type, rejection_reason);
+        await Logger.requestRejected(currentUser.id, currentUser.username, request.title, request.request_type, rejection_reason, requestId);
 
         res.json({ message: "Заявка отклонена" });
     } catch (error) {
@@ -1264,7 +1259,7 @@ app.delete("/requests/:id", authenticateAndCheckDB, async (req, res) => {
 
         await pool.query("DELETE FROM material_requests WHERE id = $1", [requestId]);
 
-        await Logger.requestDeleted(currentUser.id, currentUser.username, request.title);
+        await Logger.requestDeleted(currentUser.id, currentUser.username, request.title, requestId);
 
         res.json({ message: "Заявка удалена" });
     } catch (error) {
@@ -1343,7 +1338,7 @@ app.put("/requests/:id", authenticateAndCheckDB, async (req, res) => {
         }
 
         if (changes.length > 0) {
-            await Logger.requestUpdated(currentUser.id, currentUser.username, oldRequest.title, changes.join(", "));
+            await Logger.requestUpdated(currentUser.id, currentUser.username, oldRequest.title, changes.join(", "), requestId);
         }
 
         res.json({ message: "Заявка обновлена" });
@@ -1607,7 +1602,6 @@ app.put("/inventories/:id", authenticateAndCheckDB, checkAdmin, async (req, res)
         );
 
         if (changes.length > 0) {
-            Logger.setCurrentInventoryId(inventoryId);
             await Logger.inventoryUpdated(currentUser.id, currentUser.username, oldData.title, changes.join(", "), inventoryId);
         }
 
@@ -1642,7 +1636,6 @@ app.put("/inventories/:id/start", authenticateAndCheckDB, async (req, res) => {
 
         await pool.query(`UPDATE inventories SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
-        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryStarted(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация начата" });
@@ -1717,7 +1710,6 @@ app.put("/inventories/:id/complete", authenticateAndCheckDB, async (req, res) =>
 
         await pool.query(`UPDATE inventories SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [inventoryId]);
 
-        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryCompleted(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация завершена и отправлена на проверку" });
@@ -1796,7 +1788,6 @@ app.put("/inventories/:id/cancel", authenticateAndCheckDB, checkAdmin, async (re
 
         await pool.query(`UPDATE inventories SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [currentUser.id, inventoryId]);
 
-        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryCancelled(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация отменена" });
@@ -1819,7 +1810,6 @@ app.delete("/inventories/:id", authenticateAndCheckDB, checkAdmin, async (req, r
 
         await pool.query("DELETE FROM inventories WHERE id = $1", [inventoryId]);
 
-        Logger.setCurrentInventoryId(inventoryId);
         await Logger.inventoryDeleted(currentUser.id, currentUser.username, inventory.rows[0].title, inventoryId);
 
         res.json({ message: "Инвентаризация удалена" });
