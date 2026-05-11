@@ -2,10 +2,19 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, Mail, Phone, MapPin, Github } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
+import { useEffect, useState } from "react";
+import { versionService } from "@/services/versionService";
 
 export default function Footer() {
     const { user } = useUser();
     const isAdmin = user?.role === "admin";
+    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    useEffect(() => {
+        versionService
+            .getVersions()
+            .then((data) => setCurrentVersion(data.currentVersion))
+            .catch((err) => console.error(err));
+    }, []);
 
     const currentYear = new Date().getFullYear();
 
@@ -123,6 +132,7 @@ export default function Footer() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>&copy; {currentYear} Material House.</span>
                             <span>Все права защищены.</span>
+                            <Link to="/versions" className="hover:text-foreground transition-colors">v.{currentVersion}</Link>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             <a href="/privacy" target="_blank" className="hover:text-foreground transition-colors">

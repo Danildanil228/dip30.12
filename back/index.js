@@ -15,6 +15,8 @@ const multer = require("multer");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const changelogPath = path.join(__dirname, "changelog.json");
+
 if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
     console.error("КРИТИЧЕСКАЯ ОШИБКА: JWT_SECRET и REFRESH_TOKEN_SECRET должны быть установлены!");
     process.exit(1);
@@ -108,6 +110,22 @@ app.post("/refresh", async (req, res) => {
 
 app.get("/verifyToken", authenticate, checkUserInDB, (req, res) => {
     res.json({ valid: true, user: req.user });
+});
+
+app.get("/versions", (req, res) => {
+    try {
+        if (!fs.existsSync(changelogPath)) {
+            console.error("Файл changelog.json не найден по пути:", changelogPath);
+            return res.json({ versions: [], currentVersion: "1.0.0" });
+        }
+        const data = fs.readFileSync(changelogPath, "utf8");
+        const json = JSON.parse(data);
+        const currentVersion = json.versions[0]?.version || "1.0.0";
+        res.json({ versions: json.versions, currentVersion });
+    } catch (error) {
+        console.error("Ошибка чтения changelog.json:", error);
+        res.status(500).json({ error: "Не удалось загрузить историю версий" });
+    }
 });
 
 app.get("/countUsers", async (req, res) => {
