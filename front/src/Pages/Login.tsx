@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { authService } from "@/services/authService";
 import DarkModeButtonToggle from "@/components/DarkModeButtonToggle";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Shield, Package, BarChart3, Users, CheckCircle2, ArrowRight } from "lucide-react";
+import { versionService } from "@/services/versionService";
 
 export default function Login() {
     const [username, setUsername] = useState("");
@@ -17,6 +18,13 @@ export default function Login() {
     const [rememberMe, setRememberMe] = useState(false);
     const [agreeTerms, setAgreeTerms] = useState(false); 
     const navigate = useNavigate();
+    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+        useEffect(() => {
+            versionService
+                .getVersions()
+                .then((data) => setCurrentVersion(data.currentVersion))
+                .catch((err) => console.error(err));
+        }, []);
 
     useEffect(() => {
         checkFirstRun();
@@ -155,7 +163,7 @@ export default function Login() {
                             ))}
                         </div>
 
-                        <p className="text-white/40 text-xs">Версия 1.0 • 2026</p>
+                        <p className="text-white/40 text-xs">Версия {currentVersion} • 2026</p>
                     </motion.div>
                 </div>
             </div>
@@ -288,7 +296,7 @@ export default function Login() {
                                         </div>
                                         <p className="text-sm text-muted-foreground">Это будет администратор системы с полным доступом. Вы сможете создать других пользователей позже.</p>
 
-                                        {/* Блок согласия с условиями */}
+                                      
                                         <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/20">
                                             <input
                                                 type="checkbox"

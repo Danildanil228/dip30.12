@@ -1,9 +1,10 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
-import { BookOpen, Package, BarChart3, UserCog, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search } from "lucide-react";
+import { BookOpen, Package, BarChart3, UserCog, ClipboardList, FileText, Users, Database, Bell, CheckCircle, PlusCircle, Search, ArrowRight } from "lucide-react";
 import { ScrollToTop } from "@/components/ScrollToTop";
-
+import { versionService } from "@/services/versionService";
+import { Link } from "react-router-dom";
 
 const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
     const ref = useRef(null);
@@ -18,6 +19,13 @@ const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; 
 
 export default function Main() {
     const { user, isAdmin } = useUser();
+    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    useEffect(() => {
+        versionService
+            .getVersions()
+            .then((data) => setCurrentVersion(data.currentVersion))
+            .catch((err) => console.error(err));
+    }, []);
 
     const roleName = useMemo(() => {
         if (user?.role === "admin") return "Администратор";
@@ -36,14 +44,22 @@ export default function Main() {
                 transition={{ duration: 0.5 }}
                 className="relative overflow-hidden rounded-2xl bg-linear-to-r from-primary/10 via-primary/5 to-background p-8 border"
             >
-                <div className="relative z-10">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                        Добро пожаловать, {user?.name} {user?.secondname}
-                    </h1>
-                    <p className="mt-2 text-lg text-muted-foreground">{roleName}</p>
-                    <p className="mt-4 text-sm text-muted-foreground max-w-xl">
-                        Material House — система управления складскими запасами. Выберите интересующий раздел ниже, чтобы изучить возможности.
-                    </p>
+                <div className="relative sm:flex grid gap-2 justify-between">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                            Добро пожаловать, {user?.name} {user?.secondname}
+                        </h1>
+                        <p className="mt-2 text-lg text-muted-foreground">{roleName}</p>
+                        <p className="mt-4 text-sm text-muted-foreground max-w-xl">Material House — система управления складскими запасами. Выберите интересующий раздел ниже, чтобы изучить возможности.</p>
+                    </div>
+                    <div className="max-w-50">
+                        <h1 className="text-xl! sm:text-3xl font-bold tracking-tight text-wrap">Текущая версия приложения {currentVersion}</h1>
+                        <div className="flex items-end">
+                            <Link to="/versions" className="mt-2 text-sm text-muted-foreground underline">
+                                Посмотреть последние изменения системы
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </motion.div>
 
@@ -70,20 +86,18 @@ export default function Main() {
                         <div>
                             <h3 className="font-medium mb-2">Для кого</h3>
                             <p className="text-sm text-muted-foreground">Система рассчитана на три роли: администратор, бухгалтер и кладовщик. Каждая роль имеет свой набор инструментов.</p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                
-                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2"></div>
                         </div>
                         <div className="grid w-fit h-fit space-y-2">
                             <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                                    <UserCog className="h-3 w-3" /> Админ
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full">
-                                    <BarChart3 className="h-3 w-3" /> Бухгалтер
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-full">
-                                    <Package className="h-3 w-3" /> Кладовщик
-                                </span>
+                                <UserCog className="h-3 w-3" /> Админ
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full">
+                                <BarChart3 className="h-3 w-3" /> Бухгалтер
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-1 rounded-full">
+                                <Package className="h-3 w-3" /> Кладовщик
+                            </span>
                         </div>
                         {/* <div>
                             <h3 className="font-medium mb-2">Быстрый старт</h3>
@@ -175,9 +189,7 @@ export default function Main() {
                                 <h3 className="font-medium flex items-center gap-2 mb-2">
                                     <FileText className="h-4 w-4 text-primary" /> Отчёты
                                 </h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Раздел «Отчёты» — движение материалов, заявки, ОСВ, активность пользователей. Все отчёты можно экспортировать в Excel/PDF.
-                                </p>
+                                <p className="text-sm text-muted-foreground">Раздел «Отчёты» — движение материалов, заявки, ОСВ, активность пользователей. Все отчёты можно экспортировать в Excel/PDF.</p>
                             </div>
                         </div>
                     </div>

@@ -3,10 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { versionService, type VersionEntry } from "@/services/versionService";
-
 import {
     Bug,
     FileText,
@@ -59,7 +57,6 @@ export default function Versions() {
     const [versions, setVersions] = useState<VersionEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(0);
-    const navigate = useNavigate();
 
     useEffect(() => {
         versionService
@@ -132,11 +129,6 @@ export default function Versions() {
     return (
         <div className="container max-w-4xl mx-auto py-8 space-y-6">
             <ScrollToTop />
-
-            <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Назад
-            </Button>
-
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 <div className="mb-6">
                     <h1 className="text-2xl md:text-3xl font-bold">История версий</h1>
@@ -201,17 +193,14 @@ export default function Versions() {
                         </div>
 
                         {totalPages > 1 && (
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t">
-                                <div className="text-sm text-muted-foreground">
-                                    Страница {currentPage + 1} из {totalPages}
-                                </div>
+                            <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 mt-6 border-t">
                                 <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="sm" onClick={goToPrevPage} disabled={currentPage === 0} className="gap-1">
+                                    <Button variant="default" size="sm" onClick={goToPrevPage} disabled={currentPage === 0} className="gap-1">
                                         <ChevronLeft className="h-4 w-4" />
-                                        Назад
                                     </Button>
-                                    <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="gap-1">
-                                        Вперёд
+                                    <p className="text-sm">{currentPage + 1} из {totalPages}</p>
+                                   
+                                    <Button variant="default" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="gap-1">
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
                                 </div>
