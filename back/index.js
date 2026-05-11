@@ -434,13 +434,14 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
 
         values.push(userId);
 
-        const result = await pool.query(query, values);
         const query = `
-    UPDATE users 
-    SET ${setClauses.join(", ")} 
-    WHERE id = $${paramIndex} 
-    RETURNING id, username, role, name, secondname, email, phone, birthday, created_at, updated_at, avatar
-`;
+            UPDATE users 
+            SET ${setClauses.join(", ")} 
+            WHERE id = $${paramIndex} 
+            RETURNING id, username, role, name, secondname, email, phone, birthday, created_at, updated_at, avatar
+        `;
+
+        const result = await pool.query(query, values);
         const updatedUser = result.rows[0];
 
         if (roleChanged) {
