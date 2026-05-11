@@ -1090,9 +1090,9 @@ app.post("/requests", authenticateAndCheckDB, async (req, res) => {
 
             if (isApproved) {
                 for (const item of items) {
-                    const material = materialsMap.get(item.material_id);
-                    const newQuantity = request_type === "incoming" ? material.quantity + item.quantity : material.quantity - item.quantity;
-
+                    const currentRes = await client.query("SELECT quantity FROM materials WHERE id = $1 FOR UPDATE", [item.material_id]);
+                    const currentQty = currentRes.rows[0].quantity;
+                    const newQuantity = request_type === "incoming" ? currentQty + item.quantity : currentQty - item.quantity;
                     await client.query("UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2", [newQuantity, item.material_id]);
                 }
             }
@@ -1141,11 +1141,11 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
 
         const requestResult = await pool.query(
             `SELECT r.*, 
-                    array_agg(json_build_object('id', ri.id, 'material_id', ri.material_id, 'quantity', ri.quantity, 'current_quantity', ri.current_quantity_at_request)) as items
+                    ri.id as item_id, ri.material_id, ri.quantity, ri.current_quantity_at_request
              FROM material_requests r
              LEFT JOIN material_requests_items ri ON r.id = ri.request_id
              WHERE r.id = $1 AND r.status = 'pending'
-             GROUP BY r.id`,
+             GROUP BY r.id, ri.id`,
             [requestId],
         );
 
@@ -1154,26 +1154,26 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
         }
 
         const request = requestResult.rows[0];
-        const items = request.items || [];
-
-        if (request.request_type === "outgoing") {
-            for (const item of items) {
-                const currentMaterial = await pool.query("SELECT quantity FROM materials WHERE id = $1", [item.material_id]);
-
-                if (currentMaterial.rows[0].quantity < item.quantity) {
-                    return res.status(400).json({
-                        error: `Недостаточно товара. Запрошено: ${item.quantity}, остаток: ${currentMaterial.rows[0].quantity}`,
-                    });
-                }
-            }
-        }
-
-        Logger.setCurrentRequestId(requestId);
+        const items = requestResult.rows;
 
         const client = await pool.connect();
-
         try {
             await client.query("BEGIN");
+
+            for (const item of items) {
+                const materialRes = await client.query("SELECT quantity FROM materials WHERE id = $1 FOR UPDATE", [item.material_id]);
+                const currentQty = materialRes.rows[0].quantity;
+
+                if (request.request_type === "outgoing" && currentQty < item.quantity) {
+                    const materialNameRes = await client.query("SELECT name FROM materials WHERE id = $1", [item.material_id]);
+                    const materialName = materialNameRes.rows[0]?.name || "товар";
+                    throw new Error(`Недостаточно "${materialName}". Остаток: ${currentQty}, запрошено: ${item.quantity}`);
+                }
+
+                const newQty = request.request_type === "incoming" ? currentQty + item.quantity : currentQty - item.quantity;
+
+                await client.query("UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2", [newQty, item.material_id]);
+            }
 
             await client.query(
                 `UPDATE material_requests 
@@ -1182,14 +1182,9 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
                 [currentUser.id, requestId],
             );
 
-            for (const item of items) {
-                const newQuantity = request.request_type === "incoming" ? item.current_quantity + item.quantity : item.current_quantity - item.quantity;
-
-                await client.query("UPDATE materials SET quantity = $1, updated_at = NOW() WHERE id = $2", [newQuantity, item.material_id]);
-            }
-
             await client.query("COMMIT");
 
+            Logger.setCurrentRequestId(requestId);
             const itemsList = items.map((i) => `ID:${i.material_id} (${i.quantity})`).join(", ");
             await Logger.requestApproved(currentUser.id, currentUser.username, request.title, request.request_type, itemsList);
 
@@ -1202,7 +1197,7 @@ app.put("/requests/:id/approve", authenticateAndCheckDB, checkAdminOrAccountant,
         }
     } catch (error) {
         console.error("Ошибка подтверждения заявки:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        res.status(500).json({ error: error.message || "Ошибка сервера" });
     }
 });
 
@@ -1334,19 +1329,17 @@ app.put("/requests/:id", authenticateAndCheckDB, async (req, res) => {
         }
 
         if (items && items.length > 0) {
-            await pool.query("DELETE FROM material_requests_items WHERE request_id = $1", [requestId]);
-
+            await client.query("DELETE FROM material_requests_items WHERE request_id = $1", [requestId]);
             for (const item of items) {
-                const materialResult = await pool.query("SELECT quantity FROM materials WHERE id = $1", [item.material_id]);
-                const currentQuantity = materialResult.rows[0]?.quantity || 0;
+                const materialRes = await client.query("SELECT quantity FROM materials WHERE id = $1 FOR UPDATE", [item.material_id]);
+                const currentQuantity = materialRes.rows[0]?.quantity || 0;
 
-                await pool.query(
+                await client.query(
                     `INSERT INTO material_requests_items (request_id, material_id, quantity, current_quantity_at_request)
-                     VALUES ($1, $2, $3, $4)`,
+         VALUES ($1, $2, $3, $4)`,
                     [requestId, item.material_id, item.quantity, currentQuantity],
                 );
             }
-            changes.push("состав заявки изменён");
         }
 
         if (changes.length > 0) {

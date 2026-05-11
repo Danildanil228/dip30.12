@@ -15,13 +15,12 @@ const pool = new Pool({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     database: process.env.DB_NAME,
-
-    // SSl для VPS
-    
-    ssl: {
-        require: true,
-        rejectUnauthorized: false
-    }
+    ...(process.env.DB_SSL === "true" && {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false,
+        },
+    }),
 });
 
 module.exports = pool;
