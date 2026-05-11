@@ -143,3 +143,21 @@ CREATE TABLE inventory_results (
 );
 
 
+
+-- ветка trash
+
+-- Пользователи
+ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL;
+ALTER TABLE users ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+-- Категории материалов
+ALTER TABLE materialCategories ADD COLUMN deleted_at TIMESTAMP NULL;
+ALTER TABLE materialCategories ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+-- Материалы
+ALTER TABLE materials ADD COLUMN deleted_at TIMESTAMP NULL;
+ALTER TABLE materials ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+-- Бэкапы
+ALTER TABLE backups ADD COLUMN deleted_at TIMESTAMP NULL;
+ALTER TABLE backups ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;

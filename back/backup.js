@@ -66,11 +66,12 @@ const checkAdmin = (req, res, next) => {
 router.get("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT b.*, u.username as created_by_username, u.name, u.secondname
-            FROM backups b
-            LEFT JOIN users u ON b.created_by = u.id
-            ORDER BY b.created_at DESC
-        `);
+    SELECT b.*, u.username as created_by_username, u.name, u.secondname
+    FROM backups b
+    LEFT JOIN users u ON b.created_by = u.id
+    WHERE b.deleted_at IS NULL
+    ORDER BY b.created_at DESC
+`);
 
         const backupsWithFileCheck = await Promise.all(
             result.rows.map(async (backup) => {
@@ -186,7 +187,7 @@ router.post("/", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 router.get("/:id/download", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const backupId = parseInt(req.params.id);
-        const result = await pool.query("SELECT filename, filepath FROM backups WHERE id = $1", [backupId]);
+        const result = await pool.query("SELECT filename, filepath FROM backups WHERE id = $1 AND deleted_at IS NULL", [backupId]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Бэкап не найден" });
@@ -213,30 +214,16 @@ router.get("/:id/download", authenticateAndCheckDB, checkAdmin, async (req, res)
 router.delete("/:id", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     try {
         const backupId = parseInt(req.params.id);
-        const result = await pool.query("SELECT filename, filepath FROM backups WHERE id = $1", [backupId]);
-
+        const result = await pool.query("SELECT filename, filepath FROM backups WHERE id = $1 AND deleted_at IS NULL", [backupId]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Бэкап не найден" });
         }
-
         const backup = result.rows[0];
 
-        try {
-            if (await fs.pathExists(backup.filepath)) {
-                await fs.unlink(backup.filepath);
-            }
-        } catch (fileError) {
-            console.error("Ошибка при удалении файла:", fileError);
-        }
-
-        await pool.query("DELETE FROM backups WHERE id = $1", [backupId]);
+        await pool.query("UPDATE backups SET deleted_at = NOW(), deleted_by = $1 WHERE id = $2", [req.user.id, backupId]);
 
         await Logger.backupDeleted(req.user.id, req.user.username, backup.filename);
-
-        res.json({
-            message: "Бэкап удален",
-            deletedBackup: { id: backupId, filename: backup.filename },
-        });
+        res.json({ message: "Бэкап перемещён в корзину", deletedBackup: { id: backupId, filename: backup.filename } });
     } catch (error) {
         console.error("Ошибка при удалении бэкапа:", error);
         res.status(500).json({ error: "Ошибка сервера" });

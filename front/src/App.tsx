@@ -19,6 +19,7 @@ import InventoryReview from "./Pages/Inventories/InventoryReview";
 import InventoryDetails from "./Pages/Inventories/InventoryDetails";
 import Dashboard from "./Pages/Dashboard";
 import Reports from "./Pages/Reports";
+import Trash from "./Pages/Trash";
 
 function App() {
     return (
@@ -27,7 +28,16 @@ function App() {
                 <Route path="/" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path="/login" element={<Login />} />
-
+                <Route
+                    path="/trash"
+                    element={
+                        <ProtectedRoute>
+                            <AdminRoute>
+                                <Trash />
+                            </AdminRoute>
+                        </ProtectedRoute>
+                    }
+                />
                 <Route
                     element={
                         <ProtectedRoute>
