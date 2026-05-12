@@ -25,12 +25,14 @@ export default function Footer() {
         { label: "Заявки", path: "/requests" },
         { label: "Инвентаризация", path: "/inventories" },
         { label: "Дашборд", path: "/dashboard" },
+        {label:"Версии",path:"/versions"}
     ];
 
     const adminLinks = [
         { label: "Пользователи", path: "/allusers" },
         { label: "Бэкапы", path: "/backups" },
         { label: "Журнал", path: "/notifications" },
+        { label: "Корзина", path: "/trash" },
     ];
 
     const contactInfo = [
@@ -65,7 +67,7 @@ export default function Footer() {
 
                         <div className="space-y-2">
                             <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Навигация</h4>
-                            <ul className="space-y-1">
+                            <ul className="sm:grid-cols-2 sm:grid">
                                 {navigationLinks.map((link) => (
                                     <li key={link.path}>
                                         <Link to={link.path} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -78,7 +80,7 @@ export default function Footer() {
 
                         <div className="space-y-2">
                             <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Возможности</h4>
-                            <ul className="space-y-1">
+                            <ul className="sm:grid sm:grid-cols-2">
                                 {user?.role !== "storekeeper" && (
                                     <li>
                                         <Link to="/reports" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -132,7 +134,9 @@ export default function Footer() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>&copy; {currentYear} Material House.</span>
                             <span>Все права защищены.</span>
-                            <Link to="/versions" className="hover:text-foreground transition-colors">v.{currentVersion}</Link>
+                            <Link to="/versions" className="hover:text-foreground transition-colors">
+                                v.{currentVersion}
+                            </Link>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             <a href="/privacy" target="_blank" className="hover:text-foreground transition-colors">

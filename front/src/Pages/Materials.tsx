@@ -103,10 +103,10 @@ export default function Materials() {
     ];
 
     const columns: ColumnDef<Material>[] = [
-        {
-            accessorKey: "id",
-            header: "ID",
-        },
+        // {
+        //     accessorKey: "id",
+        //     header: "ID",
+        // },
         {
             accessorKey: "name",
             header: ({ column }) => (

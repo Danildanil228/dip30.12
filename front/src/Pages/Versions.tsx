@@ -24,7 +24,6 @@ import {
     Database,
     ArrowRightLeft,
     Rocket,
-    ArrowLeft,
     Tag,
     Calendar,
     ChevronLeft,
@@ -162,7 +161,7 @@ export default function Versions() {
                                                         </div>
                                                     </div>
                                                 </CardHeader>
-                                                <CardContent className="pt-4">
+                                                <CardContent>
                                                     <div className="space-y-4">
                                                         {groups.map((group, groupIdx) => (
                                                             <div key={groupIdx}>
