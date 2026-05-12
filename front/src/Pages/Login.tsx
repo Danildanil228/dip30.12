@@ -18,7 +18,7 @@ export default function Login() {
     const [rememberMe, setRememberMe] = useState(false);
     const [agreeTerms, setAgreeTerms] = useState(false); 
     const navigate = useNavigate();
-    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    const [currentVersion, setCurrentVersion] = useState("");
         useEffect(() => {
             versionService
                 .getVersions()

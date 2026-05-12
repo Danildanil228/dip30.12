@@ -10,12 +10,11 @@ create table users(
 	email VARCHAR(100),
 	phone VARCHAR(20),
 	birthday DATE,
-    avatar TEXT NULL,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
-CREATE TABLE IF NOT EXISTS user_sessions (
+CREATE TABLE user_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     refresh_token_hash TEXT NOT NULL UNIQUE,
@@ -161,3 +160,6 @@ ALTER TABLE materials ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELE
 -- Бэкапы
 ALTER TABLE backups ADD COLUMN deleted_at TIMESTAMP NULL;
 ALTER TABLE backups ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+
+Alter table users add column avatar TEXT NULL;

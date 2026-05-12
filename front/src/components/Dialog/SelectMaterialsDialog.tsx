@@ -104,23 +104,15 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
         return tempSelected.some((item) => item.material_id === materialId);
     };
 
-    const handleQuantityBlur = (material: Material, inputValue: string) => {
-        let quantity = parseInt(inputValue);
-
+    const handleQuantityChange = (material: Material, newValue: string) => {
+        let quantity = parseInt(newValue);
         if (isNaN(quantity) || quantity < 1) {
             quantity = 1;
         }
-
+        // Ограничиваем максимальным доступным, если это расход
         if (requestType === "outgoing" && quantity > material.quantity) {
-            setErrorMessage(`Недостаточно товара. Доступно: ${material.quantity} ${material.unit}`)
-            setErrorOpen(true)
-            quantity = Math.min(quantity, material.quantity);
-            if (quantity < 1) quantity = 1;
-            if (inputRefs.current[material.id]) {
-                inputRefs.current[material.id]!.value = quantity.toString();
-            }
+            quantity = material.quantity;
         }
-
         setQuantities({ ...quantities, [material.id]: quantity });
     };
 
@@ -129,9 +121,8 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
             return;
         }
 
-        const quantity = quantities[material.id] || 1;
-
-        if (requestType === "outgoing" && quantity > material.quantity) {
+        const currentQty = quantities[material.id] || 1;
+        if (requestType === "outgoing" && currentQty > material.quantity) {
             setErrorMessage(`Недостаточно товара. Доступно: ${material.quantity} ${material.unit}`);
             setErrorOpen(true);
             return;
@@ -142,7 +133,7 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
             name: material.name,
             code: material.code,
             unit: material.unit,
-            quantity: quantity,
+            quantity: currentQty,
             current_quantity: material.quantity,
         };
 
@@ -156,25 +147,24 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
         setQuantities(newQuantities);
     };
 
-    const handleSelectedItemQuantityBlur = (item: SelectedItem, inputValue: string) => {
-        let quantity = parseInt(inputValue);
-
+    const handleSelectedItemQuantityUpdate = (materialId: number, newValue: string) => {
+        let quantity = parseInt(newValue);
         if (isNaN(quantity) || quantity < 1) {
             quantity = 1;
         }
+        const item = tempSelected.find((i) => i.material_id === materialId);
+        if (!item) return;
 
+        // Проверка на превышение остатка при расходе
         if (requestType === "outgoing" && quantity > item.current_quantity) {
             setErrorMessage(`Недостаточно товара. Доступно: ${item.current_quantity} ${item.unit}`);
             setErrorOpen(true);
-            quantity = Math.min(quantity, item.current_quantity);
+            quantity = item.current_quantity;
             if (quantity < 1) quantity = 1;
-            if (inputRefs.current[item.material_id]) {
-                inputRefs.current[item.material_id]!.value = quantity.toString();
-            }
         }
 
-        setQuantities({ ...quantities, [item.material_id]: quantity });
-        setTempSelected(tempSelected.map((i) => (i.material_id === item.material_id ? { ...i, quantity: quantity } : i)));
+        setQuantities({ ...quantities, [materialId]: quantity });
+        setTempSelected(tempSelected.map((i) => (i.material_id === materialId ? { ...i, quantity } : i)));
     };
 
     const handleConfirm = () => {
@@ -214,14 +204,19 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
                                 }}
                                 type="number"
                                 min="1"
-                                defaultValue={currentQuantity}
-                                onBlur={(e) => handleQuantityBlur(material, e.target.value)}
+                                value={currentQuantity}
+                                onChange={(e) => handleQuantityChange(material, e.target.value)}
                                 disabled={isSelected}
                                 className="w-20 h-8"
                             />
                             <span className="text-sm">{material.unit}</span>
                         </div>
-                        <Button size="sm" onClick={() => handleAddMaterial(material)} disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)} variant={isSelected ? "secondary" : "default"}>
+                        <Button
+                            size="sm"
+                            onClick={() => handleAddMaterial(material)}
+                            disabled={isSelected || (requestType === "outgoing" && material.quantity === 0)}
+                            variant={isSelected ? "secondary" : "default"}
+                        >
                             {isSelected ? "✓" : <Plus className="h-4 w-4" />}
                         </Button>
                     </div>
@@ -301,8 +296,8 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
                                                             }}
                                                             type="number"
                                                             min="1"
-                                                            defaultValue={currentQuantity}
-                                                            onBlur={(e) => handleQuantityBlur(material, e.target.value)}
+                                                            value={currentQuantity}
+                                                            onChange={(e) => handleQuantityChange(material, e.target.value)}
                                                             disabled={isSelected}
                                                             className="w-20"
                                                         />
@@ -386,8 +381,8 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
                                                             }}
                                                             type="number"
                                                             min="1"
-                                                            defaultValue={currentQuantity}
-                                                            onBlur={(e) => handleSelectedItemQuantityBlur(item, e.target.value)}
+                                                            value={currentQuantity}
+                                                            onChange={(e) => handleSelectedItemQuantityUpdate(item.material_id, e.target.value)}
                                                             className="w-20 h-8"
                                                         />
                                                         <span className="text-sm">{item.unit}</span>

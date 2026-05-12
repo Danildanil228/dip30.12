@@ -147,7 +147,13 @@ export default function Versions() {
                                 {paginatedVersions.map((v, idx) => {
                                     const groups = groupChanges(v.changes);
                                     return (
-                                        <motion.div key={v.version} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, delay: idx * 0.05 }}>
+                                        <motion.div
+                                            key={v.version}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -20 }}
+                                            transition={{ duration: 0.3, delay: idx * 0.05 }}
+                                        >
                                             <Card className="overflow-hidden hover:shadow-md transition-shadow">
                                                 <CardHeader className="pb-3 border-b">
                                                     <div className="flex items-center gap-3 flex-wrap">
@@ -197,8 +203,10 @@ export default function Versions() {
                                     <Button variant="default" size="sm" onClick={goToPrevPage} disabled={currentPage === 0} className="gap-1">
                                         <ChevronLeft className="h-4 w-4" />
                                     </Button>
-                                    <p className="text-sm">{currentPage + 1} из {totalPages}</p>
-                                   
+                                    <p className="text-sm">
+                                        {currentPage + 1} из {totalPages}
+                                    </p>
+
                                     <Button variant="default" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="gap-1">
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>

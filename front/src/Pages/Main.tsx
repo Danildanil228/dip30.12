@@ -19,7 +19,7 @@ const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; 
 
 export default function Main() {
     const { user, isAdmin } = useUser();
-    const [currentVersion, setCurrentVersion] = useState("1.0.0");
+    const [currentVersion, setCurrentVersion] = useState("");
     useEffect(() => {
         versionService
             .getVersions()
@@ -69,7 +69,7 @@ export default function Main() {
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                             <BookOpen className="h-5 w-5 text-primary" />
                         </div>
-                        <h2 className="text-xl font-semibold">О программе</h2>
+                        <h2 className="text-xl font-semibold">О системе</h2>
                     </div>
                     <div className="grid sm:grid-cols-3 gap-6">
                         <div>
