@@ -139,10 +139,10 @@ export default function Categories() {
     ];
 
     const columns: ColumnDef<Category>[] = [
-        {
-            accessorKey: "id",
-            header: "ID",
-        },
+        // {
+        //     accessorKey: "id",
+        //     header: "ID",
+        // },
         {
             accessorKey: "name",
             header: ({ column }) => (

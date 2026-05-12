@@ -106,10 +106,10 @@ export default function AllUsers() {
 
     const columns = useMemo<ColumnDef<User>[]>(
         () => [
-            {
-                accessorKey: "id",
-                header: "ID",
-            },
+            // {
+            //     accessorKey: "id",
+            //     header: "ID",
+            // },
             {
                 accessorKey: "username",
                 header: ({ column }) => (

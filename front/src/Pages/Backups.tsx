@@ -120,7 +120,6 @@ export default function Backups() {
     ];
 
     const columns: ColumnDef<Backup>[] = [
-        { accessorKey: "id", header: "ID" },
         {
             accessorKey: "filename",
             header: "Имя файла",

@@ -85,6 +85,16 @@ export default function EditMaterialDialog({ materialId, onMaterialUpdated, trig
                 return;
             }
 
+            if (code.length < 3) {
+                setError("Код материала должен минимум состоять из 3 символов");
+                return;
+            }
+            const allowedRegex = /^[A-Za-z0-9А-Яа-яЁё]+$/;
+            if (!allowedRegex.test(code)) {
+                setError("Код материала не должен содержать спец. символы");
+                return;
+            }
+
             await materialService.updateMaterial(materialId, {
                 name: name.trim(),
                 code: code.trim(),

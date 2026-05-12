@@ -87,7 +87,7 @@ export default function Requests() {
                     <p className="text-muted-foreground mt-1">Приход и расход материалов</p>
                 </div>
                 <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Создать заявку
+                    <Plus className="h-4 w-4 mr-1" /> Создать
                 </Button>
             </motion.div>
 

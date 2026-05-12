@@ -116,11 +116,11 @@ app.get("/versions", (req, res) => {
     try {
         if (!fs.existsSync(changelogPath)) {
             console.error("Файл changelog.json не найден по пути:", changelogPath);
-            return res.json({ versions: [], currentVersion: "1.0.0" });
+            return res.json({ versions: [], currentVersion: "1.0" });
         }
         const data = fs.readFileSync(changelogPath, "utf8");
         const json = JSON.parse(data);
-        const currentVersion = json.versions[0]?.version || "1.0.0";
+        const currentVersion = json.versions[0]?.version || "1.0";
         res.json({ versions: json.versions, currentVersion });
     } catch (error) {
         console.error("Ошибка чтения changelog.json:", error);

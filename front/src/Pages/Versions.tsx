@@ -161,7 +161,7 @@ export default function Versions() {
                                                         </div>
                                                     </div>
                                                 </CardHeader>
-                                                <CardContent className="pt-4">
+                                                <CardContent>
                                                     <div className="space-y-4">
                                                         {groups.map((group, groupIdx) => (
                                                             <div key={groupIdx}>
@@ -197,8 +197,10 @@ export default function Versions() {
                                     <Button variant="default" size="sm" onClick={goToPrevPage} disabled={currentPage === 0} className="gap-1">
                                         <ChevronLeft className="h-4 w-4" />
                                     </Button>
-                                    <p className="text-sm">{currentPage + 1} из {totalPages}</p>
-                                   
+                                    <p className="text-sm">
+                                        {currentPage + 1} из {totalPages}
+                                    </p>
+
                                     <Button variant="default" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="gap-1">
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
