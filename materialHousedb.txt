@@ -1,4 +1,5 @@
 create database materialHousedb;
+
 create table users(
 	id serial primary key,
 	username varchar(100) unique not null,
@@ -7,10 +8,13 @@ create table users(
 	name varchar(100),
 	secondname varchar(100),
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	email VARCHAR(100),
-	phone VARCHAR(20),
+	email VARCHAR(100) unique,
+	phone VARCHAR(20) unique,
 	birthday DATE,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    avatar TEXT NULL,
+    deleted_at TIMESTAMP NULL,
+    deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
 
@@ -35,29 +39,6 @@ create table notifications (
 	created_at timestamp default current_timestamp
 );
 
-
-create table materialCategories (
-	id serial primary key,
-	name varchar(255) not null,
-	description text,
-	created_by int references users(id) on delete set null,
-	updated_by int references users(id) on delete set null,
-	created_at timestamp default current_timestamp,
-	updated_at timestamp default current_timestamp
- );
-create table materials (
-	id serial primary key,
-	category_id int references materialCategories(id) on delete set null,
-	name varchar(255) not null,
-	code varchar(50) unique not null,
-	description text,
-	unit varchar(30) not null,
-	quantity int default 0 check (quantity >=0),
-	created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
- );
 CREATE TABLE backups (
     id SERIAL PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
@@ -65,8 +46,11 @@ CREATE TABLE backups (
     file_size BIGINT,
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    description TEXT
+    description TEXT,
+    deleted_at TIMESTAMP NULL,
+    deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
+
 create table material_requests (
 	id serial primary key,
 	request_type varchar(20) not null check (request_type in ('incoming', 'outgoing')),
@@ -80,6 +64,7 @@ create table material_requests (
 	is_public BOOLEAN DEFAULT TRUE,
 	title VARCHAR(255)
 );
+
 CREATE TABLE material_requests_items (
     id SERIAL PRIMARY KEY,
     request_id INTEGER NOT NULL REFERENCES material_requests(id) ON DELETE CASCADE,
@@ -89,12 +74,6 @@ CREATE TABLE material_requests_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
-
-
---INVENTORY
-
--- Таблица инвентаризаций
 CREATE TABLE inventories (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -114,21 +93,18 @@ CREATE TABLE inventories (
     CONSTRAINT inventories_status_check CHECK (status IN ('draft', 'in_progress', 'completed', 'approved', 'cancelled', 'expired'))
 );
 
--- Категории в инвентаризации
 CREATE TABLE inventory_categories (
     id SERIAL PRIMARY KEY,
     inventory_id INTEGER REFERENCES inventories(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES materialcategories(id) ON DELETE CASCADE
 );
 
--- Конкретные товары в инвентаризации
 CREATE TABLE inventory_materials (
     id SERIAL PRIMARY KEY,
     inventory_id INTEGER REFERENCES inventories(id) ON DELETE CASCADE,
     material_id INTEGER REFERENCES materials(id) ON DELETE CASCADE
 );
 
--- Результаты инвентаризации
 CREATE TABLE inventory_results (
     id SERIAL PRIMARY KEY,
     inventory_id INTEGER REFERENCES inventories(id) ON DELETE CASCADE,
@@ -141,25 +117,33 @@ CREATE TABLE inventory_results (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+create table materialCategories (
+	id serial primary key,
+	name varchar(255) not null unique,
+	description text,
+	created_by int references users(id) on delete set null,
+	updated_by int references users(id) on delete set null,
+	created_at timestamp default current_timestamp,
+	updated_at timestamp default current_timestamp,
+    deleted_at TIMESTAMP NULL,
+    deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+ );
+ 
+create table materials (
+	id serial primary key,
+	category_id int references materialCategories(id) on delete set null,
+	name varchar(255) not null unique,
+	code varchar(50) unique not null,
+	description text,
+	unit varchar(30) not null,
+	quantity int default 0 check (quantity >=0),
+	created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+ );
 
 
--- ветка trash
 
--- Пользователи
-ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL;
-ALTER TABLE users ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
-
--- Категории материалов
-ALTER TABLE materialCategories ADD COLUMN deleted_at TIMESTAMP NULL;
-ALTER TABLE materialCategories ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
-
--- Материалы
-ALTER TABLE materials ADD COLUMN deleted_at TIMESTAMP NULL;
-ALTER TABLE materials ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
-
--- Бэкапы
-ALTER TABLE backups ADD COLUMN deleted_at TIMESTAMP NULL;
-ALTER TABLE backups ADD COLUMN deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
-
-
-Alter table users add column avatar TEXT NULL;
