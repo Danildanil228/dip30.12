@@ -52,31 +52,44 @@ router.get("/:entity", authenticateAndCheckDB, checkAdmin, async (req, res) => {
 
 router.put("/:entity/:id/restore", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     const { entity, id } = req.params;
-    let table;
+    let table, nameField;
 
     switch (entity) {
         case "users":
             table = "users";
+            nameField = "username";
             break;
         case "categories":
             table = "materialcategories";
+            nameField = "name";
             break;
         case "materials":
             table = "materials";
+            nameField = "name";
             break;
         case "backups":
             table = "backups";
+            nameField = "filename";
             break;
         default:
             return res.status(400).json({ error: "Неверная сущность" });
     }
 
     try {
+      
+        const nameResult = await pool.query(`SELECT ${nameField} as name FROM ${table} WHERE id = $1`, [id]);
+        const entityName = nameResult.rows[0]?.name || `ID:${id}`;
+
+    
         const result = await pool.query(`UPDATE ${table} SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 RETURNING id`, [id]);
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Запись не найдена" });
         }
-        await Logger.log(req.user.id, "restore", "Восстановление из корзины", `[user:${req.user.id}:${req.user.username}] восстановил ${entity.substr(0, -1)} ID:${id}`);
+
+
+        await Logger.trashRestored(req.user.id, req.user.username, entity, id, entityName);
+
         res.json({ message: "Запись восстановлена" });
     } catch (error) {
         console.error("Ошибка восстановления:", error);
@@ -87,11 +100,13 @@ router.put("/:entity/:id/restore", authenticateAndCheckDB, checkAdmin, async (re
 router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, async (req, res) => {
     const { entity, id } = req.params;
     let table,
+        nameField,
         filePathField = null;
 
     switch (entity) {
         case "users":
             table = "users";
+            nameField = "username";
             const avatarResult = await pool.query("SELECT avatar FROM users WHERE id = $1", [id]);
             if (avatarResult.rows.length > 0 && avatarResult.rows[0].avatar) {
                 const avatarPath = path.join(__dirname, avatarResult.rows[0].avatar);
@@ -102,12 +117,15 @@ router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, asyn
             break;
         case "categories":
             table = "materialcategories";
+            nameField = "name";
             break;
         case "materials":
             table = "materials";
+            nameField = "name";
             break;
         case "backups":
             table = "backups";
+            nameField = "filename";
             filePathField = "filepath";
             break;
         default:
@@ -115,13 +133,17 @@ router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, asyn
     }
 
     try {
-        if (filePathField) {
-            const fileResult = await pool.query(`SELECT filepath FROM backups WHERE id = $1`, [id]);
-            if (fileResult.rows.length > 0) {
-                const filepath = fileResult.rows[0].filepath;
-                if (await fs.pathExists(filepath)) {
-                    await fs.unlink(filepath);
-                }
+       
+        const selectQuery = filePathField ? `SELECT ${nameField} as name, ${filePathField} as filepath FROM ${table} WHERE id = $1` : `SELECT ${nameField} as name FROM ${table} WHERE id = $1`;
+
+        const infoResult = await pool.query(selectQuery, [id]);
+        const entityName = infoResult.rows[0]?.name || `ID:${id}`;
+
+  
+        if (filePathField && infoResult.rows[0]?.filepath) {
+            const filepath = infoResult.rows[0].filepath;
+            if (await fs.pathExists(filepath)) {
+                await fs.unlink(filepath);
             }
         }
 
@@ -129,7 +151,10 @@ router.delete("/:entity/:id/permanent", authenticateAndCheckDB, checkAdmin, asyn
         if (result.rowCount === 0) {
             return res.status(404).json({ error: "Запись не найдена" });
         }
-        await Logger.log(req.user.id, "permanent_delete", "Полное удаление", `[user:${req.user.id}:${req.user.username}] навсегда удалил ${entity.substr(0, -1)} ID:${id}`);
+
+
+        await Logger.trashPermanentDeleted(req.user.id, req.user.username, entity, id, entityName);
+
         res.json({ message: "Запись удалена навсегда" });
     } catch (error) {
         console.error("Ошибка полного удаления:", error);

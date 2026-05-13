@@ -98,7 +98,7 @@ export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserD
             щ: "sch",
             ъ: "",
             ы: "y",
-            ь: "",
+            ь: "b",
             э: "e",
             ю: "yu",
             я: "ya",
@@ -319,9 +319,15 @@ export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserD
                         <div className="grid gap-4">
                             <div className="flex items-center gap-4">
                                 <div className="flex-1 grid gap-2">
-                                    <Label htmlFor="add-user-username" className="text-lg">
-                                        Логин
-                                    </Label>
+                                    <div className="flex justify-between">
+                                        <Label htmlFor="add-user-username" className="text-lg">
+                                            Логин
+                                        </Label>
+                                        <Button type="button" variant="ghost" onClick={handleGenerateLogin} disabled={loading || !name || !secondname}>
+                                            Сгенерировать
+                                        </Button>
+                                    </div>
+
                                     <div className="flex gap-4">
                                         <Input
                                             id="add-user-username"
@@ -338,17 +344,18 @@ export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserD
                                             className={`px-4 py-3 text-lg ${fieldErrors.username && touched.username ? "border-red-500" : ""}`}
                                             disabled={loading}
                                         />
-                                        <Button type="button" variant="outline" onClick={handleGenerateLogin} disabled={loading || !name || !secondname}>
-                                            <img src="/dice.png" className="icon w-5" alt="Сгенерировать" />
-                                        </Button>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="flex-1 grid gap-2">
-                                    <Label htmlFor="add-user-password" className="text-lg">
-                                        Пароль
-                                    </Label>
+                                    <div className="flex justify-between">
+                                        <Label htmlFor="add-user-password" className="text-lg">
+                                            Пароль
+                                        </Label>
+                                        <Button type="button" variant="ghost" onClick={handleGeneratePassword} disabled={loading}>Сгенерировать</Button>
+                                    </div>
+
                                     <div className="flex gap-4">
                                         <Input
                                             id="add-user-password"
@@ -366,9 +373,6 @@ export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserD
                                             className={`px-4 py-3 text-lg ${fieldErrors.password && touched.password ? "border-red-500" : ""}`}
                                             disabled={loading}
                                         />
-                                        <Button type="button" variant="outline" onClick={handleGeneratePassword} disabled={loading}>
-                                            <img src="/dice.png" className="icon w-5" alt="Сгенерировать" />
-                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -379,10 +383,10 @@ export default function AddUserDialog({ onUserCreated, triggerButton }: AddUserD
                                 Роль
                             </Label>
                             <Select value={role} onValueChange={setRole} disabled={loading}>
-                                <SelectTrigger className="text-lg py-3">
+                                <SelectTrigger className="text-base! py-3">
                                     <SelectValue placeholder="Роль" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="text-sm!">
                                     <SelectItem value="admin">Администратор</SelectItem>
                                     <SelectItem value="accountant">Бухгалтер</SelectItem>
                                     <SelectItem value="storekeeper">Кладовщик</SelectItem>

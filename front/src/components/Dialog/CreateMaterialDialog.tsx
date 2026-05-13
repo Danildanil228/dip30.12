@@ -67,7 +67,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
         }
 
         const randomNum = Math.floor(Math.random() * 900) + 100;
-        setCode(`${codePrefix}-${randomNum}`);
+        setCode(`${codePrefix}${randomNum}`);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -76,9 +76,13 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
         try {
             setError(null);
             setLoading(true);
-
+            const allowedRegex = /^[A-Za-z0-9А-Яа-яЁё_.,\-\s°\u00B2\u00B3\u2070-\u2079\u00B9]+$/;
             if (!name.trim()) {
                 setError("Название материала обязательно");
+                return;
+            }
+            if (!allowedRegex.test(name)) {
+                setError("Название материала не должно содержать спец. символы");
                 return;
             }
 
@@ -90,7 +94,7 @@ export default function CreateMaterialDialog({ onMaterialCreated, triggerButton 
                 setError("Код материала должен минимум состоять из 3 символов");
                 return;
             }
-            const allowedRegex = /^[A-Za-z0-9А-Яа-яЁё]+$/;
+            
             if (!allowedRegex.test(code)) {
                 setError("Код материала не должен содержать спец. символы");
                 return;

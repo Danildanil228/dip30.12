@@ -123,6 +123,28 @@ class Logger {
     static async inventoryDeleted(userId, username, title, inventoryId) {
         await this.log(userId, "inventory_deleted", "Удаление инвентаризации", `[user:${userId}:${username}] удалил [inventory:${inventoryId}] "${title}"`);
     }
+
+    static async trashRestored(userId, username, entityType, entityId, entityName) {
+        const entityLabels = {
+            users: "пользователя",
+            materials: "материал",
+            categories: "категорию",
+            backups: "бэкап",
+        };
+        const label = entityLabels[entityType] || entityType;
+        await this.log(userId, "trash_restored", "Восстановление из корзины", `[user:${userId}:${username}] восстановил ${label}: ${entityName}`);
+    }
+
+    static async trashPermanentDeleted(userId, username, entityType, entityId, entityName) {
+        const entityLabels = {
+            users: "пользователя",
+            materials: "материал",
+            categories: "категорию",
+            backups: "бэкап",
+        };
+        const label = entityLabels[entityType] || entityType;
+        await this.log(userId, "trash_permanent_deleted", "Полное удаление", `[user:${userId}:${username}] навсегда удалил ${label}: ${entityName}`);
+    }
 }
 
 module.exports = Logger;
