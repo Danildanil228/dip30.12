@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, RotateCcw, Loader2, Users, Package, FolderOpen, Database, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, RotateCcw, Loader2, Users, Package, FolderOpen, Database, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import apiClient from "@/services/api";
 import { useUser } from "@/hooks/useUser";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -140,7 +140,7 @@ export default function Trash() {
                             <TabsContent value={activeTab} className="mt-0">
                                 {items.length === 0 ? (
                                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
-                                        <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4"></div>
+                                        <div className="w-10 h-10 rounded-full bg-muted dark:bg-[#3b82f6] flex items-center justify-center mx-auto mb-4"><Check/></div>
                                         <p className="text-lg font-medium">Корзина пуста</p>
                                         <p className="text-sm text-muted-foreground mt-1">Нет удалённых {currentLabel.toLowerCase()}</p>
                                     </motion.div>

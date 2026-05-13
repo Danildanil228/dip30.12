@@ -298,7 +298,7 @@ app.post("/createUser", authenticateAndCheckDB, checkAdmin, async (req, res) => 
             `INSERT INTO users (username, password, role, name, secondname, email, phone, birthday) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
      RETURNING id, username, role, name, secondname, avatar`,
-            [username, hashedPassword, role, name, secondname, "", "", null],
+            [username, hashedPassword, role, name, secondname, null, null, null],
         );
 
         const user = result.rows[0];
@@ -500,7 +500,6 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
                 };
             }
         });
-
         if (Object.keys(changedFields).length > 0) {
             if (isAdmin && !isSelf) {
                 await Logger.userUpdated(currentUser.id, currentUser.username, userId, oldUser.username, changedFields);
@@ -515,6 +514,12 @@ app.put("/users/:id", authenticateAndCheckDB, async (req, res) => {
         });
     } catch (error) {
         console.error("Ошибка при обновлении пользователя:", error);
+        if (error.constraint === "users_phone_key") {
+            return res.status(400).json({ error: "Номер телефона уже используется" });
+        }
+        if (error.constraint === "users_email_key") {
+            return res.status(400).json({ error: "Email уже используется" });
+        }
         res.status(500).json({ error: "Ошибка сервера" });
     }
 });
@@ -849,6 +854,9 @@ app.post("/materials", authenticateAndCheckDB, checkAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error("Ошибка при создании материала:", error);
+        if (error.code === "23505") {
+            return res.status(400).json({ error: "Материал с таким названием уже существует" });
+        }
         res.status(500).json({ error: "Ошибка сервера" });
     }
 });
