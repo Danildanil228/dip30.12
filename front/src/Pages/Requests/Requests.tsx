@@ -11,9 +11,10 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRequests } from "@/hooks/useRequests";
 import { useUser } from "@/hooks/useUser";
+import OnboardingTour from "@/components/OnboardingTour";
 
 export default function Requests() {
-    const { isAdmin } = useUser();
+    const { user, isAdmin } = useUser();
     const { requests, loading, fetchRequests } = useRequests();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -86,7 +87,7 @@ export default function Requests() {
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Заявки</h1>
                     <p className="text-muted-foreground mt-1">Приход и расход материалов</p>
                 </div>
-                <Button onClick={() => setShowCreateDialog(true)}>
+                <Button onClick={() => setShowCreateDialog(true)} data-tour="requests-create-btn">
                     <Plus className="h-4 w-4 mr-1" /> Создать
                 </Button>
             </motion.div>
@@ -131,7 +132,8 @@ export default function Requests() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {["all", "pending", "approved", "rejected"].map((status) => (
-                        <Button className="dark:bg-"
+                        <Button
+                            className="dark:bg-"
                             key={status}
                             variant={statusFilter === status ? "default" : "outline"}
                             onClick={() => {
@@ -220,6 +222,19 @@ export default function Requests() {
             </div>
 
             <CreateRequestDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onRequestCreated={() => fetchRequests(statusFilter !== "all" ? statusFilter : undefined)} />
+
+            <OnboardingTour
+                pageKey="requests"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='requests-create-btn']",
+                        title: "Создать заявку",
+                        description: "Оформляйте приход или расход материалов. Для расходных заявок система проверяет остатки.",
+                        placement: "bottom",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }

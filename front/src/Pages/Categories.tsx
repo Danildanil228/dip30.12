@@ -14,6 +14,7 @@ import type { ExportColumn } from "@/services/exportService";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Plus } from "lucide-react";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -27,7 +28,7 @@ const formatDate = (value: unknown): string => {
 };
 
 export default function Categories() {
-    const { isAdmin } = useUser();
+    const { user, isAdmin } = useUser();
     const { categories, loading, deleteCategory, fetchCategories } = useMaterials();
 
     const [singleDeleteTarget, setSingleDeleteTarget] = useState<Category | null>(null);
@@ -177,11 +178,11 @@ export default function Categories() {
         {
             accessorKey: "created_at",
             header: ({ column }) => (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Дата создания
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                ),
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Дата создания
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            ),
             cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDate(row.original.created_at)}</span>,
         },
         {
@@ -229,7 +230,7 @@ export default function Categories() {
                     <CreateCategoryDialog
                         onCategoryCreated={fetchCategories}
                         triggerButton={
-                            <Button>
+                            <Button data-tour="categories-add-btn">
                                 <Plus className="h-4 w-4 mr-1" /> Добавить
                             </Button>
                         }
@@ -304,6 +305,18 @@ export default function Categories() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <OnboardingTour
+                pageKey="categories"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='categories-add-btn']",
+                        title: "Добавить категорию",
+                        description: "Группируйте материалы по категориям для удобной навигации и отчётов.",
+                        placement: "bottom",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }

@@ -13,6 +13,7 @@ import { ExportDropdown } from "@/components/ExportDropdown";
 import type { Backup } from "@/types/backup.types";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ExportColumn } from "@/services/exportService";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -52,7 +53,7 @@ const formatFileSize = (bytes: unknown): string => {
 };
 
 export default function Backups() {
-    const { isAdmin } = useUser();
+    const {user, isAdmin } = useUser();
     const { backups, loading, downloading, deleteBackup, downloadBackup, fetchBackups } = useBackups();
 
     const [deleteSingleOpen, setDeleteSingleOpen] = useState(false);
@@ -200,7 +201,7 @@ export default function Backups() {
                     <CreateBackupDialog
                         onBackupCreated={fetchBackups}
                         triggerButton={
-                            <Button>
+                            <Button data-tour="backups-add-btn">
                                 <Plus className="h-4 w-4 mr-1" /> Создать
                             </Button>
                         }
@@ -290,6 +291,18 @@ export default function Backups() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <OnboardingTour
+                pageKey="backups"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='backups-add-btn']",
+                        title: "Создать бэкап",
+                        description: "Сделайте резервную копию базы данных. Хранится до 10 бэкапов.",
+                        placement: "bottom",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }
