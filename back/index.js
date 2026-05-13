@@ -14,6 +14,14 @@ const fs = require("fs-extra");
 const multer = require("multer");
 const app = express();
 const PORT = process.env.PORT || 3000;
+const rateLimit = require("express-rate-limit");
+const loginLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 5,
+    message: { error: "Слишком много попыток входа. Попробуйте позже." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 const changelogPath = path.join(__dirname, "changelog.json");
 
@@ -152,7 +160,7 @@ app.get("/countUsers", async (req, res) => {
     }
 });
 
-app.post("/registerFirst", async (req, res) => {
+app.post("/registerFirst", loginLimiter, async (req, res) => {
     try {
         const countResult = await pool.query("SELECT COUNT(*) FROM users");
         const userCount = parseInt(countResult.rows[0].count);
@@ -206,7 +214,7 @@ app.post("/registerFirst", async (req, res) => {
     }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", loginLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
 
