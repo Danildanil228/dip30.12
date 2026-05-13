@@ -49,9 +49,10 @@ export default function Inventories() {
     const handleStart = async (id: number) => {
         try {
             await startInventory(id);
+            navigate(`/inventories/${id}/conduct`);
         } catch (error: any) {
             setErrorMessage(error.response?.data?.error);
-            setErrorDialogOpen(true)
+            setErrorDialogOpen(true);
         }
     };
 
@@ -62,7 +63,7 @@ export default function Inventories() {
             setCompleteDialog({ open: false, id: null, title: "" });
         } catch (error: any) {
             setErrorMessage(error.response?.data?.error);
-            setErrorDialogOpen(true)
+            setErrorDialogOpen(true);
         }
     };
 
@@ -73,7 +74,7 @@ export default function Inventories() {
             setCancelDialog({ open: false, id: null, title: "" });
         } catch (error: any) {
             setErrorMessage(error.response?.data?.error);
-            setErrorDialogOpen(true)
+            setErrorDialogOpen(true);
         }
     };
 
@@ -84,7 +85,7 @@ export default function Inventories() {
             setDeleteDialog({ open: false, id: null, title: "" });
         } catch (error: any) {
             setErrorMessage(error.response?.data?.error);
-            setErrorDialogOpen(true)
+            setErrorDialogOpen(true);
         }
     };
 

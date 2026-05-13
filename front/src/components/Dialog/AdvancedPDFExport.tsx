@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { useState } from "react";
 
 interface AdvancedPDFExportProps {
     data: any[];
@@ -89,14 +91,30 @@ export default function AdvancedPDFExport({ data, columns, filename, title, subt
             pdf.save(`${filename}_${new Date().toISOString().split("T")[0]}.pdf`);
         } catch (error) {
             console.error("Ошибка экспорта в PDF:", error);
-            alert("Ошибка при экспорте в PDF");
+            setErrorMessage("Ошибка экспорта в PDF")
+            setErrorDialogOpen(true);
         }
     };
+    const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     return (
-        <Button variant="outline" onClick={handleExportPDF} disabled={data.length === 0}>
-            <FileText className="h-4 w-4 mr-2" />
-            PDF (расширенный)
-        </Button>
+        <>
+            <Button variant="outline" onClick={handleExportPDF} disabled={data.length === 0}>
+                <FileText className="h-4 w-4 mr-2" />
+                PDF (расширенный)
+            </Button>
+            <AlertDialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Ошибка</AlertDialogTitle>
+                        <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setErrorDialogOpen(false)}>Закрыть</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

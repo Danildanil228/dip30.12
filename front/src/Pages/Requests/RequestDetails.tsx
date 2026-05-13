@@ -55,7 +55,8 @@ export default function RequestDetails() {
 
     const handleReject = async () => {
         if (!rejectionReason.trim()) {
-            alert("Укажите причину отклонения");
+            setErrorMessage("Укажите причину отклонения");
+            setErrorOpen(true);
             return;
         }
         setProcessing(true);
@@ -65,7 +66,8 @@ export default function RequestDetails() {
             setRejectionReason("");
         } catch (error: any) {
             const message = error.response?.data?.error || "Ошибка отклонения заявки";
-            alert(message);
+            setErrorMessage(message);
+            setErrorOpen(true);
         } finally {
             setProcessing(false);
         }
