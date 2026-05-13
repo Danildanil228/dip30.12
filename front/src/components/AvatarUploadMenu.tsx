@@ -10,7 +10,7 @@ interface AvatarUploadMenuProps {
     userId: number;
     currentAvatar: string | null | undefined;
     onAvatarUpdate: (newAvatarUrl: string | null) => void;
-    onSuccess?: () => void; // новый prop
+    onSuccess?: () => void; 
     children: React.ReactNode;
 }
 

@@ -31,6 +31,8 @@ export default function Inventories() {
     const [completeDialog, setCompleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
     const [cancelDialog, setCancelDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number | null; title: string }>({ open: false, id: null, title: "" });
+    const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     const isAdminOrAccountant = isAdmin || user?.role === "accountant";
     const isResponsible = (inventory: Inventory) => inventory.responsible_person === user?.id;
@@ -48,7 +50,8 @@ export default function Inventories() {
         try {
             await startInventory(id);
         } catch (error: any) {
-            alert(error.response?.data?.error || "Ошибка");
+            setErrorMessage(error.response?.data?.error);
+            setErrorDialogOpen(true)
         }
     };
 
@@ -58,7 +61,8 @@ export default function Inventories() {
             await completeInventory(completeDialog.id);
             setCompleteDialog({ open: false, id: null, title: "" });
         } catch (error: any) {
-            alert(error.response?.data?.error || "Ошибка");
+            setErrorMessage(error.response?.data?.error);
+            setErrorDialogOpen(true)
         }
     };
 
@@ -68,7 +72,8 @@ export default function Inventories() {
             await cancelInventory(cancelDialog.id);
             setCancelDialog({ open: false, id: null, title: "" });
         } catch (error: any) {
-            alert(error.response?.data?.error || "Ошибка");
+            setErrorMessage(error.response?.data?.error);
+            setErrorDialogOpen(true)
         }
     };
 
@@ -78,7 +83,8 @@ export default function Inventories() {
             await deleteInventory(deleteDialog.id);
             setDeleteDialog({ open: false, id: null, title: "" });
         } catch (error: any) {
-            alert(error.response?.data?.error || "Ошибка");
+            setErrorMessage(error.response?.data?.error);
+            setErrorDialogOpen(true)
         }
     };
 
@@ -359,7 +365,17 @@ export default function Inventories() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            
+            <AlertDialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Ошибка</AlertDialogTitle>
+                        <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setErrorDialogOpen(false)}>Закрыть</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
