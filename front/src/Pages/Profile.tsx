@@ -253,7 +253,7 @@ export default function Profile() {
                     {
                         targetSelector: "[data-tour='profile-password-btn']",
                         title: "Сменить пароль",
-                        description: "",
+                        description: "Смените пароль на более удобный",
                         placement: "top",
                     },
                 ]}
