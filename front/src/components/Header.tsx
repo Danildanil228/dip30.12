@@ -100,20 +100,22 @@ export default function Header() {
                             <p className="text-sm font-semibold leading-none">
                                 {user.name} {user.secondname}
                             </p>
-                            <p className="text-xs text-muted-foreground">{roleName}</p>
+                            <p className="text-xs text-muted-foreground ">{roleName}</p>
                         </div>
                     </Link>
                 </div>
                 <div className="flex gap-2 items-center">
-                    <Link to="/versions" className="text-sm hover:text-foreground transition-colors">
+                    <Link to="/versions" className="text-sm hover:text-foreground transition-colors" data-tour="header-version">
                         v.{currentVersion}
                     </Link>
                     <div className="flex items-center gap-3">
-                        <DarkModeButtonToggle />
+                        <div data-tour="header-theme">
+                            <DarkModeButtonToggle />
+                        </div>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon" className="relative">
+                                <Button variant="outline" size="icon" className="relative" data-tour="header-tools">
                                     <img src="/setting.png" alt="" className="w-5 icon" />
                                 </Button>
                             </DropdownMenuTrigger>

@@ -13,6 +13,7 @@ import type { ExportColumn } from "@/services/exportService";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Plus } from "lucide-react";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -26,9 +27,8 @@ const formatDate = (value: unknown): string => {
 };
 
 export default function Materials() {
-    const { isAdmin } = useUser();
+    const {user, isAdmin } = useUser();
     const { materials, loading, deleteMaterial, fetchMaterials } = useMaterials();
-
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
     const [multipleDeleteIds, setMultipleDeleteIds] = useState<number[]>([]);
@@ -103,10 +103,6 @@ export default function Materials() {
     ];
 
     const columns: ColumnDef<Material>[] = [
-        // {
-        //     accessorKey: "id",
-        //     header: "ID",
-        // },
         {
             accessorKey: "name",
             header: ({ column }) => (
@@ -123,11 +119,11 @@ export default function Materials() {
         {
             accessorKey: "quantity",
             header: ({ column }) => (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Остаток
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                ),
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Остаток
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            ),
             cell: ({ row }) => {
                 const qty = row.original.quantity;
                 let colorClass = "";
@@ -148,11 +144,11 @@ export default function Materials() {
         {
             accessorKey: "created_at",
             header: ({ column }) => (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Дата создания
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                ),
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Дата создания
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            ),
             cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDate(row.original.created_at)}</span>,
         },
         {
@@ -201,7 +197,7 @@ export default function Materials() {
                         <CreateMaterialDialog
                             onMaterialCreated={fetchMaterials}
                             triggerButton={
-                                <Button className="btn">
+                                <Button className="btn" data-tour="materials-add-btn">
                                     <Plus className="h-4 w-4 mr-1" /> Добавить
                                 </Button>
                             }
@@ -263,6 +259,18 @@ export default function Materials() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <OnboardingTour
+                pageKey="materials"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='materials-add-btn']",
+                        title: "Добавить материал",
+                        description: "Создайте новый материал для учёта. Выберите категорию, единицу измерения и укажите начальный остаток.",
+                        placement: "bottom",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }

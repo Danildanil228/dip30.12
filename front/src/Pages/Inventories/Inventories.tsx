@@ -16,6 +16,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { useInventories } from "@/hooks/useInventories";
 import { useUser } from "@/hooks/useUser";
 import type { Inventory } from "@/types/inventory.types";
+import OnboardingTour from "@/components/OnboardingTour";
 
 export default function Inventories() {
     const navigate = useNavigate();
@@ -132,7 +133,7 @@ export default function Inventories() {
                     <p className="text-muted-foreground mt-1">Управление проверками склада</p>
                 </div>
                 {isAdminOrAccountant && (
-                    <Button onClick={() => setShowCreateDialog(true)}>
+                    <Button onClick={() => setShowCreateDialog(true)} data-tour="inventories-add-btn">
                         <Package className="h-4 w-4 mr-2" /> Создать
                     </Button>
                 )}
@@ -167,7 +168,8 @@ export default function Inventories() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {["all", "draft", "in_progress", "completed", "approved", "cancelled"].map((s) => (
-                        <Button className="dark:bg-"
+                        <Button
+                            className="dark:bg-"
                             key={s}
                             variant={statusFilter === s ? "default" : "outline"}
                             onClick={() => {
@@ -186,7 +188,8 @@ export default function Inventories() {
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div className="text-sm text-muted-foreground">Найдено: {filteredInventories.length}</div>
                     <div className="flex items-center gap-2">
-                        <Button className="dark:bg-"
+                        <Button
+                            className="dark:bg-"
                             variant="outline"
                             size="sm"
                             onClick={() => {
@@ -201,7 +204,8 @@ export default function Inventories() {
                                 <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
                                     &lt;
                                 </Button>
-                                <span className="text-sm">{currentPage + 1} из {totalPages}
+                                <span className="text-sm">
+                                    {currentPage + 1} из {totalPages}
                                 </span>
                                 <Button variant="outline" className="dark:bg-" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} disabled={currentPage === totalPages - 1}>
                                     &gt;
@@ -356,6 +360,18 @@ export default function Inventories() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <OnboardingTour
+                pageKey="inventories"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='inventories-add-btn']",
+                        title: "Создать инвентаризацию",
+                        description: "Запустите проверку склада: выберите ответственного и перечень товаров.",
+                        placement: "bottom",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }

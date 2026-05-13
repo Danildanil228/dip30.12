@@ -13,6 +13,7 @@ import { useUser } from "@/hooks/useUser";
 import type { User } from "@/types/user.types";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ExportColumn } from "@/services/exportService";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -27,8 +28,7 @@ const formatDate = (value: unknown): string => {
 
 export default function AllUsers() {
     const { users, loading, deleteUser, fetchUsers } = useUsers();
-    const { user: currentUser } = useUser();
-
+    const { user, user: currentUser } = useUser();
     const [deleteSingleOpen, setDeleteSingleOpen] = useState(false);
     const [deleteSingleUser, setDeleteSingleUser] = useState<User | null>(null);
 
@@ -196,7 +196,7 @@ export default function AllUsers() {
                 <AddUserDialog
                     onUserCreated={fetchUsers}
                     triggerButton={
-                        <Button>
+                        <Button data-tour="users-add-btn">
                             <Plus className="h-4 w-4 mr-1" /> Добавить
                         </Button>
                     }
@@ -273,6 +273,18 @@ export default function AllUsers() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <OnboardingTour
+                pageKey="users"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='users-add-btn']",
+                        title: "Добавить пользователя",
+                        description: "Создайте учётную запись для сотрудника с нужной ролью.",
+                        placement: "bottom",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }

@@ -14,6 +14,7 @@ import { userService } from "@/services/userService";
 import type { UserProfile } from "@/types/user.types";
 import { avatarService } from "@/services/avatarService";
 import { AvatarUploadMenu } from "@/components/AvatarUploadMenu";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -141,7 +142,7 @@ export default function Profile() {
                 </Button>
             )}
 
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center">
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center" data-tour="profile-avatar">
                 <AvatarUploadMenu
                     userId={user.id}
                     currentAvatar={user.avatar}
@@ -221,11 +222,11 @@ export default function Profile() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-wrap gap-4 justify-center">
-                <Button variant="default" className="gap-2" onClick={() => setEditOpen(true)}>
+                <Button variant="default" className="gap-2" onClick={() => setEditOpen(true)} data-tour="profile-edit-btn">
                     <Edit3 className="h-4 w-4" />
                     Изменить данные
                 </Button>
-                <Button variant="default" className="gap-2" onClick={() => setPasswordOpen(true)}>
+                <Button variant="default" className="gap-2" onClick={() => setPasswordOpen(true)} data-tour="profile-password-btn">
                     <Key className="h-4 w-4" />
                     Сменить пароль
                 </Button>
@@ -233,6 +234,31 @@ export default function Profile() {
 
             <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} user={user} isOwnProfile={isOwnProfile || false} isAdmin={isAdmin} onProfileUpdated={fetchUserProfile} />
             <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} userId={targetUserId!} isOwnProfile={isOwnProfile || false} isAdmin={isAdmin} onPasswordChanged={fetchUserProfile} />
+
+            <OnboardingTour
+                pageKey="profile"
+                steps={[
+                    {
+                        targetSelector: "[data-tour='profile-avatar']",
+                        title: "Аватар",
+                        description: "Нажмите, чтобы загрузить, просмотреть или удалить фото профиля.",
+                        placement: "top",
+                    },
+                    {
+                        targetSelector: "[data-tour='profile-edit-btn']",
+                        title: "Изменить данные",
+                        description: "Обновите имя, фамилию, email, телефон и дату рождения.",
+                        placement: "top",
+                    },
+                    {
+                        targetSelector: "[data-tour='profile-password-btn']",
+                        title: "Сменить пароль",
+                        description: "",
+                        placement: "top",
+                    },
+                ]}
+                user={user}
+            />
         </div>
     );
 }
