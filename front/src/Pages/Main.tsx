@@ -5,7 +5,6 @@ import { BookOpen, Package, BarChart3, UserCog, ClipboardList, FileText, Users, 
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { versionService } from "@/services/versionService";
 import { Link } from "react-router-dom";
-import OnboardingTour from "@/components/OnboardingTour";
 
 const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
     const ref = useRef(null);
@@ -235,31 +234,6 @@ export default function Main() {
                     </div>
                 </RevealBlock>
             )}
-
-            <OnboardingTour
-                pageKey="main"
-                steps={[
-                    {
-                        targetSelector: "[data-tour='header-version']",
-                        title: "Версия системы",
-                        description: "Здесь отображается текущая версия. Нажмите, чтобы увидеть историю изменений.",
-                        placement: "bottom",
-                    },
-                    {
-                        targetSelector: "[data-tour='header-theme']",
-                        title: "Переключение темы",
-                        description: "Светлая, тёмная или системная — выберите удобную для глаз.",
-                        placement: "bottom",
-                    },
-                    {
-                        targetSelector: "[data-tour='header-tools']",
-                        title: "Инструменты",
-                        description: "Быстрый доступ к бэкапам, отчётам, корзине и другим разделам.",
-                        placement: "bottom",
-                    },
-                ]}
-                user={user}
-            />
         </div>
     );
 }

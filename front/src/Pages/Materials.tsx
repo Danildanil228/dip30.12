@@ -13,7 +13,6 @@ import type { ExportColumn } from "@/services/exportService";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Plus } from "lucide-react";
-import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -27,7 +26,7 @@ const formatDate = (value: unknown): string => {
 };
 
 export default function Materials() {
-    const {user, isAdmin } = useUser();
+    const {isAdmin } = useUser();
     const { materials, loading, deleteMaterial, fetchMaterials } = useMaterials();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
@@ -259,18 +258,7 @@ export default function Materials() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <OnboardingTour
-                pageKey="materials"
-                steps={[
-                    {
-                        targetSelector: "[data-tour='materials-add-btn']",
-                        title: "Добавить материал",
-                        description: "Создайте новый материал для учёта. Выберите категорию, единицу измерения и укажите начальный остаток.",
-                        placement: "bottom",
-                    },
-                ]}
-                user={user}
-            />
+            
         </div>
     );
 }

@@ -14,7 +14,6 @@ import { userService } from "@/services/userService";
 import type { UserProfile } from "@/types/user.types";
 import { avatarService } from "@/services/avatarService";
 import { AvatarUploadMenu } from "@/components/AvatarUploadMenu";
-import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -234,31 +233,6 @@ export default function Profile() {
 
             <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} user={user} isOwnProfile={isOwnProfile || false} isAdmin={isAdmin} onProfileUpdated={fetchUserProfile} />
             <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} userId={targetUserId!} isOwnProfile={isOwnProfile || false} isAdmin={isAdmin} onPasswordChanged={fetchUserProfile} />
-
-            <OnboardingTour
-                pageKey="profile"
-                steps={[
-                    {
-                        targetSelector: "[data-tour='profile-avatar']",
-                        title: "Аватар",
-                        description: "Нажмите, чтобы загрузить, просмотреть или удалить фото профиля.",
-                        placement: "top",
-                    },
-                    {
-                        targetSelector: "[data-tour='profile-edit-btn']",
-                        title: "Изменить данные",
-                        description: "Обновите имя, фамилию, email, телефон и дату рождения.",
-                        placement: "top",
-                    },
-                    {
-                        targetSelector: "[data-tour='profile-password-btn']",
-                        title: "Сменить пароль",
-                        description: "Смените пароль на более удобный",
-                        placement: "top",
-                    },
-                ]}
-                user={user}
-            />
         </div>
     );
 }

@@ -14,7 +14,6 @@ import type { ExportColumn } from "@/services/exportService";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Plus } from "lucide-react";
-import OnboardingTour from "@/components/OnboardingTour";
 
 const formatDate = (value: unknown): string => {
     if (!value) return "";
@@ -28,7 +27,7 @@ const formatDate = (value: unknown): string => {
 };
 
 export default function Categories() {
-    const { user, isAdmin } = useUser();
+    const {isAdmin } = useUser();
     const { categories, loading, deleteCategory, fetchCategories } = useMaterials();
 
     const [singleDeleteTarget, setSingleDeleteTarget] = useState<Category | null>(null);
@@ -305,18 +304,7 @@ export default function Categories() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <OnboardingTour
-                pageKey="categories"
-                steps={[
-                    {
-                        targetSelector: "[data-tour='categories-add-btn']",
-                        title: "Добавить категорию",
-                        description: "Группируйте материалы по категориям для удобной навигации и отчётов.",
-                        placement: "bottom",
-                    },
-                ]}
-                user={user}
-            />
+            
         </div>
     );
 }

@@ -11,10 +11,9 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRequests } from "@/hooks/useRequests";
 import { useUser } from "@/hooks/useUser";
-import OnboardingTour from "@/components/OnboardingTour";
 
 export default function Requests() {
-    const { user, isAdmin } = useUser();
+    const {isAdmin } = useUser();
     const { requests, loading, fetchRequests } = useRequests();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -222,19 +221,6 @@ export default function Requests() {
             </div>
 
             <CreateRequestDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onRequestCreated={() => fetchRequests(statusFilter !== "all" ? statusFilter : undefined)} />
-
-            <OnboardingTour
-                pageKey="requests"
-                steps={[
-                    {
-                        targetSelector: "[data-tour='requests-create-btn']",
-                        title: "Создать заявку",
-                        description: "Оформляйте приход или расход материалов. Для расходных заявок система проверяет остатки.",
-                        placement: "bottom",
-                    },
-                ]}
-                user={user}
-            />
         </div>
     );
 }

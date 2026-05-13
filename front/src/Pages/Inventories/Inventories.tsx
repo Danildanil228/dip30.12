@@ -16,7 +16,6 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { useInventories } from "@/hooks/useInventories";
 import { useUser } from "@/hooks/useUser";
 import type { Inventory } from "@/types/inventory.types";
-import OnboardingTour from "@/components/OnboardingTour";
 
 export default function Inventories() {
     const navigate = useNavigate();
@@ -360,18 +359,7 @@ export default function Inventories() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <OnboardingTour
-                pageKey="inventories"
-                steps={[
-                    {
-                        targetSelector: "[data-tour='inventories-add-btn']",
-                        title: "Создать инвентаризацию",
-                        description: "Запустите проверку склада: выберите ответственного и перечень товаров.",
-                        placement: "bottom",
-                    },
-                ]}
-                user={user}
-            />
+            
         </div>
     );
 }
