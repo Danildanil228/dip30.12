@@ -121,262 +121,257 @@ export default function Login() {
     }
 
     return (
-        <div className="">
-            <div className="min-h-screen flex bg-linear-to-br from-primary/5 via-background to-primary/10">
-                <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-linear-to-br from-primary to-primary/80">
-                    <div className="absolute inset-0 bg-black/10" />
-                    <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
-                    <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
+        <div className="min-h-screen flex bg-linear-to-br from-primary/5 via-background to-primary/10">
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-linear-to-br from-primary to-primary/80">
+                <div className="absolute inset-0 bg-black/10" />
+                <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
+                <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
 
-                    <div className="relative z-10 flex flex-col justify-center px-12 lg:px-20 text-white">
-                        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                                    <img src="/boxes.png" className="w-8 h-8" alt="Logo" />
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl font-bold tracking-tight">Material House</h1>
-                                    <p className="text-white/70 text-sm">Система складского учёта</p>
-                                </div>
+                <div className="relative z-10 flex flex-col justify-center px-12 lg:px-20 text-white">
+                    <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                                <img src="/boxes.png" className="w-8 h-8" alt="Logo" />
                             </div>
-
-                            <h2 className="text-3xl lg:text-4xl font-bold mb-6 leading-tight">{isFirst ? "Добро пожаловать в Material House" : "Управляйте складом эффективно"}</h2>
-                            <p className="text-white/80 text-lg mb-10 leading-relaxed">
-                                {isFirst
-                                    ? "Настройте систему за пару минут. Создайте учётную запись администратора и начните работу."
-                                    : "Отслеживайте движение материалов, создавайте заявки, проводите инвентаризации и формируйте отчёты."}
-                            </p>
-
-                            <div className="space-y-4 mb-10">
-                                {[
-                                    { icon: Package, text: "Управление материалами и категориями" },
-                                    { icon: BarChart3, text: "Отчёты и аналитика в реальном времени" },
-                                    { icon: Users, text: "Разграничение прав доступа" },
-                                    { icon: Shield, text: "Резервное копирование базы данных" },
-                                ].map((item, i) => (
-                                    <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.1 }} className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                                            <item.icon className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-white/90 text-sm">{item.text}</span>
-                                    </motion.div>
-                                ))}
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight">Material House</h1>
+                                <p className="text-white/70 text-sm">Система складского учёта</p>
                             </div>
-
-                            <p className="text-white/40 text-xs">Версия {currentVersion} • 2026</p>
-                        </motion.div>
-                    </div>
-                </div>
-
-                <div className="flex-1 flex items-center justify-center p-6 sm:p-12 hidden">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
-                        <div className="lg:hidden text-center mb-8">
-                            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                {isFirst ? <Shield className="w-8 h-8 text-primary" /> : <img src="/boxes.png" className="w-8 h-8" alt="Logo" />}
-                            </div>
-                            <h1 className="text-2xl font-bold">Material House</h1>
                         </div>
 
-                        <div className="rounded-2xl border bg-card shadow-xl p-8">
-                            <div className="text-center mb-6">
-                                <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{isFirst ? (step === 1 ? "Создание администратора" : "Проверьте данные") : "Вход в систему"}</h2>
-                                <p className="text-muted-foreground text-sm mt-2">{isFirst ? (step === 1 ? "Шаг 1 из 2: Учётные данные" : "Шаг 2 из 2: Подтверждение") : "Войдите в свою учётную запись"}</p>
-                            </div>
+                        <h2 className="text-3xl lg:text-4xl font-bold mb-6 leading-tight">{isFirst ? "Добро пожаловать в Material House" : "Управляйте складом эффективно"}</h2>
+                        <p className="text-white/80 text-lg mb-10 leading-relaxed">
+                            {isFirst
+                                ? "Настройте систему за пару минут. Создайте учётную запись администратора и начните работу."
+                                : "Отслеживайте движение материалов, создавайте заявки, проводите инвентаризации и формируйте отчёты."}
+                        </p>
 
-                            {isFirst && (
-                                <div className="flex justify-center gap-2 mb-6">
-                                    <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 1 ? "w-8 bg-primary" : "w-4 bg-primary/30"}`} />
-                                    <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 2 ? "w-8 bg-primary" : "w-4 bg-primary/30"}`} />
-                                </div>
-                            )}
-
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <AnimatePresence mode="wait">
-                                    {(step === 1 || !isFirst) && (
-                                        <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
-                                            <div>
-                                                <label className="text-sm font-medium mb-1.5 block">Логин</label>
-                                                <div className="relative">
-                                                    <input
-                                                        type="text"
-                                                        placeholder={isFirst ? "Придумайте логин" : "Введите логин"}
-                                                        value={username}
-                                                        onChange={(e) => setUsername(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                                        disabled={loading}
-                                                        autoFocus
-                                                        required
-                                                    />
-                                                    {!isFirst && localStorage.getItem("rememberedUsername") && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                localStorage.removeItem("rememberedUsername");
-                                                                setUsername("");
-                                                                setRememberMe(false);
-                                                            }}
-                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-destructive transition-colors p-1"
-                                                            title="Забыть сохранённый логин"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                {isFirst && <p className="text-xs text-muted-foreground mt-1.5">Минимум 5 символов, латинские буквы и цифры</p>}
-                                            </div>
-
-                                            <div>
-                                                <label className="text-sm font-medium mb-1.5 block">Пароль</label>
-                                                <div className="relative">
-                                                    <input
-                                                        type={showPassword ? "text" : "password"}
-                                                        placeholder={isFirst ? "Придумайте пароль" : "Введите пароль"}
-                                                        value={password}
-                                                        onChange={(e) => setPassword(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary pr-12 transition-all"
-                                                        disabled={loading}
-                                                        required
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowPassword(!showPassword)}
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                                                        tabIndex={-1}
-                                                    >
-                                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                    </button>
-                                                </div>
-                                                {isFirst && <p className="text-xs text-muted-foreground mt-1.5">Минимум 6 символов</p>}
-                                            </div>
-
-                                            {isFirst && (
-                                                <div>
-                                                    <label className="text-sm font-medium mb-1.5 block">Подтвердите пароль</label>
-                                                    <input
-                                                        type="password"
-                                                        placeholder="Повторите пароль"
-                                                        value={confirmPassword}
-                                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                                        disabled={loading}
-                                                        required
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {!isFirst && (
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="rememberMe"
-                                                        checked={rememberMe}
-                                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                                        className="rounded border-input w-4 h-4 accent-primary cursor-pointer"
-                                                    />
-                                                    <label htmlFor="rememberMe" className="text-sm text-muted-foreground cursor-pointer select-none">
-                                                        Запомнить меня
-                                                    </label>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    )}
-
-                                    {isFirst && step === 2 && (
-                                        <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                                            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
-                                                <h3 className="font-medium">Данные администратора:</h3>
-                                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                                    <div className="text-muted-foreground">Логин:</div>
-                                                    <div className="font-medium text-right">{username}</div>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-green-600 text-sm p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                                    <CheckCircle2 className="h-4 w-4" />
-                                                    <span>Данные для входа проверены</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">Это будет администратор системы с полным доступом. Вы сможете создать других пользователей позже.</p>
-
-                                            <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/20">
-                                                <input
-                                                    type="checkbox"
-                                                    id="agreeTerms"
-                                                    checked={agreeTerms}
-                                                    onChange={(e) => setAgreeTerms(e.target.checked)}
-                                                    className="rounded border-input w-4 h-4 mt-0.5 accent-primary cursor-pointer"
-                                                    required
-                                                />
-                                                <label htmlFor="agreeTerms" className="text-sm text-muted-foreground cursor-pointer select-none leading-relaxed">
-                                                    Я принимаю{" "}
-                                                    <a href="/terms" target="_blank" className="text-primary hover:underline">
-                                                        Условия использования
-                                                    </a>{" "}
-                                                    и{" "}
-                                                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
-                                                        Политику конфиденциальности
-                                                    </a>
-                                                </label>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <AnimatePresence>
-                                    {error && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm"
-                                        >
-                                            {error}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <div className="flex gap-3 pt-2 items-center">
-                                    {isFirst && step === 2 && (
-                                        <button type="button" onClick={() => setStep(1)} disabled={loading} className="px-6 py-3 rounded-xl border font-medium hover:bg-accent transition-colors disabled:opacity-50">
-                                            Назад
-                                        </button>
-                                    )}
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
-                                    >
-                                        {loading ? (
-                                            <motion.div
-                                                animate={{ rotate: 360 }}
-                                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                className="w-5 h-5 border-2 border-current border-t-transparent rounded-full"
-                                            />
-                                        ) : isFirst ? (
-                                            step === 1 ? (
-                                                <>
-                                                    Далее <ArrowRight className="h-4 w-4" />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Shield className="h-4 w-4" /> Создать
-                                                </>
-                                            )
-                                        ) : (
-                                            <>
-                                                <LogIn className="h-4 w-4" /> Войти
-                                            </>
-                                        )}
-                                    </button>
-                                    <DarkModeButtonToggle />
-                                </div>
-                            </form>
+                        <div className="space-y-4 mb-10">
+                            {[
+                                { icon: Package, text: "Управление материалами и категориями" },
+                                { icon: BarChart3, text: "Отчёты и аналитика в реальном времени" },
+                                { icon: Users, text: "Разграничение прав доступа" },
+                                { icon: Shield, text: "Резервное копирование базы данных" },
+                            ].map((item, i) => (
+                                <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.1 }} className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                                        <item.icon className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-white/90 text-sm">{item.text}</span>
+                                </motion.div>
+                            ))}
                         </div>
 
-                        <p className="text-center text-xs text-muted-foreground mt-6">{isFirst ? "При создании учётной записи вы принимаете условия использования" : "Защищённый вход в систему управления складом"}</p>
+                        <p className="text-white/40 text-xs">Версия {currentVersion} • 2026</p>
                     </motion.div>
                 </div>
-                <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-                    <h1 className="text-center text-4xl">Ведутся технические работы</h1>
-                </div>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
+                    <div className="lg:hidden text-center mb-8">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            {isFirst ? <Shield className="w-8 h-8 text-primary" /> : <img src="/boxes.png" className="w-8 h-8" alt="Logo" />}
+                        </div>
+                        <h1 className="text-2xl font-bold">Material House</h1>
+                    </div>
+
+                    <div className="rounded-2xl border bg-card shadow-xl p-8">
+                        <div className="text-center mb-6">
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{isFirst ? (step === 1 ? "Создание администратора" : "Проверьте данные") : "Вход в систему"}</h2>
+                            <p className="text-muted-foreground text-sm mt-2">{isFirst ? (step === 1 ? "Шаг 1 из 2: Учётные данные" : "Шаг 2 из 2: Подтверждение") : "Войдите в свою учётную запись"}</p>
+                        </div>
+
+                        {isFirst && (
+                            <div className="flex justify-center gap-2 mb-6">
+                                <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 1 ? "w-8 bg-primary" : "w-4 bg-primary/30"}`} />
+                                <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 2 ? "w-8 bg-primary" : "w-4 bg-primary/30"}`} />
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <AnimatePresence mode="wait">
+                                {(step === 1 || !isFirst) && (
+                                    <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1.5 block">Логин</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder={isFirst ? "Придумайте логин" : "Введите логин"}
+                                                    value={username}
+                                                    onChange={(e) => setUsername(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                    disabled={loading}
+                                                    autoFocus
+                                                    required
+                                                />
+                                                {!isFirst && localStorage.getItem("rememberedUsername") && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            localStorage.removeItem("rememberedUsername");
+                                                            setUsername("");
+                                                            setRememberMe(false);
+                                                        }}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-destructive transition-colors p-1"
+                                                        title="Забыть сохранённый логин"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {isFirst && <p className="text-xs text-muted-foreground mt-1.5">Минимум 5 символов, латинские буквы и цифры</p>}
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium mb-1.5 block">Пароль</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showPassword ? "text" : "password"}
+                                                    placeholder={isFirst ? "Придумайте пароль" : "Введите пароль"}
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary pr-12 transition-all"
+                                                    disabled={loading}
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                                                    tabIndex={-1}
+                                                >
+                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                </button>
+                                            </div>
+                                            {isFirst && <p className="text-xs text-muted-foreground mt-1.5">Минимум 6 символов</p>}
+                                        </div>
+
+                                        {isFirst && (
+                                            <div>
+                                                <label className="text-sm font-medium mb-1.5 block">Подтвердите пароль</label>
+                                                <input
+                                                    type="password"
+                                                    placeholder="Повторите пароль"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                    disabled={loading}
+                                                    required
+                                                />
+                                            </div>
+                                        )}
+
+                                        {!isFirst && (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="rememberMe"
+                                                    checked={rememberMe}
+                                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                                    className="rounded border-input w-4 h-4 accent-primary cursor-pointer"
+                                                />
+                                                <label htmlFor="rememberMe" className="text-sm text-muted-foreground cursor-pointer select-none">
+                                                    Запомнить меня
+                                                </label>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+
+                                {isFirst && step === 2 && (
+                                    <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                                        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+                                            <h3 className="font-medium">Данные администратора:</h3>
+                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div className="text-muted-foreground">Логин:</div>
+                                                <div className="font-medium text-right">{username}</div>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-green-600 text-sm p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                <span>Данные для входа проверены</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">Это будет администратор системы с полным доступом. Вы сможете создать других пользователей позже.</p>
+
+                                        <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/20">
+                                            <input
+                                                type="checkbox"
+                                                id="agreeTerms"
+                                                checked={agreeTerms}
+                                                onChange={(e) => setAgreeTerms(e.target.checked)}
+                                                className="rounded border-input w-4 h-4 mt-0.5 accent-primary cursor-pointer"
+                                                required
+                                            />
+                                            <label htmlFor="agreeTerms" className="text-sm text-muted-foreground cursor-pointer select-none leading-relaxed">
+                                                Я принимаю{" "}
+                                                <a href="/terms" target="_blank" className="text-primary hover:underline">
+                                                    Условия использования
+                                                </a>{" "}
+                                                и{" "}
+                                                <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                                                    Политику конфиденциальности
+                                                </a>
+                                            </label>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <AnimatePresence>
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm"
+                                    >
+                                        {error}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <div className="flex gap-3 pt-2 items-center">
+                                {isFirst && step === 2 && (
+                                    <button type="button" onClick={() => setStep(1)} disabled={loading} className="px-6 py-3 rounded-xl border font-medium hover:bg-accent transition-colors disabled:opacity-50">
+                                        Назад
+                                    </button>
+                                )}
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
+                                >
+                                    {loading ? (
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-5 h-5 border-2 border-current border-t-transparent rounded-full"
+                                        />
+                                    ) : isFirst ? (
+                                        step === 1 ? (
+                                            <>
+                                                Далее <ArrowRight className="h-4 w-4" />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Shield className="h-4 w-4" /> Создать
+                                            </>
+                                        )
+                                    ) : (
+                                        <>
+                                            <LogIn className="h-4 w-4" /> Войти
+                                        </>
+                                    )}
+                                </button>
+                                <DarkModeButtonToggle />
+                            </div>
+                        </form>
+                    </div>
+
+                    <p className="text-center text-xs text-muted-foreground mt-6">{isFirst ? "При создании учётной записи вы принимаете условия использования" : "Защищённый вход в систему управления складом"}</p>
+                </motion.div>
             </div>
         </div>
     );
