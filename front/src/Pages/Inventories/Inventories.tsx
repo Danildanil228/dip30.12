@@ -345,7 +345,7 @@ export default function Inventories() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={handleCancel}>
                             Отменить
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -360,7 +360,7 @@ export default function Inventories() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={handleDelete}>
                             Удалить
                         </AlertDialogAction>
                     </AlertDialogFooter>

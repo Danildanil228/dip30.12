@@ -301,7 +301,7 @@ export default function Trash() {
                                 ) : (
                                     <>
                                         <div className="flex items-center gap-4 mb-4 pb-2 border-b">
-                                            <Checkbox checked={allCurrentPageSelected} onCheckedChange={handleSelectAll} aria-label="Выбрать все" />
+                                            <Checkbox checked={allCurrentPageSelected} onCheckedChange={handleSelectAll} aria-label="Выбрать все" className="bg-[#3b82f6]!"/>
                                             <span className="text-sm text-muted-foreground">{allCurrentPageSelected ? "Снять все" : "Выбрать все на странице"}</span>
                                         </div>
 
@@ -312,7 +312,7 @@ export default function Trash() {
                                                         <CardContent className="p-4 sm:p-5">
                                                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                                                                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                                    <Checkbox checked={selectedIds.has(item.id)} onCheckedChange={() => handleToggleItem(item.id)} className="mt-1" />
+                                                                    <Checkbox checked={selectedIds.has(item.id)} onCheckedChange={() => handleToggleItem(item.id)} className="mt-1 bg-[#3b82f6]!" />
                                                                     <div className="flex-1 min-w-0">
                                                                         <div className="flex items-center gap-2 flex-wrap mb-2">
                                                                             <h3 className="font-semibold text-base break-words">{item.name}</h3>

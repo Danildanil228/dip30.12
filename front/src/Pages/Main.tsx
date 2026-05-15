@@ -6,12 +6,12 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { versionService } from "@/services/versionService";
 import { Link } from "react-router-dom";
 
-const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+const RevealBlock = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-80px" });
 
     return (
-        <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, ease: "easeOut" }} className={className}>
+        <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: delay, ease: "easeOut" }} className={className}>
             {children}
         </motion.div>
     );
@@ -20,6 +20,7 @@ const RevealBlock = ({ children, className = "" }: { children: React.ReactNode; 
 export default function Main() {
     const { user, isAdmin } = useUser();
     const [currentVersion, setCurrentVersion] = useState("");
+
     useEffect(() => {
         versionService
             .getVersions()
@@ -34,36 +35,10 @@ export default function Main() {
         return "";
     }, [user]);
 
-    return (
-        <div className="space-y-8 pb-8">
-            <ScrollToTop />
-
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="relative overflow-hidden rounded-2xl bg-linear-to-r from-primary/10 via-primary/5 to-background p-8 border"
-            >
-                <div className="relative sm:flex grid gap-2 justify-between">
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                            Добро пожаловать, {user?.name} {user?.secondname}
-                        </h1>
-                        <p className="mt-2 text-lg text-muted-foreground">{roleName}</p>
-                        <p className="mt-4 text-sm text-muted-foreground max-w-xl">Material House — система управления складскими запасами. Выберите интересующий раздел ниже, чтобы изучить возможности.</p>
-                    </div>
-                    <div className="max-w-50">
-                        <h1 className="text-xl! sm:text-3xl font-bold tracking-tight text-wrap">Текущая версия приложения {currentVersion}</h1>
-                        <div className="flex items-end">
-                            <Link to="/versions" className="mt-2 text-sm text-muted-foreground underline">
-                                Посмотреть последние изменения системы
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
-
-            <RevealBlock>
+    const blocks = [
+        {
+            condition: true,
+            content: (
                 <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -99,141 +74,158 @@ export default function Main() {
                                 <Package className="h-3 w-3" /> Кладовщик
                             </span>
                         </div>
-                        {/* <div>
-                            <h3 className="font-medium mb-2">Быстрый старт</h3>
-                            <div className="flex flex-col gap-2">
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link to="/materials">
-                                        <Package className="h-4 w-4 mr-2" /> Материалы
-                                    </Link>
-                                </Button>
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link to="/requests">
-                                        <ClipboardList className="h-4 w-4 mr-2" /> Заявки
-                                    </Link>
-                                </Button>
-                                {isAdmin && (
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link to="/allusers">
-                                            <Users className="h-4 w-4 mr-2" /> Пользователи
-                                        </Link>
-                                    </Button>
-                                )}
-                            </div>
-                        </div> */}
                     </div>
                 </div>
-            </RevealBlock>
-
-            {(user?.role === "storekeeper" || isAdmin) && (
-                <RevealBlock>
-                    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                                <Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                            </div>
-                            <h2 className="text-xl font-semibold">Инструкция для кладовщика</h2>
+            ),
+        },
+        {
+            condition: user?.role === "storekeeper" || isAdmin,
+            content: (
+                <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-6">
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <PlusCircle className="h-4 w-4 text-primary" /> Создание заявки
-                                </h3>
-                                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                    <li>Перейдите в раздел «Заявки»</li>
-                                    <li>Нажмите «Создать»</li>
-                                    <li>Выберите тип заявки и товары</li>
-                                    <li>Укажите количество</li>
-                                    <li>Сохраните заявку</li>
-                                </ol>
-                            </div>
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <Search className="h-4 w-4 text-primary" /> Просмотр остатков
-                                </h3>
-                                <p className="text-sm text-muted-foreground">Раздел «Материалы» показывает актуальные остатки с поиском и фильтрами.</p>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <ClipboardList className="h-4 w-4 text-primary" /> Инвентаризация
-                                </h3>
-                                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                                    <li>Откройте раздел «Инвентаризация»</li>
-                                    <li>Выберите назначенную вам инвентаризацию</li>
-                                    <li>Нажмите «Начать» и вносите фактические остатки</li>
-                                    <li>Сохраняйте результаты и завершите инвентаризацию</li>
-                                </ol>
-                            </div>
+                        <h2 className="text-xl font-semibold">Инструкция для кладовщика</h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-6">
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <PlusCircle className="h-4 w-4 text-primary" /> Создание заявки
+                            </h3>
+                            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                                <li>Перейдите в раздел «Заявки»</li>
+                                <li>Нажмите «Создать»</li>
+                                <li>Выберите тип заявки и товары</li>
+                                <li>Укажите количество</li>
+                                <li>Сохраните заявку</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <Search className="h-4 w-4 text-primary" /> Просмотр остатков
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Раздел «Материалы» показывает актуальные остатки с поиском и фильтрами.</p>
+                        </div>
+                        <div className="sm:col-span-2">
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <ClipboardList className="h-4 w-4 text-primary" /> Инвентаризация
+                            </h3>
+                            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                                <li>Откройте раздел «Инвентаризация»</li>
+                                <li>Выберите назначенную вам инвентаризацию</li>
+                                <li>Нажмите «Начать» и вносите фактические остатки</li>
+                                <li>Сохраняйте результаты и завершите инвентаризацию</li>
+                            </ol>
                         </div>
                     </div>
-                </RevealBlock>
-            )}
-
-            {(user?.role === "accountant" || isAdmin) && (
-                <RevealBlock>
-                    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                            </div>
-                            <h2 className="text-xl font-semibold">Инструкция для бухгалтера</h2>
+                </div>
+            ),
+        },
+        {
+            condition: user?.role === "accountant" || isAdmin,
+            content: (
+                <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-6">
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <CheckCircle className="h-4 w-4 text-primary" /> Подтверждение заявок
-                                </h3>
-                                <p className="text-sm text-muted-foreground">В разделе «Заявки» вы можете подтверждать (товары спишутся/поступят) или отклонять заявки с указанием причины.</p>
-                            </div>
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <FileText className="h-4 w-4 text-primary" /> Отчёты
-                                </h3>
-                                <p className="text-sm text-muted-foreground">Раздел «Отчёты» — движение материалов, заявки, ОСВ, активность пользователей. Все отчёты можно экспортировать в Excel/PDF.</p>
-                            </div>
+                        <h2 className="text-xl font-semibold">Инструкция для бухгалтера</h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-6">
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <CheckCircle className="h-4 w-4 text-primary" /> Подтверждение заявок
+                            </h3>
+                            <p className="text-sm text-muted-foreground">В разделе «Заявки» вы можете подтверждать (товары спишутся/поступят) или отклонять заявки с указанием причины.</p>
+                        </div>
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <FileText className="h-4 w-4 text-primary" /> Отчёты
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Раздел «Отчёты» — движение материалов, заявки, ОСВ, активность пользователей. Все отчёты можно экспортировать в Excel/PDF.</p>
                         </div>
                     </div>
-                </RevealBlock>
-            )}
-
-            {isAdmin && (
-                <RevealBlock>
-                    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <UserCog className="h-5 w-5 text-primary" />
-                            </div>
-                            <h2 className="text-xl font-semibold">Инструкция для администратора</h2>
+                </div>
+            ),
+        },
+        {
+            condition: isAdmin,
+            content: (
+                <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-6 sm:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <UserCog className="h-5 w-5 text-primary" />
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-6">
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <Users className="h-4 w-4 text-primary" /> Управление пользователями
-                                </h3>
-                                <p className="text-sm text-muted-foreground">Создание, редактирование, удаление пользователей и смена ролей в разделе «Пользователи».</p>
-                            </div>
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <Database className="h-4 w-4 text-primary" /> Бэкапы
-                                </h3>
-                                <p className="text-sm text-muted-foreground">Создание и скачивание резервных копий базы данных в разделе «Бэкапы».</p>
-                            </div>
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <Bell className="h-4 w-4 text-primary" /> Журнал
-                                </h3>
-                                <p className="text-sm text-muted-foreground">Просмотр всех действий пользователей с фильтрацией в разделе «Журнал».</p>
-                            </div>
-                            <div>
-                                <h3 className="font-medium flex items-center gap-2 mb-2">
-                                    <FileText className="h-4 w-4 text-primary" /> Полный контроль
-                                </h3>
-                                <p className="text-sm text-muted-foreground">Редактирование материалов, категорий, инвентаризаций и приватных заявок.</p>
-                            </div>
+                        <h2 className="text-xl font-semibold">Инструкция для администратора</h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-6">
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <Users className="h-4 w-4 text-primary" /> Управление пользователями
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Создание, редактирование, удаление пользователей и смена ролей в разделе «Пользователи».</p>
+                        </div>
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <Database className="h-4 w-4 text-primary" /> Бэкапы
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Создание и скачивание резервных копий базы данных в разделе «Бэкапы».</p>
+                        </div>
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <Bell className="h-4 w-4 text-primary" /> Журнал
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Просмотр всех действий пользователей с фильтрацией в разделе «Журнал».</p>
+                        </div>
+                        <div>
+                            <h3 className="font-medium flex items-center gap-2 mb-2">
+                                <FileText className="h-4 w-4 text-primary" /> Полный контроль
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Редактирование материалов, категорий, инвентаризаций и приватных заявок.</p>
                         </div>
                     </div>
+                </div>
+            ),
+        },
+    ];
+
+    const visibleBlocks = blocks.filter((block) => block.condition);
+
+    return (
+        <div className="space-y-8 pb-8">
+            <ScrollToTop />
+
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0 }}
+                className="relative overflow-hidden rounded-2xl bg-linear-to-r from-primary/10 via-primary/5 to-background p-8 border"
+            >
+                <div className="relative sm:flex grid gap-2 justify-between">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                            Добро пожаловать, {user?.name} {user?.secondname}
+                        </h1>
+                        <p className="mt-2 text-lg text-muted-foreground">{roleName}</p>
+                        <p className="mt-4 text-sm text-muted-foreground max-w-xl">Material House — система управления складскими запасами. Выберите интересующий раздел ниже, чтобы изучить возможности.</p>
+                    </div>
+                    <div className="max-w-50">
+                        <h1 className="text-xl! sm:text-3xl font-bold tracking-tight text-wrap">Текущая версия приложения {currentVersion}</h1>
+                        <div className="flex items-end">
+                            <Link to="/versions" className="mt-2 text-sm text-muted-foreground underline">
+                                Посмотреть последние изменения системы
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            {visibleBlocks.map((block, index) => (
+                <RevealBlock key={index} delay={index * 0.15}>
+                    {block.content}
                 </RevealBlock>
-            )}
+            ))}
         </div>
     );
 }
