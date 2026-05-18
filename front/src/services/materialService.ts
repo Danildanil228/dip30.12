@@ -2,7 +2,6 @@ import apiClient from "./api";
 import type { Category, Material } from "@/types/material.types";
 
 export const materialService = {
-    // Categories
     async getCategories(): Promise<Category[]> {
         const response = await apiClient.get("/categories");
         return response.data.categories;
@@ -21,8 +20,6 @@ export const materialService = {
     async deleteCategory(categoryId: number): Promise<void> {
         await apiClient.delete(`/categories/${categoryId}`);
     },
-
-    // Materials
     async getMaterials(params?: { category_id?: string; search?: string; low_stock?: string }): Promise<{ materials: Material[]; stats: any }> {
         const response = await apiClient.get("/materials", { params });
         return response.data;

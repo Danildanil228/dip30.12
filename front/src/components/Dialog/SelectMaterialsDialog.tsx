@@ -109,7 +109,6 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
         if (isNaN(quantity) || quantity < 1) {
             quantity = 1;
         }
-        // Ограничиваем максимальным доступным, если это расход
         if (requestType === "outgoing" && quantity > material.quantity) {
             quantity = material.quantity;
         }
@@ -154,8 +153,6 @@ export default function SelectMaterialsDialog({ open, onOpenChange, onSelect, se
         }
         const item = tempSelected.find((i) => i.material_id === materialId);
         if (!item) return;
-
-        // Проверка на превышение остатка при расходе
         if (requestType === "outgoing" && quantity > item.current_quantity) {
             setErrorMessage(`Недостаточно товара. Доступно: ${item.current_quantity} ${item.unit}`);
             setErrorOpen(true);

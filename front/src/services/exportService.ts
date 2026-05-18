@@ -1,4 +1,3 @@
-// front/src/services/exportService.ts
 import { saveAs } from "file-saver";
 
 export interface ExportColumn<T = any> {
